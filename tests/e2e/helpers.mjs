@@ -31,13 +31,18 @@ export function chromePath() {
   return found;
 }
 
-export function launch(extraArgs = []) {
-  return puppeteer.launch({
+export async function launch(extraArgs = []) {
+  const browser = await puppeteer.launch({
     executablePath: chromePath(),
     headless: true,
     args: ["--no-sandbox", ...extraArgs],
     protocolTimeout: 300_000,
   });
+  // The unsaved changes guard asks before unloading; automated runs always continue.
+  browser.on("targetcreated", async (target) => {
+    (await target.page())?.on("dialog", (dialog) => dialog.accept());
+  });
+  return browser;
 }
 
 /** Collects PASS/FAIL lines, prints them at exit and fails the process if any check failed. */
