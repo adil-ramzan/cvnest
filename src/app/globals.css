@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/*
+  Design tokens for the site and editor UI.
+  Resume documents re-bind the type and spacing tokens inside .resume-paper
+  (below), so changing the UI scale here never changes a resume.
+*/
+@theme {
+  --color-canvas: #faf8f4;
+  --color-surface: #ffffff;
+  --color-ink: #1d1d1f;
+  --color-ink-soft: #3a3a3f;
+  --color-muted: #57575d;
+  --color-placeholder: #8c8880;
+  --color-line: #e9e5de;
+  --color-line-strong: #d3cdc2;
+  --color-accent: #2f5d50;
+  --color-accent-soft: #e8efe9;
+  --color-sheet: #ecebe7;
+
+  /* UI type scale: 13 / 15 / 16 / 18 / 20 / 24 / 32 / 40 / 48 px */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.45;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.55;
+  --text-base: 1rem;
+  --text-base--line-height: 1.65;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.45;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.35;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 1.2;
+  --text-4xl: 2.5rem;
+  --text-4xl--line-height: 1.15;
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1.1;
+  /* Only used inside resume documents. */
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: 1.4;
+
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-pop: 0 12px 32px -12px rgb(0 0 0 / 0.25), 0 2px 6px rgb(0 0 0 / 0.04);
+  --shadow-sheet: 0 1px 3px rgb(0 0 0 / 0.07), 0 18px 40px -20px rgb(0 0 0 / 0.25);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+}
+
+/* Consistent keyboard focus for anything without its own focus style. */
+:where(a, button, summary, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/*
+  Resume paper: a US Letter page that scales with its container.
+  `--u` equals 1rem at full page width (816px), and Tailwind's spacing and
+  font-size tokens are re-based on it, so templates use normal utilities
+  (p-8, text-xs, gap-4, ...) and render identically at any size.
+*/
+.resume-paper {
+  container-type: inline-size;
+  background-color: #ffffff;
+  --u: calc(100cqw / 51);
+  --spacing: calc(var(--u) * 0.25);
+  --text-2xs: calc(var(--u) * 0.625);
+  --text-xs: calc(var(--u) * 0.75);
+  --text-sm: calc(var(--u) * 0.875);
+  --text-base: var(--u);
+  --text-lg: calc(var(--u) * 1.125);
+  --text-xl: calc(var(--u) * 1.25);
+  --text-2xl: calc(var(--u) * 1.5);
+  --text-3xl: calc(var(--u) * 1.875);
+  --text-4xl: calc(var(--u) * 2.25);
+  --text-5xl: calc(var(--u) * 3);
+  /* Fixed document line heights, independent of the UI scale above. */
+  --text-2xs--line-height: 1.4;
+  --text-xs--line-height: calc(1 / 0.75);
+  --text-sm--line-height: calc(1.25 / 0.875);
+  --text-base--line-height: 1.5;
+  --text-lg--line-height: calc(1.75 / 1.125);
+  --text-xl--line-height: calc(1.75 / 1.25);
+  --text-2xl--line-height: calc(2 / 1.5);
+  --text-3xl--line-height: calc(2.25 / 1.875);
+  --text-4xl--line-height: calc(2.5 / 2.25);
+  --text-5xl--line-height: 1;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* A4 is narrower and taller than US Letter; 1u still equals 1rem at full page width (794px). */
+.resume-paper--a4 {
+  --u: calc(100cqw / 49.625);
+}
+
+/* The page is a one-cell grid so the template stretches to at least one full page. */
+.resume-page {
+  --page-height: calc(100cqw * 11 / 8.5);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: var(--page-height);
+  /* Long URLs or unbroken words wrap instead of pushing past the page edge. */
+  overflow-wrap: anywhere;
+}
+
+/* Thumbnails: exactly one page, extra content cropped. */
+.resume-paper:not(.resume-paper--flow) {
+  aspect-ratio: 8.5 / 11;
+  overflow: hidden;
+}
+
+.resume-paper:not(.resume-paper--flow) .resume-page {
+  height: 100%;
+}
+
+.resume-paper--a4 .resume-page {
+  --page-height: calc(100cqw * 297 / 210);
+}
+
+.resume-paper--a4:not(.resume-paper--flow) {
+  aspect-ratio: 210 / 297;
+}
+
+/* Editor preview: content flows on; a faint rule marks each page boundary. */
+.resume-paper--flow .resume-page {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--page-height) - 1px),
+    rgb(0 0 0 / 0.14) calc(var(--page-height) - 1px),
+    rgb(0 0 0 / 0.14) var(--page-height)
+  );
+}
