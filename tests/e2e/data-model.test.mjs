@@ -25,6 +25,12 @@ async function newPage(ctx) {
   page.on("request", (req) => { if (req.url().startsWith("data:") || req.url().startsWith("blob:")) return; const b = `${req.url()} ${req.postData() ?? ""}`; if (/Legacy Lena|Quokka|Streamline/.test(b)) leaks.push(req.url()); });
   return page;
 }
+// The personal details form starts collapsed behind the profile card's Edit button.
+async function openProfile(page) {
+  await page.waitForSelector("[aria-controls='personal-form']");
+  await page.$eval("[aria-controls='personal-form']", (el) => el.getAttribute("aria-expanded") === "false" && el.click());
+  await sleep(100);
+}
 const v2 = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("folio.resumes.v2") ?? "null"));
 const preview = (page) => page.$eval("[aria-label='Resume preview']", (el) => el.textContent);
 const idbPhotos = (page) => page.evaluate(() => new Promise((resolve) => {
@@ -102,6 +108,7 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
   await page.waitForSelector("select");
   check("Loading alone does not rewrite stored data", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2"))).includes("From the future"));
+  await openProfile(page);
   await page.locator("::-p-aria(Job title)").fill("Edited");
   await sleep(800);
   const d = await v2(page);
@@ -121,30 +128,33 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   const ctx = await browser.createBrowserContext();
   const page = await newPage(ctx);
   await page.goto(`${BASE}/editor?template=minimal`, { waitUntil: "networkidle0" });
-  await page.waitForSelector("::-p-aria(Full name)");
+  await openProfile(page);
   let d = await v2(page);
   await sleep(600); d = await v2(page);
   check("New resume created with schema v2 and URL template", d.resumes.length === 1 && d.resumes[0].design.templateId === "minimal" && d.resumes[0].schemaVersion === 2);
   check("Default sections", d.resumes[0].sections.map((s) => s.type).join() === "summary,experience,projects,education,skills,certifications,languages");
   await page.locator("::-p-aria(Full name)").fill("Quokka Newperson");
   await page.locator("::-p-aria(Email)").fill("q@example.com");
-  // Add awards, volunteering and a custom section
+  // Add awards, volunteering and a custom section. Adding one opens it and closes the last.
   for (const label of ["Awards", "Volunteering", "Custom section"]) {
     await page.locator("::-p-aria(Add section)").click();
     await page.locator(`[role='menu'] ::-p-text(${label})`).click();
     await sleep(150);
-    if (label === "Custom section") {
+    if (label === "Awards") {
+      await page.locator("::-p-aria(Add award)").click();
+      await page.locator("::-p-aria(Award)").fill("Hackathon Winner");
+    } else if (label === "Volunteering") {
+      await page.locator("::-p-aria(Add role)").click();
+      await page.locator("::-p-aria(Role)").fill("Food bank volunteer");
+      await page.locator("::-p-aria(Organization)").fill("City Food Bank");
+    } else {
       // New custom sections open with the heading field focused.
       await page.type("[aria-label='Section heading']", "Interests");
       await page.keyboard.press("Enter");
+      await page.locator("::-p-aria(Add item)").click();
+      await page.locator("::-p-aria(Title)").fill("Trail running");
     }
   }
-  await page.locator("::-p-text(Add award)").click();
-  await page.locator("::-p-aria(Award)").fill("Hackathon Winner");
-  await page.locator("::-p-text(Add role)").click();
-  await page.locator("::-p-aria(Role)").fill("Food bank volunteer");
-  await page.locator("::-p-aria(Organization)").fill("City Food Bank");
-  await page.locator("::-p-aria(Title)").fill("Trail running");
   // Summary, skills, language, certification, project, education, experience
   await page.locator("::-p-text(A short introduction)").click();
   await page.locator("::-p-aria(Summary)").fill("Summary text here.");
@@ -152,25 +162,24 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   await page.locator("::-p-aria(Add a skill)").fill("Go, Rust");
   await page.keyboard.press("Enter");
   await page.locator("::-p-text(Languages you speak)").click();
-  await page.locator("::-p-text(Add language)").click();
+  await page.locator("::-p-aria(Add language)").click();
   await page.locator("::-p-aria(Language)").fill("Japanese");
   await page.locator("::-p-aria(Proficiency)").fill("Intermediate");
   await page.locator("::-p-text(Licenses and certificates)").click();
-  await page.locator("::-p-text(Add certification)").click();
+  await page.locator("::-p-aria(Add certification)").click();
   await page.locator("::-p-aria(Certification)").fill("CKA");
   await page.locator("::-p-aria(Issuer)").fill("CNCF");
   await page.locator("::-p-text(Personal, academic or open-source work)").click();
-  await page.locator("::-p-text(Add project)").click();
+  await page.locator("::-p-aria(Add project)").click();
   await page.locator("::-p-aria(Project name)").fill("Tiny compiler");
   await page.locator("::-p-text(Degrees, courses and schools)").click();
-  await page.locator("::-p-text(Add education)").click();
+  await page.locator("::-p-aria(Add education)").click();
   await page.locator("::-p-aria(Degree or qualification)").fill("B.S. Math");
   await page.locator("::-p-text(Jobs, internships and volunteer roles)").click();
-  await page.locator("::-p-text(Add position)").click();
+  await page.locator("::-p-aria(Add position)").click();
   await page.locator("::-p-aria(Company)").fill("FirstCo");
-  await page.locator("::-p-text(Add position)").click();
-  const companies = await page.$$("::-p-aria(Company)");
-  await companies[1].type("SecondCo");
+  await page.locator("::-p-aria(Add position)").click();
+  await page.locator("::-p-aria(Company)").fill("SecondCo");
   await sleep(800);
   let text = await preview(page);
   const expected = ["Quokka Newperson", "Summary text here.", "Hackathon Winner", "Food bank volunteer", "Interests", "Trail running", "Go", "Rust", "Japanese — Intermediate", "CKA — CNCF", "Tiny compiler", "B.S. Math", "FirstCo", "SecondCo"];
@@ -180,7 +189,8 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   const exp = d.resumes[0].sections.find((s) => s.type === "experience");
   const idsBefore = exp.entries.map((e) => e.id);
   // Reorder entries
-  await pickOption(page, "Options for New position", "Move down", 0);
+  await page.focus("[aria-label^='Reorder New position']");
+  await page.keyboard.press("ArrowDown");
   await sleep(600);
   d = await v2(page);
   const idsAfter = d.resumes[0].sections.find((s) => s.type === "experience").entries.map((e) => e.id);
@@ -242,7 +252,7 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   check("Deleting a duplicate keeps the shared photo", (await idbPhotos(page)).length === 1);
   // Reload restores
   await page.reload({ waitUntil: "networkidle0" });
-  await page.waitForSelector("::-p-aria(Full name)");
+  await openProfile(page);
   check("Reload restores content", (await page.$eval("::-p-aria(Full name)", (e) => e.value)) === "Quokka Newperson");
   // Cross-tab (label-based DOM access: accessibility queries stall with two pages open)
   const fieldValue = (p, label) => p.evaluate((label) => { const l = [...document.querySelectorAll("label")].find((x) => x.textContent.trim() === label); return l && document.getElementById(l.htmlFor)?.value; }, label);
@@ -253,6 +263,7 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   const other = await newPage(ctx);
   await other.goto(`${BASE}/editor`);
   await other.waitForFunction(() => [...document.querySelectorAll("label")].some((x) => x.textContent.trim() === "Full name"));
+  await openProfile(other);
   await page.bringToFront();
   await typeInto(page, "Full name", "Quokka Crosstab");
   await sleep(1500);

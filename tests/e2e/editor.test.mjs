@@ -22,10 +22,16 @@ const aria = (label) => page.locator(`::-p-aria(${label})`);
 const stored = () => readStored(page);
 const fieldValue = (label) =>
   page.$eval(`::-p-aria(${label})`, (el) => el.value);
+// The personal details form starts collapsed behind the profile card's Edit button.
+const openProfile = async () => {
+  await page.waitForSelector("[aria-controls='personal-form']");
+  await page.$eval("[aria-controls='personal-form']", (el) => el.getAttribute("aria-expanded") === "false" && el.click());
+  await page.waitForSelector("::-p-aria(Full name)");
+};
 
 // 1. Template from URL
 await page.goto(`${BASE}/editor?template=modern`, { waitUntil: "networkidle0" });
-await page.waitForSelector("::-p-aria(Full name)");
+await openProfile();
 check("URL ?template is removed after load", page.url() === `${BASE}/editor`, page.url());
 const modernPressed = await page.$eval("select", (el) => el.value);
 check("Template from URL selected", modernPressed === "modern", modernPressed);
@@ -35,10 +41,9 @@ await aria("Full name").fill(MARKER);
 await aria("Job title").fill("Chief Cartographer");
 await aria("Email").fill("zelda@example.com");
 await page.locator("::-p-text(Jobs, internships and volunteer roles)").click();
-await page.locator("::-p-text(Add position)").click();
+await aria("Add position").click();
 await sleep(200);
-const jobTitleInputs = await page.$$("::-p-aria(Job title)");
-await jobTitleInputs[1].type("Map Maker");
+await aria("Job title").fill("Map Maker");
 await aria("Company").fill("Atlas Co");
 await aria("Achievements and responsibilities").fill("Drew 400 maps\nLed survey team");
 // Skills
@@ -49,7 +54,7 @@ await aria("Add a skill").fill("GIS, Python");
 await page.keyboard.press("Enter");
 // Languages
 await page.locator("::-p-text(Languages you speak)").click();
-await page.locator("::-p-text(Add language)").click();
+await aria("Add language").click();
 await aria("Language").fill("Spanish");
 await aria("Proficiency").fill("Fluent");
 // Custom section
@@ -92,7 +97,7 @@ check("Zoom in increases level", parseInt(zoomText) > parseInt(zoomBefore), `${z
 
 // 4. Reload restores
 await page.reload({ waitUntil: "networkidle0" });
-await page.waitForSelector("::-p-aria(Full name)");
+await openProfile();
 check("Reload restores content", (await fieldValue("Full name")) === MARKER);
 
 // 5. Multiple resumes: new, rename, duplicate, delete
@@ -120,6 +125,7 @@ await page.locator("::-p-text(New resume)").click();
 await sleep(700);
 data = await stored();
 check("New resume created (3 total)", data.resumes.length === 3, String(data.resumes.length));
+await openProfile();
 check("New resume is empty", (await fieldValue("Full name")) === "");
 
 await page.locator("::-p-aria(More actions)").click();
@@ -156,7 +162,7 @@ await page.evaluate(() =>
 );
 await page.evaluate(() => localStorage.setItem("folio.editor-settings", JSON.stringify({ activeResumeId: "old", zoom: 99 })));
 await page.reload({ waitUntil: "networkidle0" });
-await page.waitForSelector("::-p-aria(Full name)");
+await openProfile();
 check("Outdated data loads", (await fieldValue("Full name")) === "Legacy Person");
 const legacyTpl = await page.$eval("select", (el) => el.value);
 check("Unknown template falls back to Professional", legacyTpl === "professional", legacyTpl);
@@ -164,7 +170,7 @@ check("Unknown template falls back to Professional", legacyTpl === "professional
 // 8. Mobile
 await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
 await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
-await page.waitForSelector("::-p-aria(Full name)");
+await openProfile();
 await page.screenshot({ path: `${OUT}/editor-mobile-edit.png` });
 await page.locator("button[aria-pressed]::-p-text(Preview)").click();
 await sleep(500);
