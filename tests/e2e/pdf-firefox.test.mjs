@@ -77,6 +77,8 @@ for (const [name, size, storage] of datasets) {
     await sleep(150);
     const before = await exec("return window.__printed");
     await exec('[...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click();');
+    await sleep(80);
+    await exec('[...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Download anyway")?.click();');
     for (let i = 0; i < 200 && (await exec("return window.__printed")) === before; i++) await sleep(50);
     const [width, height] = pageSizes[size].cm;
     const pdf = await wd("POST", `${s}/print`, { background: true, margin: { top: 0, bottom: 0, left: 0, right: 0 }, page: { width, height } });

@@ -27,6 +27,7 @@ const tabCard = "m-4 overflow-hidden rounded-[22px] bg-surface shadow-soft sm:m-
 
 type DialogState =
   | { type: "rename" | "delete"; id: string }
+  | { type: "empty" }
   | { type: "restore"; resumes: Resume[]; skipped: number }
   | { type: "restore-error"; message: string }
   | null;
@@ -141,7 +142,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         onDelete={() => setDialog({ type: "delete", id: active.id })}
         onDownloadBackup={downloadBackup}
         onRestoreBackup={() => restoreInput.current?.click()}
-        onDownload={() => pdf.start(active, photoUrl)}
+        onDownload={() => (isResumeEmpty(active) ? setDialog({ type: "empty" }) : pdf.start(active, photoUrl))}
         downloading={pdf.status === "preparing"}
       />
 
@@ -361,6 +362,37 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         className="sr-only"
         tabIndex={-1}
       />
+
+      <Dialog
+        open={dialog?.type === "empty"}
+        onClose={() => setDialog(null)}
+        title="Your resume is empty"
+        description="The PDF would only show a placeholder name. Add your details first, or load sample data to see how it looks."
+      >
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setDialog(null);
+              pdf.start(active, photoUrl);
+            }}
+            className={dialogButtonClass.secondary}
+          >
+            Download anyway
+          </button>
+          <button
+            type="button"
+            autoFocus
+            onClick={() => {
+              setDialog(null);
+              loadSample();
+            }}
+            className={dialogButtonClass.primary}
+          >
+            Load sample data
+          </button>
+        </div>
+      </Dialog>
 
       <Dialog
         open={dialog?.type === "restore"}

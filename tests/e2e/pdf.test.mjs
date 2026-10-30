@@ -80,7 +80,11 @@ for (const [name, size, storage] of datasets) {
     await page.select("select", slug);
     await sleep(150);
     const before = await page.evaluate(() => window.__printed || 0);
-    await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click());
+    await page.evaluate(async () => {
+      [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click();
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Download anyway")?.click();
+    });
     await page.waitForFunction((b) => (window.__printed || 0) > b, {}, before);
     const file = path.join(dir, `${name}-${size}-${slug}.pdf`);
     await page.pdf({ path: file, preferCSSPageSize: true });

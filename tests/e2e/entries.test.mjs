@@ -125,6 +125,12 @@ check("Arrow up moves it back", (await roles())[0] === "Saved role");
 // Empty resume
 await seed(null);
 check("Empty resume previews the sample", (await preview()).includes("Load sample data"));
+await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click());
+await page.waitForSelector("dialog[open]");
+check("Download PDF warns that the resume is empty", await page.$eval("dialog[open]", (el) => el.textContent.includes("Your resume is empty") && el.textContent.includes("Download anyway")));
+await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Load sample data").click());
+await sleep(800);
+await seed(null);
 await clickButton("Load sample data");
 await sleep(800);
 const loaded = await page.evaluate(() => JSON.parse(localStorage.getItem("folio.resumes.v2")).resumes[0]);
