@@ -109,7 +109,8 @@ function sanitizeSection(raw: UnknownRecord, ctx: IdContext): ResumeSection | nu
     title: typeof raw.title === "string" ? raw.title.slice(0, 120) : DEFAULT_SECTION_TITLES[type],
     visible: raw.visible !== false,
   };
-  const id = (item: UnknownRecord) => takeId(item.id, ctx);
+  // Only written when true, so visible entries stay exactly as they were saved.
+  const entry = (item: UnknownRecord) => ({ id: takeId(item.id, ctx), ...(item.hidden === true ? { hidden: true } : {}) });
 
   switch (type) {
     case "summary":
@@ -119,7 +120,7 @@ function sanitizeSection(raw: UnknownRecord, ctx: IdContext): ResumeSection | nu
         ...base,
         type,
         entries: list(raw.entries, (e) => ({
-          id: id(e), role: str(e.role), company: str(e.company), location: optStr(e.location),
+          ...entry(e), role: str(e.role), company: str(e.company), location: optStr(e.location),
           startDate: optStr(e.startDate), endDate: optStr(e.endDate), highlights: strList(e.highlights),
         })),
       };
@@ -128,7 +129,7 @@ function sanitizeSection(raw: UnknownRecord, ctx: IdContext): ResumeSection | nu
         ...base,
         type,
         entries: list(raw.entries, (e) => ({
-          id: id(e), degree: str(e.degree), school: str(e.school), location: optStr(e.location),
+          ...entry(e), degree: str(e.degree), school: str(e.school), location: optStr(e.location),
           startDate: optStr(e.startDate), endDate: optStr(e.endDate), details: optStr(e.details),
         })),
       };
@@ -137,26 +138,26 @@ function sanitizeSection(raw: UnknownRecord, ctx: IdContext): ResumeSection | nu
         ...base,
         type,
         entries: list(raw.entries, (e) => ({
-          id: id(e), name: str(e.name), role: optStr(e.role), link: optStr(e.link),
+          ...entry(e), name: str(e.name), role: optStr(e.role), link: optStr(e.link),
           startDate: optStr(e.startDate), endDate: optStr(e.endDate), description: optStr(e.description),
         })),
       };
     case "skills":
-      return { ...base, type, entries: list(raw.entries, (e) => ({ id: id(e), name: str(e.name) })) };
+      return { ...base, type, entries: list(raw.entries, (e) => ({ ...entry(e), name: str(e.name) })) };
     case "certifications":
       return {
         ...base,
         type,
-        entries: list(raw.entries, (e) => ({ id: id(e), name: str(e.name), issuer: optStr(e.issuer), date: optStr(e.date) })),
+        entries: list(raw.entries, (e) => ({ ...entry(e), name: str(e.name), issuer: optStr(e.issuer), date: optStr(e.date) })),
       };
     case "languages":
-      return { ...base, type, entries: list(raw.entries, (e) => ({ id: id(e), name: str(e.name), proficiency: optStr(e.proficiency) })) };
+      return { ...base, type, entries: list(raw.entries, (e) => ({ ...entry(e), name: str(e.name), proficiency: optStr(e.proficiency) })) };
     case "awards":
       return {
         ...base,
         type,
         entries: list(raw.entries, (e) => ({
-          id: id(e), title: str(e.title), issuer: optStr(e.issuer), date: optStr(e.date), description: optStr(e.description),
+          ...entry(e), title: str(e.title), issuer: optStr(e.issuer), date: optStr(e.date), description: optStr(e.description),
         })),
       };
     case "volunteering":
@@ -164,7 +165,7 @@ function sanitizeSection(raw: UnknownRecord, ctx: IdContext): ResumeSection | nu
         ...base,
         type,
         entries: list(raw.entries, (e) => ({
-          id: id(e), role: str(e.role), organization: str(e.organization), location: optStr(e.location),
+          ...entry(e), role: str(e.role), organization: str(e.organization), location: optStr(e.location),
           startDate: optStr(e.startDate), endDate: optStr(e.endDate), highlights: strList(e.highlights),
         })),
       };
@@ -173,7 +174,7 @@ function sanitizeSection(raw: UnknownRecord, ctx: IdContext): ResumeSection | nu
         ...base,
         type,
         entries: list(raw.entries, (e) => ({
-          id: id(e), title: str(e.title), subtitle: optStr(e.subtitle), date: optStr(e.date), description: optStr(e.description),
+          ...entry(e), title: str(e.title), subtitle: optStr(e.subtitle), date: optStr(e.date), description: optStr(e.description),
         })),
       };
   }

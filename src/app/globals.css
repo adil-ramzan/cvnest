@@ -6,17 +6,20 @@
   (below), so changing the UI scale here never changes a resume.
 */
 @theme {
-  --color-canvas: #faf8f4;
+  --color-canvas: #eeece9;
   --color-surface: #ffffff;
-  --color-ink: #1d1d1f;
-  --color-ink-soft: #3a3a3f;
-  --color-muted: #57575d;
-  --color-placeholder: #8c8880;
-  --color-line: #e9e5de;
-  --color-line-strong: #d3cdc2;
-  --color-accent: #2f5d50;
-  --color-accent-soft: #e8efe9;
-  --color-sheet: #ecebe7;
+  --color-panel: #f5f3f0;
+  --color-ink: #14213d;
+  --color-ink-soft: #2f3a52;
+  --color-muted: #5b6472;
+  --color-placeholder: #6b7280;
+  --color-line: #d9d4de;
+  --color-line-strong: #bdb7c4;
+  /* Icons and focus rings only; text uses accent-ink. */
+  --color-accent: #0f766e;
+  --color-accent-ink: #0b5f59;
+  --color-accent-soft: #e0f0ee;
+  --color-sheet: #e4e1dd;
 
   /* UI type scale: 13 / 15 / 16 / 18 / 20 / 24 / 32 / 40 / 48 px */
   --text-xs: 0.8125rem;
@@ -37,17 +40,50 @@
   --text-4xl--line-height: 1.15;
   --text-5xl: 3rem;
   --text-5xl--line-height: 1.1;
+  /* Landing page scale. */
+  --text-display: clamp(3rem, 6.5vw, 5.5rem);
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.03em;
+  --text-display--font-weight: 700;
+  --text-h2: clamp(2.25rem, 4.6vw, 3.75rem);
+  --text-h2--line-height: 1.08;
+  --text-h2--letter-spacing: -0.03em;
+  --text-h2--font-weight: 700;
+  --text-h3: clamp(1.75rem, 3.2vw, 3rem);
+  --text-h3--line-height: 1.12;
+  --text-h3--letter-spacing: -0.02em;
+  --text-h3--font-weight: 500;
+  --text-lead: clamp(1.25rem, 2vw, 1.75rem);
+  --text-lead--line-height: 1.5;
+  --text-body: clamp(1.125rem, 1.5vw, 1.375rem);
+  --text-body--line-height: 1.6;
+  --text-title: clamp(1.375rem, 2vw, 1.625rem);
+  --text-title--line-height: 1.3;
+  --text-title--font-weight: 700;
+  --text-small: 1rem;
+  --text-small--line-height: 1.5;
+  --text-small--font-weight: 500;
   /* Only used inside resume documents. */
   --text-2xs: 0.625rem;
   --text-2xs--line-height: 1.4;
 
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-soft: 0 1px 2px rgb(20 33 61 / 0.04), 0 8px 24px -12px rgb(20 33 61 / 0.12);
+  --animate-menu: menu-in 180ms ease-out;
   --shadow-pop: 0 12px 32px -12px rgb(0 0 0 / 0.25), 0 2px 6px rgb(0 0 0 / 0.04);
   --shadow-sheet: 0 1px 3px rgb(0 0 0 / 0.07), 0 18px 40px -20px rgb(0 0 0 / 0.25);
 }
 
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
 @theme inline {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Resume documents only; they keep their own fonts when the site's change. */
+  --font-resume-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
 }
 
@@ -58,6 +94,10 @@ html {
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .animate-menu {
+    animation: none;
   }
 }
 
@@ -83,6 +123,7 @@ body {
 .resume-paper {
   container-type: inline-size;
   background-color: #ffffff;
+  font-family: var(--font-resume-sans);
   --u: calc(100cqw / 51);
   --spacing: calc(var(--u) * 0.25);
   --text-2xs: calc(var(--u) * 0.625);
@@ -141,6 +182,12 @@ body {
 
 .resume-paper--a4:not(.resume-paper--flow) {
   aspect-ratio: 210 / 297;
+}
+
+/* A page frame stays on the visible page when a thumbnail crops longer content. */
+.resume-paper:not(.resume-paper--flow) .resume-frame {
+  bottom: auto;
+  height: calc(var(--page-height) - var(--spacing) * 8);
 }
 
 /* Editor preview: content flows on; a faint rule marks each page boundary. */
@@ -258,5 +305,96 @@ body {
 
   .print-root .print-fixed-edge {
     position: fixed;
+  }
+
+  /*
+    Firefox only (the class is set by the PDF export). Its PDF output loses
+    tabular figures and ligatures from the text layer, and it moves a whole
+    grid to the next page rather than breaking it, so the page-level columns
+    become floats.
+  */
+  .print-root--gecko * {
+    font-variant-numeric: normal !important;
+    font-variant-ligatures: none !important;
+  }
+
+  .print-root--gecko .resume-page,
+  .print-root--gecko article {
+    display: block;
+    min-height: 0;
+  }
+
+  .print-root--gecko .resume-split {
+    display: block;
+  }
+
+  .print-root--gecko .resume-split::after {
+    content: "";
+    display: block;
+    clear: both;
+  }
+
+  .print-root--gecko .resume-split > * {
+    width: calc(100% - var(--side-width) - var(--split-gap, 0px));
+  }
+
+  .print-root--gecko .resume-split.gap-7 {
+    --split-gap: calc(var(--spacing) * 7);
+  }
+
+  .print-root--gecko .resume-split > aside {
+    width: var(--side-width);
+  }
+
+  .print-root--gecko .resume-split[data-side="left"] > aside,
+  .print-root--gecko .resume-split[data-side="right"] > :not(aside) {
+    float: left;
+  }
+
+  .print-root--gecko .resume-split[data-side="right"] > aside,
+  .print-root--gecko .resume-split[data-side="left"] > :not(aside) {
+    float: right;
+  }
+
+  .print-root--gecko section.grid {
+    display: block;
+  }
+
+  .print-root--gecko section.grid > h2 {
+    float: left;
+    width: 22%;
+  }
+
+  .print-root--gecko section.grid > div {
+    margin-left: calc(22% + var(--spacing) * 5);
+  }
+
+  /*
+    Firefox ignores break-after: avoid, so a title can end a page without its
+    content. Entries and short sections stay whole instead (anything taller
+    than a page still breaks).
+  */
+  .print-root--gecko :is(div:has(> h3), div:has(> .flex > h3), section:not(:has(:nth-child(3) h3))) {
+    break-inside: avoid;
+  }
+
+  /* See GeckoPages. */
+  .print-root--gecko .print-sidebar-bg {
+    display: none;
+  }
+
+  .print-root--gecko .print-page-layer {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+  }
+
+  .print-root--gecko .print-pages {
+    position: relative;
+  }
+
+  /* The body's min-h-screen would otherwise add a blank page to a short resume. */
+  body:has(> .print-root--gecko) {
+    min-height: 0;
   }
 }

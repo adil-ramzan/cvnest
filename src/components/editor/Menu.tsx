@@ -20,13 +20,14 @@ type MenuProps = {
   label: string;
   trigger: ReactNode;
   triggerClassName?: string;
+  className?: string;
   items: MenuItem[];
   align?: "start" | "end";
   menuClassName?: string;
 };
 
 /** Accessible dropdown menu: arrow keys move, Escape closes and returns focus to the trigger. */
-export function Menu({ label, trigger, triggerClassName = "", items, align = "start", menuClassName = "" }: MenuProps) {
+export function Menu({ label, trigger, triggerClassName = "", className = "", items, align = "start", menuClassName = "" }: MenuProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -90,7 +91,7 @@ export function Menu({ label, trigger, triggerClassName = "", items, align = "st
   itemRefs.current = [];
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className={`relative ${className}`}>
       <button
         ref={triggerRef}
         type="button"

@@ -25,50 +25,50 @@ export function SiteHeader() {
   const isActive = (href: string) => (href === "/" ? pathname === "/" : !href.includes("#") && pathname.startsWith(href));
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-canvas">
-      <Container className="flex h-16 items-center justify-between gap-6">
-        <Logo />
+    <header className="sticky top-0 z-40 bg-canvas/90 pt-3 pb-2 backdrop-blur-sm">
+      <Container>
+        <div className="grid h-16 grid-cols-[1fr_auto] items-center gap-6 rounded-2xl bg-surface px-4 shadow-soft md:grid-cols-[1fr_auto_1fr] md:px-5">
+          <Logo />
 
-        <nav aria-label="Main" className="hidden md:block">
-          <ul className="flex items-center gap-1">
-            {mainNav.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={isActive(item.href) ? "page" : undefined}
-                  className="rounded-md px-3 py-2 text-sm text-muted transition-colors hover:text-ink aria-[current=page]:font-medium aria-[current=page]:text-ink"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+          <nav aria-label="Main" className="hidden md:block">
+            <ul className="flex items-center gap-1">
+              {mainNav.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={isActive(item.href) ? "page" : undefined}
+                    className="rounded-lg px-3 py-2 text-base font-medium text-muted transition-colors hover:text-ink aria-[current=page]:text-ink"
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <ButtonLink href="/sign-in" variant="ghost" size="sm">
-            Sign In
-          </ButtonLink>
-          <ButtonLink href="/editor" size="sm">
-            Create Resume
-          </ButtonLink>
+          <div className="hidden items-center justify-end gap-2 md:flex">
+            <ButtonLink href="/sign-in" variant="ghost" size="sm">
+              Sign In
+            </ButtonLink>
+            <ButtonLink href="/editor" size="sm">
+              Create Resume
+            </ButtonLink>
+          </div>
+
+          <button
+            type="button"
+            className="-mr-1 inline-flex size-11 items-center justify-center justify-self-end rounded-[14px] text-ink hover:bg-ink/5 md:hidden"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span className="sr-only">{menuOpen ? "Close menu" : "Open menu"}</span>
+            {menuOpen ? <X aria-hidden="true" className="size-6" /> : <Menu aria-hidden="true" className="size-6" />}
+          </button>
         </div>
 
-        <button
-          type="button"
-          className="-mr-2 inline-flex size-10 items-center justify-center rounded-md text-ink hover:bg-ink/5 md:hidden"
-          aria-expanded={menuOpen}
-          aria-controls="mobile-menu"
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <span className="sr-only">{menuOpen ? "Close menu" : "Open menu"}</span>
-          {menuOpen ? <X aria-hidden="true" className="size-5" /> : <Menu aria-hidden="true" className="size-5" />}
-        </button>
-      </Container>
-
-      {menuOpen && (
-        <div id="mobile-menu" className="border-t border-line bg-canvas md:hidden">
-          <Container className="py-4">
+        {menuOpen && (
+          <div id="mobile-menu" className="mt-2 animate-menu rounded-2xl bg-surface p-4 shadow-pop md:hidden">
             <nav aria-label="Mobile">
               <ul className="space-y-1">
                 {mainNav.map((item) => (
@@ -77,7 +77,7 @@ export function SiteHeader() {
                       href={item.href}
                       onClick={() => setMenuOpen(false)}
                       aria-current={isActive(item.href) ? "page" : undefined}
-                      className="block rounded-md px-3 py-2.5 text-base text-ink-soft hover:bg-ink/5 aria-[current=page]:font-medium aria-[current=page]:text-ink"
+                      className="block rounded-lg px-3 py-2.5 text-base text-ink-soft hover:bg-ink/5 aria-[current=page]:font-medium aria-[current=page]:text-ink"
                     >
                       {item.label}
                     </Link>
@@ -86,16 +86,16 @@ export function SiteHeader() {
               </ul>
             </nav>
             <div className="mt-4 grid gap-2 border-t border-line pt-4">
-              <ButtonLink href="/sign-in" variant="secondary" onClick={() => setMenuOpen(false)}>
+              <ButtonLink href="/sign-in" variant="ghost" onClick={() => setMenuOpen(false)}>
                 Sign In
               </ButtonLink>
               <ButtonLink href="/editor" onClick={() => setMenuOpen(false)}>
                 Create Resume
               </ButtonLink>
             </div>
-          </Container>
-        </div>
-      )}
+          </div>
+        )}
+      </Container>
     </header>
   );
 }

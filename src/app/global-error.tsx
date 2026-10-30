@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { SITE_NAME } from "@/data/site";
 import "./globals.css";
 
 /**
@@ -9,7 +10,7 @@ import "./globals.css";
  */
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    // Logged locally only; CVNest sends no error reports anywhere.
+    // Logged locally only; no error reports are sent anywhere.
     console.error(error);
   }, [error]);
 
@@ -17,8 +18,8 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
     <html lang="en">
       <body className="flex min-h-screen items-center justify-center bg-canvas px-4 font-sans text-ink">
         <main role="alert" className="max-w-lg py-16">
-          <p className="text-sm font-medium text-accent">CVNest</p>
-          <h1 className="mt-2 text-3xl font-semibold">Something went wrong</h1>
+          <p className="text-sm font-medium text-accent-ink">{SITE_NAME}</p>
+          <h1 className="mt-2 text-3xl font-bold">Something went wrong</h1>
           <p className="mt-4 text-base leading-relaxed text-muted">
             The page couldn&apos;t be displayed. Any resumes you saved are still stored in this browser.
           </p>

@@ -1,46 +1,35 @@
-import { Container } from "@/components/ui/Container";
+import { Section } from "@/components/ui/Section";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { StepRow } from "./StepRow";
+import { DetailsCard, LayoutCard, SaveCard } from "./StepVisuals";
 
 const steps = [
   {
-    title: "Enter your information",
-    description: "Add your contact details, work history, education, and skills in a simple, guided form.",
+    title: "Start with what you’ve done",
+    description: "Add your work history, education and skills in plain form fields. Everything saves as you type.",
+    visual: <DetailsCard />,
   },
   {
-    title: "Choose a professional template",
-    description: "Pick the layout that suits your field. You can switch templates at any time without retyping.",
+    title: "Try on a layout",
+    description: "Switch templates as often as you like. Your words stay put while the design changes around them.",
+    visual: <LayoutCard />,
   },
   {
-    title: "Preview and refine",
-    description: "See every change in the live preview as you type. Your resume saves automatically in your browser.",
+    title: "Keep your PDF",
+    description: "Open the print window from the editor and save a PDF with selectable text, created on your own device.",
+    visual: <SaveCard />,
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section
-      id="how-it-works"
-      aria-labelledby="how-heading"
-      className="scroll-mt-16 border-y border-line bg-surface py-20 sm:py-24"
-    >
-      <Container>
-        <SectionHeading
-          id="how-heading"
-          eyebrow="How it works"
-          title="Three steps to a finished resume"
-          align="center"
-        />
-
-        <ol className="mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
-          {steps.map((step, index) => (
-            <li key={step.title} className="relative border-t border-line-strong pt-6">
-              <span className="font-serif text-sm font-semibold text-accent">Step {index + 1}</span>
-              <h3 className="mt-2 text-xl font-semibold text-ink">{step.title}</h3>
-              <p className="mt-2 text-base leading-relaxed text-muted">{step.description}</p>
-            </li>
-          ))}
-        </ol>
-      </Container>
-    </section>
+    <Section id="how-it-works" labelledBy="how-heading">
+      <SectionHeading id="how-heading" eyebrow="How it works" title="From blank page to finished PDF" />
+      <ol className="mt-12 space-y-14 md:mt-16 md:space-y-20">
+        {steps.map((step, index) => (
+          <StepRow key={step.title} step={index + 1} reverse={index % 2 === 1} {...step} />
+        ))}
+      </ol>
+    </Section>
   );
 }

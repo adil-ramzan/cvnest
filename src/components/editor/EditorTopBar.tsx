@@ -166,11 +166,11 @@ export function EditorTopBar({
         >
           <span
             aria-hidden="true"
-            className="flex size-7 items-center justify-center rounded-md bg-ink font-serif text-base font-semibold text-white"
+            className="flex size-7 items-center justify-center rounded-md bg-ink text-base font-bold text-white"
           >
             {site.name[0]}
           </span>
-          <span className="hidden font-serif text-xl font-semibold tracking-tight text-ink sm:inline">{site.name}</span>
+          <span className="hidden text-xl font-bold tracking-tight text-ink sm:inline">{site.name}</span>
           <span className="hidden text-sm text-muted xl:inline">Free resume builder</span>
         </Link>
 
@@ -180,7 +180,8 @@ export function EditorTopBar({
           label={`Switch resume. Current resume: ${active.name}`}
           items={resumeItems}
           menuClassName="max-h-[70vh] w-72 overflow-y-auto"
-          triggerClassName="inline-flex h-10 max-w-[42vw] items-center gap-1.5 rounded-lg px-2.5 text-base font-medium text-ink hover:bg-ink/5 sm:max-w-60"
+          className="min-w-0"
+          triggerClassName="inline-flex h-10 max-w-full items-center gap-1.5 rounded-lg px-2.5 text-base font-medium text-ink hover:bg-ink/5 sm:max-w-60"
           trigger={
             <>
               <span className="truncate">{active.name}</span>
@@ -191,7 +192,7 @@ export function EditorTopBar({
 
         <Tabs tab={tab} onTabChange={onTabChange} className="mx-auto hidden lg:flex" />
 
-        <div className="ml-auto flex items-center gap-1 sm:gap-2 lg:ml-0">
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 lg:ml-0">
           <SaveIndicator status={saveStatus} />
           <button
             type="button"

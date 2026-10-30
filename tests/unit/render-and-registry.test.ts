@@ -5,14 +5,14 @@ import { getTemplate, templateCategories, templates } from "@/data/templates";
 import { createResume, duplicateResume, isResumeEmpty, isTemplateSlug } from "@/lib/resumes";
 
 describe("template registry", () => {
-  it("has 45 templates with unique slugs", () => {
-    assert.equal(templates.length, 45);
-    assert.equal(new Set(templates.map((t) => t.slug)).size, 45);
+  it("has 65 templates with unique slugs", () => {
+    assert.equal(templates.length, 65);
+    assert.equal(new Set(templates.map((t) => t.slug)).size, 65);
   });
 
   it("has the planned number of templates in each category", () => {
     const counts = Object.fromEntries(templateCategories.map((c) => [c.id, templates.filter((t) => t.category === c.id).length]));
-    assert.deepEqual(counts, { simple: 8, modern: 8, creative: 8, photo: 5, compact: 5, graduate: 6, executive: 5 });
+    assert.deepEqual(counts, { simple: 10, modern: 11, creative: 12, photo: 9, compact: 8, graduate: 8, executive: 7 });
   });
 
   it("gives every template a sample resume with content", () => {

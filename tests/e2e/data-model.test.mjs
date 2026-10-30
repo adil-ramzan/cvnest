@@ -216,7 +216,7 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   d = await v2(page);
   const photos = await idbPhotos(page);
   check("Uploaded photo stored as metadata + IndexedDB blob", d.resumes[0].profile.photo?.width === 400 && !d.resumes[0].profile.photo.inlineData && photos.length === 1);
-  // Template switching across all 45 keeps content
+  // Template switching across all 65 keeps content
   const content = (r) => JSON.stringify({ p: r.profile, s: r.sections });
   const before = content(d.resumes[0]);
   const slugs = await page.$$eval("select option", (os) => os.map((o) => o.value));
@@ -224,7 +224,7 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   for (const slug of slugs) { await page.select("select", slug); if ((await preview(page)).toLowerCase().includes("quokka newperson")) ok++; }
   await sleep(700);
   d = await v2(page);
-  check("All 45 templates render; switching keeps content identical", ok === 45 && slugs.length === 45 && content(d.resumes[0]) === before, `${ok}/${slugs.length}`);
+  check("All 65 templates render; switching keeps content identical", ok === 65 && slugs.length === 65 && content(d.resumes[0]) === before, `${ok}/${slugs.length}`);
   // Multiple resumes: duplicate shares photo, delete keeps shared photo
   await page.locator("::-p-aria(More actions)").click();
   await page.locator("::-p-aria(Duplicate)[role='menuitem']").click();

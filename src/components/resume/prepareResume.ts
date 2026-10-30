@@ -19,7 +19,7 @@ export type RenderSection =
 
 /**
  * Resume content prepared for templates: text trimmed, hidden and empty
- * sections removed, entries without content dropped. Sections keep the
+ * sections removed, hidden entries and entries without content dropped. Sections keep the
  * user's order.
  */
 export type PreparedResume = {
@@ -54,6 +54,8 @@ function entry(fields: Partial<RenderEntry> & { id: string }): RenderEntry {
 
 const hasContent = (e: RenderEntry) => !!(e.title || e.subtitle || e.text || e.bullets.length);
 
+const shown = <T extends { hidden?: boolean }>(list: T[]) => list.filter((e) => !e.hidden);
+
 function prepareSection(section: ResumeSection): RenderSection | null {
   const base = { id: section.id, type: section.type, title: text(section.title) || DEFAULT_SECTION_TITLES[section.type] };
   const entries = (list: RenderEntry[]): RenderSection | null => {
@@ -70,7 +72,7 @@ function prepareSection(section: ResumeSection): RenderSection | null {
       return text(section.content) ? { ...base, kind: "text", text: text(section.content) } : null;
     case "experience":
       return entries(
-        section.entries.map((e) =>
+        shown(section.entries).map((e) =>
           entry({
             id: e.id,
             title: text(e.role),
@@ -83,7 +85,7 @@ function prepareSection(section: ResumeSection): RenderSection | null {
       );
     case "volunteering":
       return entries(
-        section.entries.map((e) =>
+        shown(section.entries).map((e) =>
           entry({
             id: e.id,
             title: text(e.role),
@@ -96,7 +98,7 @@ function prepareSection(section: ResumeSection): RenderSection | null {
       );
     case "education":
       return entries(
-        section.entries.map((e) =>
+        shown(section.entries).map((e) =>
           entry({
             id: e.id,
             title: text(e.degree),
@@ -109,7 +111,7 @@ function prepareSection(section: ResumeSection): RenderSection | null {
       );
     case "projects":
       return entries(
-        section.entries.map((e) =>
+        shown(section.entries).map((e) =>
           entry({
             id: e.id,
             title: text(e.name),
@@ -122,23 +124,23 @@ function prepareSection(section: ResumeSection): RenderSection | null {
       );
     case "awards":
       return entries(
-        section.entries.map((e) =>
+        shown(section.entries).map((e) =>
           entry({ id: e.id, title: text(e.title), subtitle: text(e.issuer), dates: text(e.date), text: text(e.description) }),
         ),
       );
     case "custom":
       return entries(
-        section.entries.map((e) =>
+        shown(section.entries).map((e) =>
           entry({ id: e.id, title: text(e.title), subtitle: text(e.subtitle), dates: text(e.date), text: text(e.description) }),
         ),
       );
     case "skills":
-      return items(section.entries.map((e) => e.name));
+      return items(shown(section.entries).map((e) => e.name));
     case "languages":
-      return items(section.entries.map((e) => joinParts([text(e.name), text(e.proficiency)], " — ")));
+      return items(shown(section.entries).map((e) => joinParts([text(e.name), text(e.proficiency)], " — ")));
     case "certifications":
       return items(
-        section.entries.map((e) => {
+        shown(section.entries).map((e) => {
           const name = joinParts([text(e.name), text(e.issuer)], " — ");
           return name && text(e.date) ? `${name} (${text(e.date)})` : name;
         }),

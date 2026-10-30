@@ -25,7 +25,7 @@ function Card({ title, action, children }: { title: string; action?: ReactNode; 
   return (
     <section className="border-b border-line px-4 py-6 sm:px-6">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-ink">{title}</h2>
+        <h2 className="text-lg font-bold text-ink">{title}</h2>
         {action}
       </div>
       {children}
@@ -64,7 +64,7 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
           </button>
         }
       >
-        <p className="text-xl font-semibold break-words text-ink">{active.name}</p>
+        <p className="text-xl font-bold break-words text-ink">{active.name}</p>
         <p className="mt-1 text-base text-muted">
           {getTemplate(active.design.templateId)?.name} template · Last edited {formatUpdated(active.updatedAt)}
         </p>
@@ -94,7 +94,7 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
                   </span>
                   <span className={`flex-1 ${item.done ? "text-ink-soft" : "text-ink"}`}>{item.label}</span>
                   <span className="sr-only">{item.done ? "(done)" : "(not started)"}</span>
-                  <span className="text-sm font-medium text-accent">Edit</span>
+                  <span className="text-sm font-medium text-accent-ink">Edit</span>
                 </button>
               </li>
             ))}
@@ -120,7 +120,7 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
                   <p className="truncate text-base font-medium text-ink">
                     {resume.name}
                     {isActive && (
-                      <span className="ml-2 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">
+                      <span className="ml-2 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-ink">
                         Open
                       </span>
                     )}

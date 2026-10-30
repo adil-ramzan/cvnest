@@ -20,13 +20,13 @@ type SectionCardProps = {
   children: ReactNode;
 };
 
-/** One collapsible block in the editor panel, separated from its neighbours by a divider. */
+/** One collapsible card in the editor panel. */
 export function SectionCard({ id, title, icon: Icon, summary, badge, open, onToggle, actions, headerOverride, children }: SectionCardProps) {
   const bodyId = `section-body-${id}`;
 
   return (
-    <section id={`section-${id}`} className="scroll-mt-2 border-b border-line">
-      <div className="flex items-center gap-1 px-4 sm:px-6">
+    <section id={`section-${id}`} className="scroll-mt-2 rounded-[22px] bg-surface shadow-soft">
+      <div className="flex items-center gap-1.5 pr-2 pl-4 sm:pl-5">
         {headerOverride ?? (
           <h2 className="min-w-0 flex-1">
             <button
@@ -34,26 +34,28 @@ export function SectionCard({ id, title, icon: Icon, summary, badge, open, onTog
               onClick={onToggle}
               aria-expanded={open}
               aria-controls={bodyId}
-              className="group flex w-full items-center gap-3.5 py-4 text-left focus-visible:outline-offset-0"
+              className="group flex w-full items-center gap-3.5 rounded-xl py-3.5 text-left focus-visible:outline-offset-0"
             >
-              <Icon aria-hidden="true" className="size-5 shrink-0 text-muted group-hover:text-ink" />
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent">
+                <Icon aria-hidden="true" className="size-5" />
+              </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
-                  <span className="truncate text-lg font-semibold text-ink">{title}</span>
+                  <span className="truncate text-lg font-bold text-ink">{title}</span>
                   {badge && <span className="shrink-0 rounded-full bg-ink/5 px-2 py-0.5 text-xs font-medium text-muted">{badge}</span>}
                 </span>
-                {summary && <span className="block truncate text-sm text-muted">{summary}</span>}
+                {summary && <span className="block truncate text-[0.875rem] text-muted">{summary}</span>}
               </span>
               <ChevronDown
                 aria-hidden="true"
-                className={`size-5 shrink-0 text-muted transition-transform group-hover:text-ink ${open ? "rotate-180" : ""}`}
+                className={`size-5 shrink-0 text-muted transition-transform group-hover:text-ink motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
               />
             </button>
           </h2>
         )}
         {actions}
       </div>
-      <div id={bodyId} hidden={!open} className="px-4 pt-1 pb-7 sm:px-6">
+      <div id={bodyId} hidden={!open} className="px-4 pb-4 sm:px-5 sm:pb-5">
         {children}
       </div>
     </section>

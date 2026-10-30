@@ -2,7 +2,7 @@ import { readStored } from "./adapter.mjs";
 import { BASE, FIXTURES, OUT, createChecks, isKnownMissingAsset, launch, sleep } from "./helpers.mjs";
 
 const PHOTO = `${FIXTURES}/photo.png`;
-const check = createChecks("Templates: gallery, all 45 templates, photos, page size, long and empty resumes");
+const check = createChecks("Templates: gallery, all 65 templates, photos, page size, long and empty resumes");
 const browser = await launch();
 const page = await browser.newPage();
 await page.setViewport({ width: 1440, height: 900 });
@@ -15,41 +15,53 @@ page.on("request", (req) => { if (req.url().startsWith("data:")) return; const b
 
 // ---- Gallery
 await page.goto(`${BASE}/templates`, { waitUntil: "networkidle0" });
-const visible = () => page.$$eval("#template-grid > li", (els) => els.filter((e) => !e.hidden).length);
-check("Gallery shows 45 templates", (await visible()) === 45, String(await visible()));
-const counts = await page.$$eval("[aria-label='Filter by category'] button", (bs) => bs.map((b) => b.textContent));
-check("Category counts", counts.join("|") === "All45|Simple8|Modern8|Creative8|Photo5|Compact5|First Job6|Executive5", counts.join("|"));
-await page.locator("[aria-label='Filter by category'] button::-p-text(Photo)").click();
+const cards = (scope = "main") => page.$$eval(`${scope} article.group`, (els) => els.length);
+const status = () => page.$eval("main [role=status]", (el) => el.textContent);
+check("Seven sections show their first 6 templates", (await cards()) === 42, String(await cards()));
+const counts = await page.$$eval("[aria-label='Template categories'] a", (as) => as.map((a) => a.textContent));
+check("Category counts", counts.join("|") === "Simple10|Modern11|Creative12|Photo9|Compact8|First Job8|Executive7", counts.join("|"));
+await page.click("#photo button[aria-expanded]");
 await sleep(200);
-check("Photo filter shows 5", (await visible()) === 5);
-check("Category reflected in URL", page.url().endsWith("?category=photo"), page.url());
-await page.locator("[aria-label='Filter by category'] button::-p-text(All)").click();
+check("See more reveals the rest of a category", (await cards("#photo")) === 9, String(await cards("#photo")));
+await page.click("[aria-label='Template categories'] a[href='#compact']");
+await sleep(1200);
+check("Chip scrolls its section below the sticky bars", await page.$eval("#compact h2", (el) => { const top = el.getBoundingClientRect().top; return top > 120 && top < 300; }));
+check("Chip for the section in view is highlighted", (await page.$eval("[aria-label='Template categories'] [aria-current]", (el) => el.textContent)).startsWith("Compact"));
+await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
 await page.type("input[type=search]", "serif");
 await sleep(200);
-const serifCount = await visible();
-check("Search 'serif' narrows results", serifCount > 3 && serifCount < 45, String(serifCount));
-await page.$eval("input[type=search]", (el) => { el.value = ""; });
+const serifCount = await cards();
+check("Search 'serif' lists matches with a live count", serifCount > 3 && serifCount < 65 && (await status()).startsWith(`${serifCount} `), await status());
+check("Search hides the category chips", (await page.$("[aria-label='Template categories']")) === null);
+await page.$eval("input[type=search]", (el) => el.select());
 await page.type("input[type=search]", "zzzqqq");
 await sleep(200);
-check("No-results empty state", (await visible()) === 0 && (await page.$("::-p-text(No templates match)")) !== null);
-await page.locator("::-p-text(Clear filters)").click();
+check("No-results empty state", (await cards()) === 0 && (await page.$("::-p-text(No templates match)")) !== null);
+await page.locator("::-p-text(Clear search)").click();
 await sleep(200);
-check("Clear filters restores all", (await visible()) === 45);
+check("Clear search restores the sections", (await page.$("#executive")) !== null);
+await page.click("article.group .card-open");
+await page.waitForSelector("dialog[open] .resume-paper", { timeout: 15000 });
+check("Card opens the preview modal", await page.$eval("dialog[open]", (el) => el.textContent.includes("Use This Template")));
+await page.keyboard.press("Escape");
 await page.goto(`${BASE}/templates?category=executive`, { waitUntil: "networkidle0" });
-await sleep(200);
-check("?category=executive deep link", (await visible()) === 5);
+await sleep(400);
+check("?category=executive deep link", await page.$eval("#executive h2", (el) => el.getBoundingClientRect().top < 400));
 
 // ---- Detail pages + Use Template
-const slugs = await page.$$eval("#template-grid > li a[aria-label^='Use ']", (as) => as.map((a) => new URL(a.href).searchParams.get("template")));
+await page.$$eval("main section button[aria-expanded='false']", (buttons) => buttons.forEach((button) => button.click()));
+await sleep(300);
+const slugs = await page.$$eval("main a[aria-label^='Use ']", (as) => as.map((a) => new URL(a.href).searchParams.get("template")));
 let okPages = 0;
 for (const slug of slugs) { const r = await fetch(`${BASE}/templates/${slug}`); if (r.ok) okPages++; }
-check("All 45 detail pages load", okPages === 45 && slugs.length === 45, `${okPages}/${slugs.length}`);
+check("All 65 detail pages load", okPages === 65 && slugs.length === 65, `${okPages}/${slugs.length}`);
 
 await page.goto(`${BASE}/templates/kinetic`, { waitUntil: "networkidle0" });
 await page.locator("::-p-text(Use This Free Template)").click();
 await page.waitForSelector("select");
 await sleep(300);
 check("Use This Template opens editor with Kinetic", (await page.$eval("select", (s) => s.value)) === "kinetic");
+await page.click("[aria-controls='personal-form']");
 await page.locator("::-p-aria(Full name)").fill("Xylophone Testperson");
 await page.locator("::-p-aria(Job title)").fill("Test Title");
 await sleep(600);
@@ -64,7 +76,7 @@ for (const slug of slugs) {
   if (text.includes("Xylophone Testperson")) rendered++;
   if ((await overflow()) > 1) overflowed.push(slug);
 }
-check("Every template renders the user's content", rendered === 45, `${rendered}/45`);
+check("Every template renders the user's content", rendered === 65, `${rendered}/65`);
 check("No horizontal overflow", overflowed.length === 0, overflowed.join(","));
 await sleep(600);
 let saved = await readStored(page);

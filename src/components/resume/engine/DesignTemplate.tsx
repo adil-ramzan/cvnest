@@ -15,6 +15,7 @@ const C = {
   bgTint: "[background-color:var(--t-tint)]",
   bgRule: "[background-color:var(--t-rule)]",
   rule: "[border-color:var(--t-rule)]",
+  accentRule: "[border-color:var(--t-accent)]",
   inkRule: "[border-color:var(--t-ink)]",
   headingFont: "[font-family:var(--t-heading-font)]",
   bodyFont: "[font-family:var(--t-body-font)]",
@@ -24,6 +25,7 @@ const densities = {
   relaxed: {
     page: "px-16 py-14",
     side: "px-9 py-14",
+    sideBleed: "-mx-9 -mt-14 px-9 pt-14 pb-7",
     banner: "px-16 py-11",
     sections: "gap-7",
     head: "mb-3.5",
@@ -38,6 +40,7 @@ const densities = {
   normal: {
     page: "px-14 py-12",
     side: "px-8 py-12",
+    sideBleed: "-mx-8 -mt-12 px-8 pt-12 pb-7",
     banner: "px-14 py-10",
     sections: "gap-6",
     head: "mb-3",
@@ -52,6 +55,7 @@ const densities = {
   compact: {
     page: "px-10 py-9",
     side: "px-6 py-9",
+    sideBleed: "-mx-6 -mt-9 px-6 pt-9 pb-5",
     banner: "px-10 py-7",
     sections: "gap-4",
     head: "mb-2",
@@ -131,6 +135,32 @@ function Heading({ title, style, t }: { title: string; style: HeadingStyle; t: T
           {title}
         </h2>
       );
+    case "band-center":
+      return (
+        <h2 className={`${mb} ${C.bgTint} py-1 text-center text-2xs font-semibold tracking-[0.2em] uppercase ${C.ink} ${C.headingFont}`}>
+          {title}
+        </h2>
+      );
+    case "overline":
+      return <h2 className={`${mb} border-t-2 ${C.inkRule} pt-1.5 text-xs font-bold ${C.ink} ${C.headingFont}`}>{title}</h2>;
+    case "tab":
+      return (
+        <h2 className={`${mb} border-b-2 ${C.accentRule} ${C.headingFont}`}>
+          <span className={`inline-block ${C.bgAccent} px-3 py-0.5 text-2xs font-semibold tracking-[0.14em] uppercase ${C.onAccent}`}>
+            {title}
+          </span>
+        </h2>
+      );
+    case "flanked":
+      return (
+        <h2 className={`${mb} flex items-center gap-3 ${caps} tracking-[0.24em] ${C.accent} ${C.headingFont}`}>
+          <span className={`h-px min-w-4 flex-1 ${C.bgRule}`} />
+          <span className="min-w-0 text-center">{title}</span>
+          <span className={`h-px min-w-4 flex-1 ${C.bgRule}`} />
+        </h2>
+      );
+    case "display":
+      return <h2 className={`${mb} text-xl font-light tracking-tight ${C.accent} ${C.headingFont}`}>{title}</h2>;
   }
 }
 
@@ -144,6 +174,14 @@ function Section({ title, t, area, children }: { title: string; t: Theme; area: 
     );
   }
   const style = area === "side" ? (t.d.sideHeading ?? t.d.heading) : t.d.heading;
+  if (t.d.sectionCards && area === "main") {
+    return (
+      <section className={`min-w-0 rounded-md border ${C.rule} px-5 py-4`} style={{ backgroundColor: t.d.colors.card }}>
+        <Heading title={title} style={style} t={t} />
+        {children}
+      </section>
+    );
+  }
   return (
     <section className="min-w-0">
       <Heading title={title} style={style} t={t} />
@@ -200,9 +238,21 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
     italic: `${C.muted} italic`,
   }[d.subtitleStyle ?? "muted"];
 
-  const title = e.title && <h3 className={`${dens.title} font-semibold ${C.ink}`}>{e.title}</h3>;
-  const subtitle = e.subtitle && <p className={`${dens.body} ${subtitleClass}`}>{e.subtitle}</p>;
-  const dates = e.dates && <span className={`${dens.small} shrink-0 ${C.muted} tabular-nums`}>{e.dates}</span>;
+  const inline = d.entryStyle === "inline" && area === "main" && !!e.title;
+  const title = e.title && (
+    <h3 className={`${dens.title} font-semibold ${C.ink}`}>
+      {e.title}
+      {inline && e.subtitle && <span className={`font-normal ${subtitleClass}`}>, {e.subtitle}</span>}
+    </h3>
+  );
+  const subtitle = !inline && e.subtitle && <p className={`${dens.body} ${subtitleClass}`}>{e.subtitle}</p>;
+  const dates =
+    e.dates &&
+    (placement === "chip" ? (
+      <span className={`${dens.small} shrink-0 rounded-full ${C.bgTint} px-2 py-px ${C.ink} tabular-nums`}>{e.dates}</span>
+    ) : (
+      <span className={`${dens.small} shrink-0 ${C.muted} tabular-nums`}>{e.dates}</span>
+    ));
   const details = (
     <>
       {e.bullets.length > 0 && <Bullets items={e.bullets} t={t} />}
@@ -212,6 +262,7 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
 
   switch (placement) {
     case "right":
+    case "chip":
       return (
         <div>
           <div className="flex items-baseline justify-between gap-4">
@@ -259,6 +310,15 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
 
 function EntryList({ entries, t, area }: { entries: EntryData[]; t: Theme; area: Area }) {
   const spacing = t.d.layout === "timeline" && area === "main" ? "" : t.dens.entries;
+  if (t.d.entryStyle === "ruled" && area === "main") {
+    return (
+      <div className={`${spacing} [&>*+*]:border-t [&>*+*]:border-[color:var(--t-rule)] [&>*+*]:pt-2.5`}>
+        {entries.map((e) => (
+          <Entry key={e.key} e={e} t={t} area={area} />
+        ))}
+      </div>
+    );
+  }
   return (
     <div className={spacing}>
       {entries.map((e) => (
@@ -272,7 +332,7 @@ function EntryList({ entries, t, area }: { entries: EntryData[]; t: Theme; area:
 // Lists, skills and contact details
 
 function SkillList({ items, t, area }: { items: string[]; t: Theme; area: Area }) {
-  const style = area === "side" && (t.d.skills === "inline" || t.d.skills === "columns") ? "list" : t.d.skills;
+  const style = area === "side" && (t.d.skills === "inline" || t.d.skills === "columns" || t.d.skills === "grid") ? "list" : t.d.skills;
   const { body, small } = t.dens;
 
   switch (style) {
@@ -283,6 +343,26 @@ function SkillList({ items, t, area }: { items: string[]; t: Theme; area: Area }
         <ul className="flex flex-wrap gap-1.5">
           {items.map((item, i) => (
             <li key={i} className={`${C.bgTint} rounded-[3px] px-2 py-0.5 ${small} ${C.ink}`}>
+              {item}
+            </li>
+          ))}
+        </ul>
+      );
+    case "outline":
+      return (
+        <ul className="flex flex-wrap gap-1.5">
+          {items.map((item, i) => (
+            <li key={i} className={`rounded-full border ${C.accentRule} px-2.5 py-px ${small} ${C.ink}`}>
+              {item}
+            </li>
+          ))}
+        </ul>
+      );
+    case "grid":
+      return (
+        <ul className={`grid grid-cols-2 gap-x-6 ${body}`}>
+          {items.map((item, i) => (
+            <li key={i} className={`border-b ${C.rule} py-0.5`}>
               {item}
             </li>
           ))}
@@ -321,6 +401,18 @@ const contactEntries = (r: PreparedResume): { icon: LucideIcon; value: string }[
   ].filter((item) => item.value);
 
 function ContactDetails({ t, mode, align = "start" }: { t: Theme; mode: "inline" | "stacked"; align?: "start" | "center" | "end" }) {
+  if (mode === "inline" && t.d.contactGrid) {
+    return (
+      <ul className={`grid grid-cols-2 gap-x-6 gap-y-1 ${t.dens.small} ${C.muted}`}>
+        {contactEntries(t.r).map(({ icon: Icon, value }, i) => (
+          <li key={i} className="flex min-w-0 items-center gap-1.5 [overflow-wrap:anywhere]">
+            {t.d.contactIcons && <Icon aria-hidden="true" className={`size-[1.1em] shrink-0 ${C.accent}`} />}
+            <span className="min-w-0">{value}</span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
   const items = contactEntries(t.r);
   if (!items.length) return null;
   const icons = t.d.contactIcons;
@@ -433,6 +525,17 @@ function Photo({ t, size }: { t: Theme; size: keyof typeof photoSizes }) {
   );
 }
 
+function Monogram({ t }: { t: Theme }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`flex size-20 shrink-0 items-center justify-center rounded-full border-2 ${C.accentRule} text-2xl font-semibold ${C.accent} ${C.headingFont}`}
+    >
+      {t.r.initials}
+    </div>
+  );
+}
+
 function NameBlock({ t, align = "start", compactName = false }: { t: Theme; align?: "start" | "center"; compactName?: boolean }) {
   const { d, r } = t;
   const n = d.name ?? {};
@@ -445,13 +548,35 @@ function NameBlock({ t, align = "start", compactName = false }: { t: Theme; alig
     caps: `mt-1.5 text-xs font-medium tracking-[0.22em] uppercase ${C.muted}`,
   }[d.titleStyle ?? "muted"];
 
+  const [firstName, ...otherNames] = r.name.split(" ");
+  const nameText =
+    n.stack && otherNames.length > 0 ? (
+      <>
+        <span className="block">{firstName}</span> <span className="block">{otherNames.join(" ")}</span>
+      </>
+    ) : (
+      r.name
+    );
+  const heading = (
+    <h1
+      className={`${size} ${weight} ${tracking} leading-[1.1] ${n.upper ? "uppercase" : ""} ${n.accent ? C.accent : C.ink} ${C.headingFont} [overflow-wrap:anywhere]`}
+    >
+      {nameText}
+    </h1>
+  );
+
+  if (n.inlineTitle) {
+    return (
+      <div className={`flex min-w-0 flex-wrap items-baseline gap-x-3 ${align === "center" ? "justify-center text-center" : ""}`}>
+        {heading}
+        {r.title && <p className={`${titleClass} mt-0!`}>{r.title}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className={`min-w-0 ${align === "center" ? "text-center" : ""}`}>
-      <h1
-        className={`${size} ${weight} ${tracking} leading-[1.1] ${n.upper ? "uppercase" : ""} ${n.accent ? C.accent : C.ink} ${C.headingFont} [overflow-wrap:anywhere]`}
-      >
-        {r.name}
-      </h1>
+      {heading}
       {r.title && <p className={titleClass}>{r.title}</p>}
     </div>
   );
@@ -461,6 +586,22 @@ function Header({ t, showContact }: { t: Theme; showContact: boolean }) {
   const { d, dens } = t;
   // Labels layouts already draw a rule above every section, including the first.
   const rule = d.headerRule && d.layout !== "labels" ? `border-b ${C.rule} pb-6` : "";
+
+  if (d.header === "masthead") {
+    return (
+      <header className={`${dens.header} flex flex-col items-center border-t-4 border-b ${C.inkRule} pt-5 pb-3 text-center`}>
+        <div className="mb-4 empty:hidden">
+          <Photo t={t} size="md" />
+        </div>
+        <NameBlock t={t} align="center" />
+        {showContact && (
+          <div className={`mt-4 w-full border-t ${C.rule} pt-2.5`}>
+            <ContactDetails t={t} mode="inline" align="center" />
+          </div>
+        )}
+      </header>
+    );
+  }
 
   if (d.header === "center") {
     return (
@@ -495,9 +636,9 @@ function Header({ t, showContact }: { t: Theme; showContact: boolean }) {
   }
 
   return (
-    <header className={`${dens.header} ${rule} flex items-center gap-6`}>
-      <Photo t={t} size="md" />
-      <div className="min-w-0">
+    <header className={`${dens.header} ${rule} flex items-center gap-6${d.photoRight ? " flex-row-reverse" : ""}`}>
+      {d.monogram ? <Monogram t={t} /> : <Photo t={t} size="md" />}
+      <div className={d.photoRight || d.monogram ? "min-w-0 flex-1" : "min-w-0"}>
         <NameBlock t={t} />
         {showContact && (
           <div className="mt-3">
@@ -510,18 +651,31 @@ function Header({ t, showContact }: { t: Theme; showContact: boolean }) {
 }
 
 function Banner({ t, showContact }: { t: Theme; showContact: boolean }) {
-  const banner = t.d.colors.banner ?? { bg: t.d.colors.accent, ink: "#ffffff" };
+  const banner: NonNullable<TemplateDesign["colors"]["banner"]> = t.d.colors.banner ?? { bg: t.d.colors.accent, ink: "#ffffff" };
+  const slant = banner.edge === "slant";
   const style = {
-    backgroundColor: banner.bg,
+    ...(slant ? {} : { backgroundColor: banner.bg }),
+    ...(banner.edge === "rule" ? { borderBottom: `calc(var(--spacing) * 1.5) solid ${banner.accent ?? banner.ink}` } : {}),
     "--t-ink": banner.ink,
     "--t-muted": banner.muted ?? banner.ink,
     "--t-accent": banner.accent ?? banner.ink,
   } as CSSProperties;
 
   return (
-    <header className={`${t.dens.banner} flex items-center gap-7 ${C.ink}`} style={style}>
+    <header
+      className={`${t.dens.banner} flex items-center gap-7 ${C.ink}${t.d.photoRight ? " flex-row-reverse" : ""}${slant ? " relative isolate pb-16" : ""}`}
+      style={style}
+    >
+      {slant && (
+        // The low side of the cut is on the left, under the text.
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10"
+          style={{ backgroundColor: banner.bg, clipPath: "polygon(0 0, 100% 0, 100% 74%, 0 100%)" }}
+        />
+      )}
       <Photo t={t} size="md" />
-      <div className="min-w-0">
+      <div className={t.d.photoRight ? "min-w-0 flex-1" : "min-w-0"}>
         <NameBlock t={t} />
         {showContact && (
           <div className="mt-3">
@@ -534,6 +688,21 @@ function Banner({ t, showContact }: { t: Theme; showContact: boolean }) {
 }
 
 function SidebarHeader({ t }: { t: Theme }) {
+  const block = t.d.side?.block;
+  if (block) {
+    const style = {
+      backgroundColor: block.bg,
+      "--t-ink": block.ink,
+      "--t-muted": block.muted ?? block.ink,
+      "--t-accent": block.accent ?? block.ink,
+    } as CSSProperties;
+    return (
+      <div className={`${t.dens.sideBleed} mb-7 flex flex-col gap-4 ${C.ink}`} style={style}>
+        <Photo t={t} size="lg" />
+        <NameBlock t={t} compactName />
+      </div>
+    );
+  }
   return (
     <div className="mb-8 flex flex-col gap-4">
       <Photo t={t} size="lg" />
@@ -573,7 +742,9 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   const contactInSide = hasSide && sideSections.includes("contact");
   // The main column follows the user's section order; the sidebar is arranged by the design.
   const inSide = (type: SectionType) => hasSide && sideSections.includes(type);
-  const mainList = r.sections.filter((section) => !inSide(section.type));
+  const inLower = (type: SectionType) => !inSide(type) && !!design.lower?.includes(type);
+  const mainList = r.sections.filter((section) => !inSide(section.type) && !inLower(section.type));
+  const lowerList = r.sections.filter((section) => inLower(section.type));
   const inlineHeader = design.header !== "banner" && design.header !== "sidebar";
 
   const vars = {
@@ -588,7 +759,12 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   } as CSSProperties;
 
   const mainSections = (
-    <div className={`flex flex-col ${dens.sections}`}>{mainList.map((section) => renderSection(section, t, "main"))}</div>
+    <div className={`flex flex-col ${dens.sections}`}>
+      {mainList.map((section) => renderSection(section, t, "main"))}
+      {lowerList.length > 0 && (
+        <div className={`grid grid-cols-2 ${dens.sections} gap-x-8`}>{lowerList.map((section) => renderSection(section, t, "side"))}</div>
+      )}
+    </div>
   );
 
   const sideContent = (
@@ -610,6 +786,7 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   const width = design.side?.width ?? (design.layout === "columns" ? "32%" : "33%");
   const sideLeft = (design.side?.position ?? (design.layout === "sidebar" ? "left" : "right")) === "left";
   const columns = sideLeft ? `${width} minmax(0,1fr)` : `minmax(0,1fr) ${width}`;
+  const splitStyle = { gridTemplateColumns: columns, "--side-width": width } as CSSProperties;
 
   let body: ReactNode;
   if (design.layout === "sidebar") {
@@ -626,7 +803,7 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
       </div>
     );
     body = (
-      <div className="grid flex-1" style={{ gridTemplateColumns: columns }}>
+      <div className="resume-split grid flex-1" data-side={sideLeft ? "left" : "right"} style={splitStyle}>
         {sideLeft ? aside : main}
         {sideLeft ? main : aside}
       </div>
@@ -644,7 +821,7 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
     body = (
       <div className={`flex-1 ${dens.page}`}>
         {inlineHeader && <Header t={t} showContact={!contactInSide} />}
-        <div className="grid gap-7" style={{ gridTemplateColumns: columns }}>
+        <div className="resume-split grid gap-7" data-side={sideLeft ? "left" : "right"} style={splitStyle}>
           {sideLeft ? aside : mainSections}
           {sideLeft ? mainSections : aside}
         </div>
@@ -660,8 +837,31 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   }
 
   return (
-    <article className={`relative flex min-w-0 flex-col ${C.bodyFont} ${C.ink}`} style={vars}>
+    <article
+      className={`relative flex min-w-0 flex-col ${C.bodyFont} ${C.ink}`}
+      style={colors.paper ? { ...vars, backgroundColor: colors.paper } : vars}
+    >
+      {colors.paper && (
+        // Print only: repeats the page color on every PDF page, under any sidebar background.
+        <div aria-hidden="true" className="print-sidebar-bg" style={{ backgroundColor: colors.paper, width: "100%", left: 0 }} />
+      )}
       {design.stripe === "top" && <div aria-hidden="true" className={`h-2 shrink-0 ${C.bgAccent}`} />}
+      {design.stripe === "ribbon" && (
+        <div aria-hidden="true" className="flex h-2.5 shrink-0">
+          {(colors.ribbon ?? [colors.accent, colors.accent, colors.accent]).map((color, i) => (
+            <span key={i} style={{ backgroundColor: color, flexGrow: 3 - i }} />
+          ))}
+        </div>
+      )}
+      {design.stripe === "rail" && (
+        <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 left-0 w-6 ${C.bgAccent}`} />
+      )}
+      {design.frame && (
+        <div
+          aria-hidden="true"
+          className={`print-fixed-edge resume-frame pointer-events-none absolute inset-4 ${C.accentRule} ${design.frame === "double" ? "border-4 [border-style:double]" : "border"}`}
+        />
+      )}
       {design.stripe === "left" && (
         <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 left-0 w-2 ${C.bgAccent}`} />
       )}

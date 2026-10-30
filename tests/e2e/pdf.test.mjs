@@ -90,7 +90,7 @@ for (const [name, size, storage] of datasets) {
   }
 }
 await browser.close();
-check("Exported a PDF for every template and dataset", files.length === 180, String(files.length));
+check("Exported a PDF for every template and dataset", files.length === 260, String(files.length));
 check("No page errors during export", errors.length === 0, errors.slice(0, 2).join(" | "));
 check("No resume content in network requests", leaks.length === 0, leaks.join(", "));
 

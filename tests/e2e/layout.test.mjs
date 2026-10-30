@@ -27,7 +27,7 @@ for (const width of widths) {
   check(`No horizontal overflow at ${width}px`, overflowing.length === 0, overflowing.join(", "));
 
   await page.goto(`${BASE}/templates`, { waitUntil: "networkidle0" });
-  const columns = await page.$eval("#template-grid", (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+  const columns = await page.$eval("#simple ul", (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length);
   check(`Gallery shows ${expectedColumns[width]} column(s) at ${width}px`, columns === expectedColumns[width], String(columns));
 }
 

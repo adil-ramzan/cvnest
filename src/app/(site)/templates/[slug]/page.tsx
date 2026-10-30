@@ -37,7 +37,10 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
   if (!template) notFound();
 
   const category = getCategory(template.category);
-  const related = templates.filter((item) => item.category === template.category && item.slug !== template.slug).slice(0, 5);
+  // The next templates in the category, wrapping around, so every template gets linked from others.
+  const siblings = templates.filter((item) => item.category === template.category);
+  const position = siblings.indexOf(template);
+  const related = [...siblings.slice(position + 1), ...siblings.slice(0, position)].slice(0, 5);
 
   return (
     <Container className="py-10 sm:py-14">
@@ -47,7 +50,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
       </Link>
 
       <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
-        <div className="rounded-lg border border-line bg-[#f1eee8] p-4 sm:p-8 lg:p-10">
+        <div className="rounded-lg border border-line bg-panel p-4 sm:p-8 lg:p-10">
           <ResumePreview
             template={template}
             className="mx-auto max-w-[816px] rounded-sm shadow-[0_2px_4px_rgba(0,0,0,0.04),0_24px_48px_-24px_rgba(0,0,0,0.25)]"
@@ -55,10 +58,10 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
         </div>
 
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <p className="text-sm font-medium text-accent">
+          <p className="text-sm font-medium text-accent-ink">
             {category.label} · {template.layout}
           </p>
-          <h1 className="mt-1 font-serif text-4xl font-semibold tracking-tight text-ink">{template.name}</h1>
+          <h1 className="mt-1 text-4xl font-bold tracking-tight text-ink">{template.name}</h1>
           <p className="mt-4 text-base leading-relaxed text-muted">{template.description}</p>
 
           <dl className="mt-6 space-y-4 border-t border-line pt-5 text-base">
@@ -86,7 +89,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
           </p>
 
           <div className="mt-10 border-t border-line pt-6">
-            <h2 className="text-base font-semibold text-ink">More {category.label.toLowerCase()} templates</h2>
+            <h2 className="text-base font-bold text-ink">More {category.label.toLowerCase()} templates</h2>
             <ul className="mt-3 space-y-2.5">
               {related.map((item) => (
                 <li key={item.slug}>

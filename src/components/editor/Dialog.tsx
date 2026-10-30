@@ -31,11 +31,11 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
       aria-describedby={description ? descriptionId : undefined}
       onClose={onClose}
       onClick={(event) => event.target === event.currentTarget && onClose()}
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-line bg-surface p-0 text-ink shadow-pop backdrop:bg-[#1d1d1f]/40"
+      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-line bg-surface p-0 text-ink shadow-pop backdrop:bg-ink/40"
     >
       {open && (
         <div className="p-6">
-          <h2 id={titleId} className="text-xl font-semibold">
+          <h2 id={titleId} className="text-xl font-bold">
             {title}
           </h2>
           {description && (

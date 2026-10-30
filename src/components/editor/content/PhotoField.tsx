@@ -96,52 +96,48 @@ export function PhotoField({ value, hasPhoto, onChange }: PhotoFieldProps) {
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-canvas ring-1 ring-line">
-        {value ? (
-          <img src={value} alt="Your profile photo" className="size-full object-cover" />
-        ) : (
-          <UserRound aria-hidden="true" className="size-8 text-muted" />
-        )}
-      </div>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-ink-soft">Profile photo (optional)</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <input
-            ref={inputRef}
-            id={inputId}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(event) => onFile(event.target.files?.[0])}
-            className="sr-only"
-          />
-          <label
-            htmlFor={inputId}
-            className={buttonClass("secondary", "sm", "cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent")}
-          >
-            <ImagePlus aria-hidden="true" className="size-4" />
-            {busy ? "Processing…" : hasPhoto ? "Replace photo" : "Upload photo"}
-          </label>
-          {hasPhoto && (
-            <button
-              type="button"
-              onClick={() => onChange(undefined)}
-              className={buttonClass("ghost", "sm", "text-[#b42318] hover:bg-[#fef3f2]")}
-            >
-              <Trash2 aria-hidden="true" className="size-4" />
-              Remove
-            </button>
+    <div>
+      <div className="flex items-center gap-3">
+        <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-panel ring-1 ring-line">
+          {value ? (
+            <img src={value} alt="Your profile photo" className="size-full object-cover" />
+          ) : (
+            <UserRound aria-hidden="true" className="size-5 text-muted" />
           )}
         </div>
-        <p className="mt-2 text-sm text-muted">
-          Shown only on templates with a photo. It is resized and stored in this browser, never uploaded.
-        </p>
-        {error && (
-          <p role="alert" className="mt-1.5 text-sm text-[#b42318]">
-            {error}
-          </p>
+        <input
+          ref={inputRef}
+          id={inputId}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(event) => onFile(event.target.files?.[0])}
+          className="sr-only"
+        />
+        <label
+          htmlFor={inputId}
+          className={buttonClass("secondary", "sm", "cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent")}
+        >
+          <ImagePlus aria-hidden="true" className="size-4" />
+          {busy ? "Processing…" : hasPhoto ? "Replace photo" : "Upload photo"}
+        </label>
+        {hasPhoto ? (
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            aria-label="Remove photo"
+            className={buttonClass("ghost", "sm", "w-10 px-0 text-[#b42318] hover:bg-[#fef3f2]")}
+          >
+            <Trash2 aria-hidden="true" className="size-4" />
+          </button>
+        ) : (
+          <p className="min-w-0 truncate text-[0.875rem] text-muted">Optional, stays in this browser</p>
         )}
       </div>
+      {error && (
+        <p role="alert" className="mt-1.5 text-sm text-[#b42318]">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

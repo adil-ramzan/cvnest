@@ -6,7 +6,7 @@ Production domain: https://getcvnest.com
 
 ## Features
 
-- **45 free resume templates** in seven categories: Simple, Modern, Creative, Photo, Compact, First Job and Executive.
+- **65 free resume templates** in seven categories: Simple, Modern, Creative, Photo, Compact, First Job and Executive.
 - **Template gallery** with category filters, search and a full-size preview page for each template.
 - **Resume editor** (`/editor`) with a live preview, zoom, US Letter or A4 pages, and Overview, Content and Customize tabs.
 - **Editable sections:** personal details, summary, experience, education, projects, skills, certifications, languages, awards, volunteering and custom sections. Sections and entries can be reordered, renamed and hidden.
@@ -47,10 +47,11 @@ npm run verify     # typecheck + unit tests + production build
 ## Testing
 
 - **Unit tests** (`npm run test:unit`): schema validation, migrations, storage, the render model and the template registry. They use Node's built-in test runner and the project's own TypeScript compiler, with no extra dependencies.
-- **Browser tests** (`npm run build && npm run test:e2e`): `tests/e2e/run.mjs` starts the production build on a free port and runs every `*.test.mjs` suite against it in Chrome via `puppeteer-core`. The suites cover the editor, migration and recovery, all 45 templates, layout at phone to desktop widths, error screens, and PDF export.
+- **Browser tests** (`npm run build && npm run test:e2e`): `tests/e2e/run.mjs` starts the production build on a free port and runs every `*.test.mjs` suite against it in Chrome via `puppeteer-core`. The suites cover the editor, migration and recovery, all 65 templates, layout at phone to desktop widths, error screens, and PDF export.
   - Run some suites only: `npm run test:e2e -- layout pdf`.
   - Chrome is found automatically. Set `CHROME_PATH` to override.
-  - The PDF suite also needs poppler-utils (`pdfinfo`, `pdftotext`, `pdfimages`) and skips itself without them.
+  - The PDF suites also need poppler-utils (`pdfinfo`, `pdftotext`, `pdfimages`, `pdffonts`) and skip themselves without them.
+  - `pdf-firefox.test.mjs` exports every template in real Firefox and needs `firefox` and `geckodriver`. To run the Chrome PDF suite in Edge, set `CHROME_PATH` to the Edge binary.
   - Screenshots and PDFs from the last run go to `.e2e-output/`.
 
 ## Project structure
@@ -89,7 +90,7 @@ When the resume shape changes, add a step to `src/lib/migrations.ts` and bump `R
 | --- | --- |
 | 1. Homepage and template gallery | Complete |
 | 2. Browser-only resume editor | Complete |
-| Template library (45 templates) | Complete |
+| Template library (65 templates) | Complete |
 | 3. Unified data model and safe migration | Complete |
 | Free messaging, SEO and CVNest rebrand | Complete |
 | UI/UX, typography and editor redesign | Complete; font, color and spacing controls deferred |
@@ -98,7 +99,7 @@ When the resume shape changes, add a step to `src/lib/migrations.ts` and bump `R
 
 ### Known limitations
 
-- PDF export goes through the browser's print dialog, where you choose "Save as PDF"; there's no one-click file download. Safari can't repeat page padding on continuation pages, so it falls back to page margins, which leave thin white bands across sidebar backgrounds.
+- PDF export goes through the browser's print dialog, where you choose "Save as PDF"; there's no one-click file download. Firefox gets its own export path in `usePdfExport` (static font files from `public/fonts/print`, floats for page columns and a repeating page spacer), because its PDF output loses text set in variable fonts and it doesn't break CSS grids or repeat padding across pages. Safari hasn't been tested on a real device. From reading the code, it doesn't support `box-decoration-break: clone` without a prefix, so it should fall back to page margins, which would leave thin white bands across sidebar backgrounds.
 - The Contact page has no contact address, and the Privacy and Terms pages are short placeholders.
 - There is no favicon or Open Graph image.
 - When two tabs edit at the same time, the last save wins.

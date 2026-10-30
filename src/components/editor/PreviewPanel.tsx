@@ -72,7 +72,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
               id={selectId}
               value={template.slug}
               onChange={(event) => onTemplateChange(event.target.value)}
-              className="h-10 appearance-none rounded-lg border border-line-strong bg-surface pr-9 pl-3 text-sm font-medium text-ink hover:border-[#c4beb2] focus:border-accent focus:outline-2 focus:outline-offset-0 focus:outline-accent/25"
+              className="h-10 appearance-none rounded-lg border border-line-strong bg-surface pr-9 pl-3 text-sm font-medium text-ink hover:border-ink/35 focus:border-accent focus:outline-2 focus:outline-offset-0 focus:outline-accent/25"
             >
               {templateCategories.map((category) => (
                 <optgroup key={category.id} label={category.label}>

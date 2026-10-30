@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type { SectionType } from "@/data/resume";
 import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
 
@@ -108,7 +108,11 @@ export function ModernTemplate({ resume }: { resume: PreparedResume }) {
   const main = resume.sections.filter((section) => !SIDEBAR.includes(section.type));
 
   return (
-    <article className="grid grid-cols-[34%_1fr] font-sans text-[#25292e]">
+    <article
+      className="resume-split grid grid-cols-[34%_1fr] font-resume-sans text-[#25292e]"
+      data-side="left"
+      style={{ "--side-width": "34%" } as CSSProperties}
+    >
       {/* Print only: repeats the sidebar color down every PDF page. */}
       <div aria-hidden="true" className="print-sidebar-bg left-0 w-[34%] bg-[#eef4f2]" />
       <aside className="bg-[#eef4f2] px-8 py-12">

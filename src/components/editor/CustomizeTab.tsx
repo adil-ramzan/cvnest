@@ -27,7 +27,7 @@ export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateC
   return (
     <div>
       <section className={groupClass} aria-labelledby="customize-template">
-        <h2 id="customize-template" className="text-lg font-semibold text-ink">
+        <h2 id="customize-template" className="text-lg font-bold text-ink">
           Template
         </h2>
         {current && (
@@ -79,7 +79,7 @@ export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateC
 
       <section className={groupClass}>
         <fieldset>
-          <legend className="text-lg font-semibold text-ink">Page settings</legend>
+          <legend className="text-lg font-bold text-ink">Page settings</legend>
           <p className="mt-1 text-base text-muted">Paper size used for the preview and page breaks.</p>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {(Object.keys(pageSizes) as PageSize[]).map((size) => (

@@ -1,5 +1,5 @@
 type SectionHeadingProps = {
-  id?: string;
+  id: string;
   eyebrow: string;
   title: string;
   description?: string;
@@ -10,12 +10,12 @@ export function SectionHeading({ id, eyebrow, title, description, align = "left"
   const alignment = align === "center" ? "mx-auto text-center" : "";
 
   return (
-    <div className={`max-w-2xl ${alignment}`}>
-      <p className="text-sm font-medium text-accent">{eyebrow}</p>
-      <h2 id={id} className="mt-2 font-serif text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+    <div className={`max-w-3xl ${alignment}`}>
+      <p className="text-small font-bold tracking-wide text-muted uppercase">{eyebrow}</p>
+      <h2 id={id} className="mt-3 text-h2 text-balance text-ink">
         {title}
       </h2>
-      {description && <p className="mt-4 text-lg leading-relaxed text-muted">{description}</p>}
+      {description && <p className={`mt-5 max-w-2xl text-body text-pretty text-muted ${align === "center" ? "mx-auto" : ""}`}>{description}</p>}
     </div>
   );
 }

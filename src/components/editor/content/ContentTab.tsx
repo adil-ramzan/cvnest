@@ -19,11 +19,10 @@ import {
   Plus,
   Sparkles,
   Trash2,
-  UserRound,
   Wrench,
 } from "lucide-react";
 import { type KeyboardEvent, useState } from "react";
-import { buttonClass, iconButtonClass, inputClass } from "@/components/ui/styles";
+import { buttonClass, focusRing, iconButtonClass, inputClass } from "@/components/ui/styles";
 import {
   DEFAULT_SECTION_TITLES,
   type EntrySection,
@@ -49,6 +48,7 @@ import { Menu, type MenuItem } from "../Menu";
 import { EntryList } from "./EntryList";
 import { TagInput, TextArea, TextField } from "./fields";
 import { PhotoField } from "./PhotoField";
+import { ProfileCard } from "./ProfileCard";
 import { SectionCard } from "./SectionCard";
 
 type ContentTabProps = {
@@ -134,7 +134,7 @@ function RenameField({ initial, placeholder, onDone }: { initial: string; placeh
         placeholder={placeholder}
         autoFocus
         maxLength={120}
-        className={`${inputClass} h-11 text-lg font-semibold`}
+        className={`${inputClass} h-11 text-lg font-bold`}
       />
     </div>
   );
@@ -390,15 +390,8 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
   }
 
   return (
-    <div>
-      <SectionCard
-        id="personal"
-        title="Personal information"
-        icon={UserRound}
-        summary={join(profile.fullName, profile.jobTitle) || "Name, title and contact details"}
-        open={openSections.has("personal")}
-        onToggle={() => onToggleSection("personal")}
-      >
+    <div className="space-y-3.5 p-4 sm:p-5">
+      <ProfileCard profile={profile} photoUrl={photoUrl} editing={openSections.has("personal")} onToggle={() => onToggleSection("personal")}>
         <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <PhotoField value={photoUrl} hasPhoto={!!profile.photo} onChange={onPhotoChange} />
@@ -412,7 +405,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <TextField label="GitHub" value={profile.github ?? ""} onChange={(github) => updateProfile({ github })} placeholder="github.com/alexmorgan" />
           <TextField label="Website" value={profile.website ?? ""} onChange={(website) => updateProfile({ website })} placeholder="alexmorgan.com" className="sm:col-span-2" />
         </div>
-      </SectionCard>
+      </ProfileCard>
 
       {sections.map((section, index) => {
         const heading = sectionHeading(section);
@@ -455,13 +448,25 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
               ) : undefined
             }
             actions={
-              <Menu
-                label={`Section options for ${heading}`}
-                align="end"
-                items={options}
-                triggerClassName={iconButtonClass}
-                trigger={<MoreHorizontal aria-hidden="true" className="size-5" />}
-              />
+              <>
+                {openSections.has(section.id) && !renaming && (
+                  <button
+                    type="button"
+                    onClick={() => setRenamingId(section.id)}
+                    aria-label={`Rename ${heading} section`}
+                    className={`h-8 rounded-full border border-line px-3 text-[0.875rem] font-medium text-ink-soft hover:border-ink/35 ${focusRing}`}
+                  >
+                    Rename
+                  </button>
+                )}
+                <Menu
+                  label={`Section options for ${heading}`}
+                  align="end"
+                  items={options}
+                  triggerClassName={iconButtonClass}
+                  trigger={<MoreHorizontal aria-hidden="true" className="size-5" />}
+                />
+              </>
             }
           >
             {renderBody(section)}
@@ -469,20 +474,18 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
         );
       })}
 
-      <div className="px-4 py-6 sm:px-6">
       <Menu
         label="Add section"
         items={addItems}
         menuClassName="w-72"
-        triggerClassName={buttonClass("secondary", "md", "w-full")}
+        triggerClassName={buttonClass("secondary", "lg", "h-14 w-full")}
         trigger={
           <>
-            <Plus aria-hidden="true" className="size-4" />
+            <Plus aria-hidden="true" className="size-5" />
             Add section
           </>
         }
       />
-      </div>
 
       <Dialog
         open={pendingDelete !== null}

@@ -6,14 +6,18 @@ import {
   Lora,
   Montserrat,
   Playfair_Display,
+  Plus_Jakarta_Sans,
   Source_Serif_4,
   Space_Grotesk,
   Work_Sans,
 } from "next/font/google";
 import type { ReactNode } from "react";
-import { site } from "@/data/site";
+import { site, siteDescription } from "@/data/site";
+import { templates } from "@/data/templates";
 import "./globals.css";
 
+// The site's font. Everything below it is only used inside resume documents.
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-jakarta", display: "swap" });
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], variable: "--font-source-serif", display: "swap" });
 
@@ -26,7 +30,7 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space
 const garamond = EB_Garamond({ subsets: ["latin"], variable: "--font-garamond", display: "swap", preload: false });
 const workSans = Work_Sans({ subsets: ["latin"], variable: "--font-work-sans", display: "swap", preload: false });
 
-const fontVariables = [inter, sourceSerif, lora, playfair, montserrat, plexSans, spaceGrotesk, garamond, workSans]
+const fontVariables = [jakarta, inter, sourceSerif, lora, playfair, montserrat, plexSans, spaceGrotesk, garamond, workSans]
   .map((font) => font.variable)
   .join(" ");
 
@@ -36,7 +40,7 @@ export const metadata: Metadata = {
     default: `Free Online Resume Builder | ${site.name}`,
     template: `%s | ${site.name}`,
   },
-  description: site.description,
+  description: siteDescription(templates.length),
   applicationName: site.name,
   openGraph: {
     type: "website",

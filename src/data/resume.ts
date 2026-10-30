@@ -45,7 +45,10 @@ export type ResumeDesign = {
   pageSize: PageSize;
 };
 
-export type Experience = {
+/** Optional on every entry. Missing means visible, so resumes saved before it existed load unchanged. */
+type EntryOptions = { hidden?: boolean };
+
+export type Experience = EntryOptions & {
   id: string;
   role: string;
   company: string;
@@ -55,7 +58,7 @@ export type Experience = {
   highlights: string[];
 };
 
-export type Education = {
+export type Education = EntryOptions & {
   id: string;
   degree: string;
   school: string;
@@ -65,7 +68,7 @@ export type Education = {
   details?: string;
 };
 
-export type Project = {
+export type Project = EntryOptions & {
   id: string;
   name: string;
   role?: string;
@@ -75,15 +78,15 @@ export type Project = {
   description?: string;
 };
 
-export type Skill = { id: string; name: string };
+export type Skill = EntryOptions & { id: string; name: string };
 
-export type Certification = { id: string; name: string; issuer?: string; date?: string };
+export type Certification = EntryOptions & { id: string; name: string; issuer?: string; date?: string };
 
-export type Language = { id: string; name: string; proficiency?: string };
+export type Language = EntryOptions & { id: string; name: string; proficiency?: string };
 
-export type Award = { id: string; title: string; issuer?: string; date?: string; description?: string };
+export type Award = EntryOptions & { id: string; title: string; issuer?: string; date?: string; description?: string };
 
-export type Volunteering = {
+export type Volunteering = EntryOptions & {
   id: string;
   role: string;
   organization: string;
@@ -93,7 +96,7 @@ export type Volunteering = {
   highlights: string[];
 };
 
-export type CustomEntry = { id: string; title: string; subtitle?: string; date?: string; description?: string };
+export type CustomEntry = EntryOptions & { id: string; title: string; subtitle?: string; date?: string; description?: string };
 
 type SectionBase<Type extends string> = {
   id: string;

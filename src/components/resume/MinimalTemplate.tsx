@@ -104,7 +104,7 @@ export function MinimalTemplate({ resume }: { resume: PreparedResume }) {
   );
 
   return (
-    <article className="px-16 py-14 font-sans text-[#1a1a1a]">
+    <article className="px-16 py-14 font-resume-sans text-[#1a1a1a]">
       <header className="mb-10">
         <h1 className="text-4xl font-light tracking-tight">{resume.name}</h1>
         {resume.title && <p className="mt-1.5 text-base text-[#555555]">{resume.title}</p>}

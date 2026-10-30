@@ -1,6 +1,9 @@
+import { ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
-import { TemplateCard } from "@/components/templates/TemplateCard";
-import { TemplateFilters } from "@/components/templates/TemplateFilters";
+import Link from "next/link";
+import { ResumePreview } from "@/components/resume/ResumePreview";
+import type { GalleryTemplate } from "@/components/templates/gallery";
+import { TemplateGallery } from "@/components/templates/TemplateGallery";
 import { Container } from "@/components/ui/Container";
 import { site } from "@/data/site";
 import { getCategory, templateCategories, templates } from "@/data/templates";
@@ -14,50 +17,63 @@ export const metadata: Metadata = {
   openGraph: { title: `Free Resume Templates | ${site.name}`, description, url: "/templates" },
 };
 
-const GRID_ID = "template-grid";
+/** Cards in view on load are rendered here, so the first thumbnails don't wait for JavaScript. */
+const EAGER_CARDS = 3;
 
 export default function TemplatesPage() {
-  const categories = templateCategories.map((category) => ({
-    id: category.id,
-    label: category.label,
-    count: templates.filter((template) => template.category === category.id).length,
+  const categories = templateCategories.map(({ id, label }) => ({
+    id,
+    label,
+    count: templates.filter((template) => template.category === id).length,
   }));
 
+  const items: GalleryTemplate[] = templates.map(({ slug, name, category, layout, description, bestFor, photo, tags }) => ({
+    slug,
+    name,
+    category,
+    layout,
+    description,
+    bestFor,
+    photo,
+    search: [name, layout, description, bestFor, getCategory(category).label, photo !== "none" ? "photo picture" : "no photo", ...tags]
+      .join(" ")
+      .toLowerCase(),
+  }));
+
+  const eager = Object.fromEntries(
+    templates
+      .filter((template) => template.category === templateCategories[0].id)
+      .slice(0, EAGER_CARDS)
+      .map((template) => [template.slug, <ResumePreview key={template.slug} template={template} thumbnail />]),
+  );
+
   return (
-    <Container className="py-16 sm:py-20">
-      <header className="max-w-2xl">
-        <p className="text-sm font-medium text-accent">Template gallery</p>
-        <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight text-ink sm:text-5xl">Free resume templates</h1>
-        <p className="mt-4 text-lg leading-relaxed text-muted">
-          All {templates.length} templates are free. Explore and customize any of them without paying or creating an
-          account, and switch designs whenever you like; your content stays the same.
+    <>
+      <Container className="pt-8 md:pt-12">
+        <nav aria-label="Breadcrumb">
+          <ol className="flex items-center gap-1.5 text-base text-muted">
+            <li>
+              <Link href="/" className="underline-offset-4 hover:text-ink hover:underline">
+                Home
+              </Link>
+            </li>
+            <li className="flex items-center gap-1.5">
+              <ChevronRight aria-hidden="true" className="size-4" />
+              <span aria-current="page" className="font-medium text-ink">
+                Templates
+              </span>
+            </li>
+          </ol>
+        </nav>
+        <h1 className="mt-5 text-display text-balance text-ink">Resume templates</h1>
+        <p className="mt-5 max-w-xl text-lead text-muted">
+          Pick a design and make it yours.
+          <br />
+          Switch any time; your words stay put.
         </p>
-      </header>
-
-      <TemplateFilters categories={categories} total={templates.length} gridId={GRID_ID} />
-
-      <ul id={GRID_ID} className="mt-8 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-10">
-        {templates.map((template) => (
-          <li
-            key={template.slug}
-            data-category={template.category}
-            data-search={[
-              template.name,
-              template.layout,
-              template.description,
-              template.bestFor,
-              getCategory(template.category).label,
-              template.photo !== "none" ? "photo picture" : "no photo",
-              ...template.tags,
-            ]
-              .join(" ")
-              .toLowerCase()}
-            className="[contain-intrinsic-block-size:auto_620px] [content-visibility:auto]"
-          >
-            <TemplateCard template={template} detailed />
-          </li>
-        ))}
-      </ul>
-    </Container>
+        <p className="mt-5 text-small text-ink-soft">Free to use · No watermark · No account needed</p>
+      </Container>
+      <TemplateGallery categories={categories} items={items} eager={eager} />
+    </>
   );
 }

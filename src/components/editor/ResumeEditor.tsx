@@ -21,7 +21,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const store = useResumeStore(initialTemplate);
   const [tab, setTab] = useState<EditorTab>("content");
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
-  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["personal"]));
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set());
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [nameDraft, setNameDraft] = useState("");
@@ -51,15 +51,10 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   };
 
   const toggleSection = (id: string) =>
-    setOpenSections((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    setOpenSections((current) => new Set(current.has(id) ? [] : [id]));
 
   const openSection = (id: string) => {
-    setOpenSections((current) => new Set(current).add(id));
+    setOpenSections(new Set([id]));
     setScrollTarget(id);
   };
 
@@ -99,7 +94,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
       <main id="main" className="flex min-h-0 flex-1">
         <div
-          className={`min-h-0 w-full flex-col bg-surface lg:flex lg:w-[480px] lg:shrink-0 lg:border-r lg:border-line xl:w-[540px] 2xl:w-[600px] ${mobileView === "edit" ? "flex" : "hidden"}`}
+          className={`min-h-0 w-full flex-col lg:flex lg:w-[40%] lg:max-w-[560px] lg:min-w-[420px] lg:shrink-0 ${mobileView === "edit" ? "flex" : "hidden"}`}
         >
           <div
             id={tabPanelId}

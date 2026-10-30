@@ -12,7 +12,7 @@ import { buttonClass } from "@/components/ui/styles";
  */
 export default function EditorError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    // Logged locally only; CVNest sends no error reports anywhere.
+    // Logged locally only; no error reports are sent anywhere.
     console.error(error);
   }, [error]);
 
@@ -20,7 +20,7 @@ export default function EditorError({ error, reset }: { error: Error & { digest?
     <main id="main" className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-12">
       <div className="w-full max-w-lg rounded-2xl border border-line bg-surface p-6 shadow-soft sm:p-8" role="alert">
         <AlertTriangle aria-hidden="true" className="size-7 text-[#b54708]" />
-        <h1 className="mt-4 text-2xl font-semibold text-ink">The editor ran into a problem</h1>
+        <h1 className="mt-4 text-2xl font-bold text-ink">The editor ran into a problem</h1>
         <p className="mt-3 text-base leading-relaxed text-muted">
           Your resumes are saved in this browser and nothing has been deleted. Try again, or reload the editor to
           continue where you left off.

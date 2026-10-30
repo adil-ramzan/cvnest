@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import { SimplePage } from "@/components/layout/SimplePage";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { freeFeatures, site } from "@/data/site";
+import { templates } from "@/data/templates";
 
-const description = `Everything in ${site.name} is free: all 45 resume templates, editing, customization and browser autosave, with no watermarks, subscription or account.`;
+const description = `Everything in ${site.name} is free: all ${templates.length} resume templates, editing, customization and browser autosave, with no watermarks, subscription or account.`;
 
 export const metadata: Metadata = {
   title: "What's Free",
@@ -21,7 +22,7 @@ export default function FreePage() {
       intro={`${site.name} is free to use. There is no subscription, no paid plan and no hidden fees, and you don't need an account.`}
     >
       <ul className="divide-y divide-line rounded-lg border border-line bg-surface">
-        {freeFeatures.map((feature) => (
+        {freeFeatures(templates.length).map((feature) => (
           <li key={feature.title} className="flex gap-3 px-5 py-4">
             <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
               <Check aria-hidden="true" className="size-3.5" strokeWidth={2.5} />
