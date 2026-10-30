@@ -12,6 +12,7 @@
  *                         in-place upgrade from schema n (future migrations).
  * - `folio.resumes.v2.unreadable-backup`  raw text of data that failed to load.
  * - `folio.migrations`    log of completed migrations.
+ * - `folio.backup-state`  when a backup was last made; holds no resume content.
  */
 import { RESUME_SCHEMA_VERSION, type Resume } from "@/data/resume";
 import { migrateResume } from "./migrations";
@@ -22,6 +23,7 @@ const LEGACY_RESUMES_KEY = "folio.resumes";
 const RESUMES_KEY = "folio.resumes.v2";
 const SETTINGS_KEY = "folio.editor-settings";
 const UNREADABLE_BACKUP_KEY = "folio.resumes.v2.unreadable-backup";
+const BACKUP_STATE_KEY = "folio.backup-state";
 const MIGRATION_LOG_KEY = "folio.migrations";
 const upgradeBackupKey = (fromVersion: number) => `folio.resumes.backup-v${fromVersion}`;
 
@@ -187,6 +189,27 @@ export function saveResumes(resumes: Resume[]): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+export type BackupState = { lastBackupAt: number | null; reminderDismissed: boolean };
+
+export function loadBackupState(): BackupState {
+  try {
+    const parsed: unknown = JSON.parse(window.localStorage.getItem(BACKUP_STATE_KEY) ?? "null");
+    if (typeof parsed !== "object" || parsed === null) return { lastBackupAt: null, reminderDismissed: false };
+    const { lastBackupAt, reminderDismissed } = parsed as Record<string, unknown>;
+    return { lastBackupAt: typeof lastBackupAt === "number" ? lastBackupAt : null, reminderDismissed: reminderDismissed === true };
+  } catch {
+    return { lastBackupAt: null, reminderDismissed: false };
+  }
+}
+
+export function saveBackupState(state: BackupState): void {
+  try {
+    window.localStorage.setItem(BACKUP_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // Only affects whether the reminder shows again.
   }
 }
 

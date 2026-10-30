@@ -2,14 +2,20 @@
 
 import { AlertTriangle, Eye, Loader2, PencilLine, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import type { Resume } from "@/data/resume";
+import { site } from "@/data/site";
 import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
-import { duplicateResume } from "@/lib/resumes";
+import { backupFileName, createBackup, downloadTextFile, MAX_BACKUP_BYTES, readBackup } from "@/lib/backup";
+import { type BackupState, loadBackupState, saveBackupState } from "@/lib/resume-storage";
+import { duplicateResume, isResumeEmpty } from "@/lib/resumes";
 import { ContentTab } from "./content/ContentTab";
+import { buttonClass } from "@/components/ui/styles";
 import { inputClass } from "./content/fields";
 import { CustomizeTab } from "./CustomizeTab";
 import { Dialog, dialogButtonClass } from "./Dialog";
 import { type EditorTab, EditorTopBar, tabId, tabPanelId } from "./EditorTopBar";
-import { OverviewTab } from "./OverviewTab";
+import { Notice } from "./Notice";
+import { formatUpdated, OverviewTab } from "./OverviewTab";
 import { PreviewPanel } from "./PreviewPanel";
 import { usePdfExport } from "./usePdfExport";
 import { usePhotoUrl } from "./usePhotoUrl";
@@ -17,7 +23,11 @@ import { useResumeStore } from "./useResumeStore";
 
 const tabCard = "m-4 overflow-hidden rounded-[22px] bg-surface shadow-soft sm:m-5";
 
-type DialogState = { type: "rename" | "delete"; id: string } | null;
+type DialogState =
+  | { type: "rename" | "delete"; id: string }
+  | { type: "restore"; resumes: Resume[]; skipped: number }
+  | { type: "restore-error"; message: string }
+  | null;
 
 export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSlug }) {
   const store = useResumeStore(initialTemplate);
@@ -27,11 +37,14 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const scrollTarget = useRef<string | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [nameDraft, setNameDraft] = useState("");
+  const [backupState, setBackupState] = useState<BackupState>(loadBackupState);
+  const [restoreMode, setRestoreMode] = useState<"merge" | "replace">("merge");
+  const restoreInput = useRef<HTMLInputElement>(null);
 
   const { activeResume: active } = store;
   const photoUrl = usePhotoUrl(active?.profile.photo);
   const pdf = usePdfExport();
-  const dialogResume = dialog ? store.resumes.find((r) => r.id === dialog.id) : undefined;
+  const dialogResume = dialog && "id" in dialog ? store.resumes.find((r) => r.id === dialog.id) : undefined;
 
   useEffect(() => {
     if (!scrollTarget.current) return;
@@ -71,6 +84,29 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     store.updateActive((resume) => ({ ...resume, profile, sections }));
   };
 
+  const updateBackupState = (patch: Partial<BackupState>) => {
+    const next = { ...backupState, ...patch };
+    setBackupState(next);
+    saveBackupState(next);
+  };
+
+  const downloadBackup = async () => {
+    downloadTextFile(backupFileName(site.name), await createBackup(store.resumes));
+    updateBackupState({ lastBackupAt: Date.now() });
+  };
+
+  const onRestoreFile = async (file: File | undefined) => {
+    if (restoreInput.current) restoreInput.current.value = "";
+    if (!file) return;
+    if (file.size > MAX_BACKUP_BYTES) {
+      setDialog({ type: "restore-error", message: "This file is too large to be a resume backup." });
+      return;
+    }
+    const result = readBackup(await file.text());
+    setRestoreMode("merge");
+    setDialog(result.ok ? { type: "restore", resumes: result.resumes, skipped: result.skipped } : { type: "restore-error", message: result.message });
+  };
+
   const openRename = (id: string) => {
     setNameDraft(store.resumes.find((r) => r.id === id)?.name ?? "");
     setDialog({ type: "rename", id });
@@ -79,7 +115,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const submitRename = (event: FormEvent) => {
     event.preventDefault();
     const name = nameDraft.trim().slice(0, 120);
-    if (dialog && name) store.renameResume(dialog.id, name);
+    if (dialog && "id" in dialog && name) store.renameResume(dialog.id, name);
     setDialog(null);
   };
 
@@ -96,6 +132,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         onRename={() => openRename(active.id)}
         onDuplicate={() => store.duplicateResume(active.id)}
         onDelete={() => setDialog({ type: "delete", id: active.id })}
+        onDownloadBackup={downloadBackup}
+        onRestoreBackup={() => restoreInput.current?.click()}
         onDownload={() => pdf.start(active, photoUrl)}
         downloading={pdf.status === "preparing"}
       />
@@ -133,6 +171,20 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               </div>
             )}
 
+            {!isResumeEmpty(active) && !backupState.lastBackupAt && !backupState.reminderDismissed && (
+              <Notice
+                title="Back up your resume"
+                onDismiss={() => updateBackupState({ reminderDismissed: true })}
+                actions={
+                  <button type="button" onClick={downloadBackup} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
+                    Download backup
+                  </button>
+                }
+              >
+                It only lives in this browser, so keep a copy somewhere safe.
+              </Notice>
+            )}
+
             {tab === "overview" && (
               <div className={tabCard}>
               <OverviewTab
@@ -144,6 +196,9 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 onDuplicate={store.duplicateResume}
                 onDelete={(id) => setDialog({ type: "delete", id })}
                 onEditSection={editSection}
+                onDownloadBackup={downloadBackup}
+                onRestoreBackup={() => restoreInput.current?.click()}
+                lastBackupAt={backupState.lastBackupAt}
               />
               </div>
             )}
@@ -244,6 +299,87 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
       )}
       {pdf.printView}
 
+      <input
+        ref={restoreInput}
+        type="file"
+        accept=".json,application/json"
+        aria-label="Choose a backup file"
+        onChange={(event) => onRestoreFile(event.target.files?.[0])}
+        className="sr-only"
+        tabIndex={-1}
+      />
+
+      <Dialog
+        open={dialog?.type === "restore"}
+        onClose={() => setDialog(null)}
+        title="Restore from backup"
+        description={
+          dialog?.type === "restore"
+            ? `This backup holds ${dialog.resumes.length} ${dialog.resumes.length === 1 ? "resume" : "resumes"}.${dialog.skipped ? ` ${dialog.skipped} couldn't be read and will be skipped.` : ""}`
+            : undefined
+        }
+      >
+        {dialog?.type === "restore" && (
+          <>
+            <ul className="mt-4 max-h-48 space-y-1.5 overflow-y-auto rounded-xl bg-panel p-3 text-[0.875rem]">
+              {dialog.resumes.map((resume) => (
+                <li key={resume.id}>
+                  <span className="font-bold text-ink">{resume.name}</span>
+                  <span className="block text-muted">
+                    {resume.profile.fullName.trim() || "No name"} · {resume.sections.length} sections · updated {formatUpdated(resume.updatedAt)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <fieldset className="mt-4 space-y-2 text-[0.875rem] text-ink">
+              <legend className="sr-only">How to restore</legend>
+              <label className="flex items-start gap-2.5">
+                <input type="radio" name="restore-mode" checked={restoreMode === "merge"} onChange={() => setRestoreMode("merge")} className="mt-0.5 size-4 accent-[#0f766e]" />
+                <span>
+                  <span className="font-bold">Add to my resumes</span>
+                  <span className="block text-muted">Keeps everything you have now.</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2.5">
+                <input type="radio" name="restore-mode" checked={restoreMode === "replace"} onChange={() => setRestoreMode("replace")} className="mt-0.5 size-4 accent-[#0f766e]" />
+                <span>
+                  <span className="font-bold">Replace all my resumes</span>
+                  <span className="block text-muted">Removes the {store.resumes.length} in this browser.</span>
+                </span>
+              </label>
+            </fieldset>
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" autoFocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  store.restoreResumes(dialog.resumes, restoreMode);
+                  setDialog(null);
+                }}
+                className={restoreMode === "replace" ? dialogButtonClass.danger : dialogButtonClass.primary}
+              >
+                {restoreMode === "replace" ? "Replace and restore" : "Restore"}
+              </button>
+            </div>
+          </>
+        )}
+      </Dialog>
+
+      <Dialog
+        open={dialog?.type === "restore-error"}
+        onClose={() => setDialog(null)}
+        title="Couldn’t restore this file"
+        description={dialog?.type === "restore-error" ? dialog.message : undefined}
+      >
+        <div className="mt-6 flex justify-end">
+          <button type="button" autoFocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
+            Close
+          </button>
+        </div>
+      </Dialog>
+
       <Dialog
         open={dialog?.type === "rename" && !!dialogResume}
         onClose={() => setDialog(null)}
@@ -287,7 +423,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           <button
             type="button"
             onClick={() => {
-              if (dialog) store.deleteResume(dialog.id);
+              if (dialog && "id" in dialog) store.deleteResume(dialog.id);
               setDialog(null);
             }}
             className={dialogButtonClass.danger}

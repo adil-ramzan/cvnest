@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { Check, Copy, Download, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import type { ReactNode } from "react";
 import { getTemplate } from "@/data/templates";
 import type { Resume, SectionType } from "@/data/resume";
@@ -16,6 +16,9 @@ type OverviewTabProps = {
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onEditSection: (sectionId: string) => void;
+  onDownloadBackup: () => void;
+  onRestoreBackup: () => void;
+  lastBackupAt: number | null;
 };
 
 export const formatUpdated = (timestamp: number) =>
@@ -36,7 +39,7 @@ function Card({ title, action, children }: { title: string; action?: ReactNode; 
 const smallButton = buttonClass("secondary", "sm");
 const iconButton = iconButtonClass;
 
-export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onDuplicate, onDelete, onEditSection }: OverviewTabProps) {
+export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onDuplicate, onDelete, onEditSection, onDownloadBackup, onRestoreBackup, lastBackupAt }: OverviewTabProps) {
   const { profile, sections } = active;
   const sectionStatus = (type: SectionType, label: string) => {
     const section = sections.find((s) => s.type === type);
@@ -149,6 +152,23 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
             );
           })}
         </ul>
+      </Card>
+
+      <Card title="Backup">
+        <p className="text-base text-muted">
+          Keep a copy of all your resumes and photos in one file. You can restore it here or in another browser.
+        </p>
+        <p className="mt-1 text-[0.875rem] text-muted">{lastBackupAt ? `Last backup: ${formatUpdated(lastBackupAt)}` : "No backup yet"}</p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button type="button" onClick={onDownloadBackup} className={smallButton}>
+            <Download aria-hidden="true" className="size-4" />
+            Download backup
+          </button>
+          <button type="button" onClick={onRestoreBackup} className={smallButton}>
+            <Upload aria-hidden="true" className="size-4" />
+            Restore from backup
+          </button>
+        </div>
       </Card>
 
       <Card title="Privacy and storage">

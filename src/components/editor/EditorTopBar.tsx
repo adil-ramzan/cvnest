@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ChevronDown, Copy, Download, HardDrive, Info, LayoutDashboard, Loader2, type LucideIcon, MoreHorizontal, Pencil, PencilLine, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Copy, Download, HardDrive, Info, LayoutDashboard, Loader2, type LucideIcon, MoreHorizontal, Pencil, PencilLine, Plus, SlidersHorizontal, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { type KeyboardEvent, useRef } from "react";
 import { getTemplate } from "@/data/templates";
@@ -34,6 +34,8 @@ type EditorTopBarProps = {
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onDownloadBackup: () => void;
+  onRestoreBackup: () => void;
   onDownload: () => void;
   /** True while the PDF is being prepared or the print dialog is open. */
   downloading: boolean;
@@ -154,6 +156,8 @@ export function EditorTopBar({
   onRename,
   onDuplicate,
   onDelete,
+  onDownloadBackup,
+  onRestoreBackup,
   onDownload,
   downloading,
 }: EditorTopBarProps) {
@@ -173,6 +177,9 @@ export function EditorTopBar({
   const moreItems: MenuItem[] = [
     { label: "Rename", icon: Pencil, onSelect: onRename },
     { label: "Duplicate", icon: Copy, onSelect: onDuplicate },
+    "separator",
+    { label: "Download backup", icon: Download, onSelect: onDownloadBackup },
+    { label: "Restore from backup", icon: Upload, onSelect: onRestoreBackup },
     "separator",
     { label: "Delete", icon: Trash2, onSelect: onDelete, danger: true },
   ];

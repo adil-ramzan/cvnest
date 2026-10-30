@@ -243,6 +243,13 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     [resumes, activeId, releasePhoto],
   );
 
+  /** Adds restored resumes to the list, or replaces the list. Ids are renewed so they can't clash. */
+  const restoreResumes = useCallback((incoming: Resume[], mode: "merge" | "replace") => {
+    const restored = incoming.map((resume) => duplicateResume(resume, resume.name));
+    setResumes((list) => (mode === "merge" ? [...(list ?? []), ...restored] : restored));
+    setActiveId(restored[0].id);
+  }, []);
+
   const activeResume = resumes?.find((r) => r.id === activeId) ?? null;
 
   return {
@@ -255,6 +262,7 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     zoom,
     setZoom,
     selectResume: setActiveId,
+    restoreResumes,
     updateActive,
     setTemplate,
     setPageSize,
