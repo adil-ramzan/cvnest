@@ -108,6 +108,67 @@ body {
   line-height: var(--text-base--line-height);
 }
 
+/*
+  Editor scroll areas. Firefox uses the standard properties below. Chrome, Edge
+  and Safari use the WebKit rules instead, because only those can restyle the
+  thumb on hover, and Chrome ignores them while the standard properties are set.
+  Forced colors keep the system's own scrollbars.
+*/
+.editor-scroll {
+  --scroll-thumb: color-mix(in srgb, var(--color-ink) 25%, transparent);
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+
+/* 50% is the lowest that reaches 3:1 against the page background. */
+.editor-scroll:hover {
+  --scroll-thumb: color-mix(in srgb, var(--color-ink) 50%, transparent);
+}
+
+@media (prefers-contrast: more) {
+  .editor-scroll,
+  .editor-scroll:hover {
+    --scroll-thumb: color-mix(in srgb, var(--color-ink) 75%, transparent);
+  }
+}
+
+@media not (forced-colors: active) {
+  @supports selector(::-webkit-scrollbar) {
+    .editor-scroll {
+      scrollbar-width: auto;
+      scrollbar-color: auto;
+    }
+
+    .editor-scroll::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    .editor-scroll::-webkit-scrollbar-track,
+    .editor-scroll::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+
+    .editor-scroll::-webkit-scrollbar-thumb {
+      border: 3px solid transparent;
+      border-radius: 999px;
+      background-color: var(--scroll-thumb);
+      background-clip: content-box;
+    }
+
+    .editor-scroll::-webkit-scrollbar-thumb:hover {
+      background-color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .editor-scroll {
+    scrollbar-color: auto;
+  }
+}
+
 /* Consistent keyboard focus for anything without its own focus style. */
 :where(a, button, summary, select, [tabindex]):focus-visible {
   outline: 2px solid var(--color-accent);

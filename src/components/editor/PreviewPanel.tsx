@@ -131,7 +131,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
         </div>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto px-4 pt-2 pb-6 sm:px-12 sm:pb-12" role="region" aria-label="Resume preview">
+      <div ref={scrollRef} className="editor-scroll min-h-0 flex-1 overflow-auto px-4 pt-2 pb-6 sm:px-12 sm:pb-12" role="region" aria-label="Resume preview">
         {fitScale !== null && (
           <div className="mx-auto" style={{ width: page.width * scale }}>
             {empty && (

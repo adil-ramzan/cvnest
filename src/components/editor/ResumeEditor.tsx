@@ -150,14 +150,14 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
       <main id="main" className="flex min-h-0 flex-1">
         <div
-          className={`min-h-0 w-full flex-col lg:flex lg:w-[40%] lg:max-w-[560px] lg:min-w-[420px] lg:shrink-0 ${mobileView === "edit" ? "flex" : "hidden"}`}
+          className={`min-h-0 w-full flex-col lg:flex lg:w-[40%] lg:max-w-[560px] lg:min-w-[420px] lg:shrink-0 lg:border-r lg:border-line lg:pr-2 ${mobileView === "edit" ? "flex" : "hidden"}`}
         >
           <div
             id={tabPanelId}
             role="tabpanel"
             aria-labelledby={tabId(tab)}
             tabIndex={-1}
-            className="min-h-0 flex-1 overflow-y-auto outline-none"
+            className="editor-scroll min-h-0 flex-1 overflow-y-auto outline-none"
           >
             {store.recovered && (
               <div className="mx-4 mt-4 flex items-start gap-3 rounded-lg border border-[#fedf89] bg-[#fffaeb] p-3.5 text-sm text-[#93370d] sm:mx-6">
