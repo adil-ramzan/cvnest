@@ -179,6 +179,20 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               </div>
             )}
 
+            {store.saveStatus === "error" && (
+              <Notice
+                tone="warning"
+                title="Your latest changes aren’t saved"
+                actions={
+                  <button type="button" onClick={downloadBackup} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
+                    Download backup
+                  </button>
+                }
+              >
+                Browser storage is full or blocked. Your work is safe in this tab for now, so download a backup before closing it.
+              </Notice>
+            )}
+
             {store.saveStatus === "blocked" && (
               <Notice
                 tone="warning"
