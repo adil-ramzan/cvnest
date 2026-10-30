@@ -15,6 +15,8 @@ type EntryListProps<T extends Entry> = {
   getTitle: (item: T) => string;
   getSubtitle?: (item: T) => string;
   renderFields: (item: T, update: (patch: Partial<T>) => void, isNew: boolean) => ReactNode;
+  /** Called after an entry is deleted, so it can be offered for undo. */
+  onDeleted: (item: T, index: number, title: string) => void;
 };
 
 /**
@@ -22,7 +24,7 @@ type EntryListProps<T extends Entry> = {
  * so the preview and autosave keep working; Cancel restores the entry as it was
  * when opened, and Save just closes the form.
  */
-export function EntryList<T extends Entry>({ items, onChange, create, itemName, getTitle, getSubtitle, renderFields }: EntryListProps<T>) {
+export function EntryList<T extends Entry>({ items, onChange, create, itemName, getTitle, getSubtitle, renderFields, onDeleted }: EntryListProps<T>) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [newKey, setNewKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
@@ -172,6 +174,7 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
                           onClick={() => {
                             onChange(items.filter((_, i) => i !== index));
                             setOpenKey(null);
+                            onDeleted(item, index, title);
                           }}
                           aria-label={`Delete ${itemName}`}
                           className={buttonClass("ghost", "sm", "mr-auto w-10 px-0 text-[#b42318] hover:bg-[#fef3f2]")}

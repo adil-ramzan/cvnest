@@ -212,13 +212,20 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   check("Section reorder saved, ids stable", order.indexOf("volunteering") < order.indexOf("awards") && new Set(d.resumes[0].sections.map((s) => s.id)).size === secIdsBefore.length && secIdsBefore.every((id) => d.resumes[0].sections.some((s) => s.id === id)));
   const volIndex = text.indexOf("Food bank volunteer"), certIndex = text.indexOf("CKA");
   check("Preview follows section order", volIndex > -1 && certIndex > -1);
-  // Delete a section with content (confirm dialog)
+  // Delete a section, undo, delete again
+  const sectionsBefore = d.resumes[0].sections.map((s) => s.id).join();
   await pickOption(page, "Section options for Interests", "Delete section");
-  await page.waitForSelector("dialog[open]");
-  await page.locator("dialog[open] ::-p-text(Delete section)").click();
+  await sleep(600);
+  await page.evaluate(() => [...document.querySelectorAll("[role=status] button")].find((b) => b.textContent === "Undo").click());
   await sleep(600);
   d = await v2(page);
-  check("Delete section with confirmation", !d.resumes[0].sections.some((s) => s.type === "custom") && !(await preview(page)).includes("Trail running"));
+  check("Undo restores a section in its original position", d.resumes[0].sections.map((s) => s.id).join() === sectionsBefore);
+  await pickOption(page, "Section options for Interests", "Delete section");
+  await sleep(600);
+  await page.keyboard.press("Escape");
+  await sleep(100);
+  d = await v2(page);
+  check("Delete section, Escape dismisses the undo", !(await page.evaluate(() => [...document.querySelectorAll("[role=status] button")].some((b) => b.textContent === "Undo"))) && !d.resumes[0].sections.some((s) => s.type === "custom") && !(await preview(page)).includes("Trail running"));
   // Photo upload goes to IndexedDB
   await (await page.$("input[type=file]")).uploadFile(PHOTO);
   await page.waitForSelector("img[alt='Your profile photo']");

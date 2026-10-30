@@ -43,7 +43,6 @@ import {
   newProject,
   newVolunteering,
 } from "@/lib/resumes";
-import { Dialog, dialogButtonClass } from "../Dialog";
 import { Menu, type MenuItem } from "../Menu";
 import { EntryList } from "./EntryList";
 import { TagInput, TextArea, TextField } from "./fields";
@@ -59,6 +58,8 @@ type ContentTabProps = {
   openSections: Set<string>;
   onToggleSection: (id: string) => void;
   onOpenSection: (id: string) => void;
+  /** Offers a just-deleted item for undo. */
+  onUndoable: (message: string, restore: () => void) => void;
 };
 
 const sectionIcons: Record<SectionType, LucideIcon> = {
@@ -151,11 +152,7 @@ function sectionSummary(section: ResumeSection): string {
 const sectionHeading = (section: ResumeSection) =>
   section.title.trim() || (section.type === "custom" ? "Untitled section" : DEFAULT_SECTION_TITLES[section.type]);
 
-const hasContent = (section: ResumeSection) =>
-  section.type === "summary" ? section.content.trim() !== "" : section.entries.length > 0;
-
-export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSections, onToggleSection, onOpenSection }: ContentTabProps) {
-  const [pendingDelete, setPendingDelete] = useState<ResumeSection | null>(null);
+export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSections, onToggleSection, onOpenSection, onUndoable }: ContentTabProps) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const { profile, sections } = resume;
 
@@ -164,7 +161,27 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
     onChange((r) => ({ ...r, sections: r.sections.map((s) => (s.id === id ? update(s) : s)) }));
   const setEntries = <S extends EntrySection>(section: S, entries: S["entries"]) =>
     updateSection(section.id, (s) => ({ ...s, entries }) as ResumeSection);
-  const removeSection = (id: string) => onChange((r) => ({ ...r, sections: r.sections.filter((s) => s.id !== id) }));
+
+  /** Removes a section, keeping what's needed to put it back in the same place. */
+  const removeSection = (section: ResumeSection, index: number) => {
+    onChange((r) => ({ ...r, sections: r.sections.filter((s) => s.id !== section.id) }));
+    onUndoable(`“${sectionHeading(section)}” deleted`, () =>
+      onChange((r) => ({ ...r, sections: [...r.sections.slice(0, index), section, ...r.sections.slice(index)] })),
+    );
+  };
+
+  /** Puts a deleted entry back where it was, if its section is still there. */
+  const entryDeleted =
+    <T,>(section: ResumeSection) =>
+    (item: T, index: number, title: string) =>
+      onUndoable(`“${title}” deleted`, () =>
+        onChange((r) => ({
+          ...r,
+          sections: r.sections.map((s) =>
+            s.id === section.id && "entries" in s ? ({ ...s, entries: [...s.entries.slice(0, index), item, ...s.entries.slice(index)] } as ResumeSection) : s,
+          ),
+        })),
+      );
 
   const moveSection = (index: number, offset: number) =>
     onChange((r) => {
@@ -210,6 +227,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <EntryList
             items={section.entries}
             onChange={(entries) => setEntries(section, entries)}
+            onDeleted={entryDeleted(section)}
             create={newExperience}
             itemName="position"
             getTitle={(job) => job.role}
@@ -239,6 +257,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <EntryList
             items={section.entries}
             onChange={(entries) => setEntries(section, entries)}
+            onDeleted={entryDeleted(section)}
             create={newVolunteering}
             itemName="role"
             getTitle={(item) => item.role}
@@ -267,6 +286,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <EntryList
             items={section.entries}
             onChange={(entries) => setEntries(section, entries)}
+            onDeleted={entryDeleted(section)}
             create={newEducation}
             itemName="education"
             getTitle={(edu) => edu.degree}
@@ -287,6 +307,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <EntryList
             items={section.entries}
             onChange={(entries) => setEntries(section, entries)}
+            onDeleted={entryDeleted(section)}
             create={newProject}
             itemName="project"
             getTitle={(project) => project.name}
@@ -310,6 +331,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             itemName="skill"
             items={section.entries}
             onChange={(entries) => setEntries(section, entries)}
+            onDeleted={entryDeleted(section)}
             placeholder="e.g. Project management"
           />
         );
@@ -318,6 +340,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <EntryList
             items={section.entries}
             onChange={(entries) => setEntries(section, entries)}
+            onDeleted={entryDeleted(section)}
             create={newCertification}
             itemName="certification"
             getTitle={(cert) => cert.name}
@@ -336,6 +359,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <EntryList
             items={section.entries}
             onChange={(entries) => setEntries(section, entries)}
+            onDeleted={entryDeleted(section)}
             create={newLanguage}
             itemName="language"
             getTitle={(language) => language.name}
@@ -353,6 +377,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <EntryList
             items={section.entries}
             onChange={(entries) => setEntries(section, entries)}
+            onDeleted={entryDeleted(section)}
             create={newAward}
             itemName="award"
             getTitle={(award) => award.title}
@@ -372,6 +397,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <EntryList
             items={section.entries}
             onChange={(entries) => setEntries(section, entries)}
+            onDeleted={entryDeleted(section)}
             create={newCustomEntry}
             itemName="item"
             getTitle={(item) => item.title}
@@ -421,7 +447,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             label: "Delete section",
             icon: Trash2,
             danger: true,
-            onSelect: () => (hasContent(section) ? setPendingDelete(section) : removeSection(section.id)),
+            onSelect: () => removeSection(section, index),
           },
         ];
         const renaming = renamingId === section.id;
@@ -486,29 +512,6 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           </>
         }
       />
-
-      <Dialog
-        open={pendingDelete !== null}
-        onClose={() => setPendingDelete(null)}
-        title={`Delete the “${pendingDelete ? sectionHeading(pendingDelete) : ""}” section?`}
-        description="Its content will be removed from this resume. You can add the section again, but its entries can't be restored."
-      >
-        <div className="mt-6 flex justify-end gap-2">
-          <button type="button" autoFocus onClick={() => setPendingDelete(null)} className={dialogButtonClass.secondary}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (pendingDelete) removeSection(pendingDelete.id);
-              setPendingDelete(null);
-            }}
-            className={dialogButtonClass.danger}
-          >
-            Delete section
-          </button>
-        </div>
-      </Dialog>
     </div>
   );
 }

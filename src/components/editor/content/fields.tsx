@@ -88,12 +88,14 @@ type TagInputProps = {
   itemName: string;
   items: Skill[];
   onChange: (items: Skill[]) => void;
+  /** Called after an item is removed, so it can be offered for undo. */
+  onDeleted: (item: Skill, index: number, title: string) => void;
   placeholder?: string;
   hint?: string;
 };
 
 /** Add/remove short values such as skills. Enter or comma adds the typed value; existing ids are kept. */
-export function TagInput({ label, itemName, items, onChange, placeholder, hint }: TagInputProps) {
+export function TagInput({ label, itemName, items, onChange, onDeleted, placeholder, hint }: TagInputProps) {
   const id = useId();
   const [draft, setDraft] = useState("");
 
@@ -150,7 +152,7 @@ export function TagInput({ label, itemName, items, onChange, placeholder, hint }
 
       {items.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-2" aria-label={`${label} added`}>
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li
               key={item.id}
               className="inline-flex items-center gap-1 rounded-full bg-canvas py-1 pr-1 pl-3.5 text-sm text-ink ring-1 ring-line"
@@ -158,7 +160,10 @@ export function TagInput({ label, itemName, items, onChange, placeholder, hint }
               {item.name}
               <button
                 type="button"
-                onClick={() => onChange(items.filter((other) => other.id !== item.id))}
+                onClick={() => {
+                  onChange(items.filter((other) => other.id !== item.id));
+                  onDeleted(item, index, item.name);
+                }}
                 aria-label={`Remove ${itemName} ${item.name}`}
                 className="inline-flex size-7 items-center justify-center rounded-full text-muted hover:bg-ink/10 hover:text-ink"
               >

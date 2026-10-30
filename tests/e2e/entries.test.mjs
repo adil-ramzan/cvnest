@@ -71,6 +71,26 @@ await clickButton("Cancel");
 await sleep(700);
 check("Cancel on a new entry removes it", (await roles()).length === 4);
 
+// Delete and undo
+await openRow("Second role");
+await page.click("button[aria-label='Delete position']");
+await sleep(700);
+check("Delete removes the entry and offers Undo", !(await roles()).includes("Second role") && (await page.$eval("body", (el) => el.innerText)).includes("“Second role” deleted"));
+await clickButton("Undo");
+await sleep(700);
+check("Undo restores it in its original position", (await roles())[1] === "Second role" && (await roles()).length === 4, (await roles()).join());
+await openRow("Third role");
+await page.click("button[aria-label='Delete position']");
+await sleep(300);
+await page.keyboard.press("Escape");
+await sleep(700);
+check("Escape dismisses Undo and keeps the deletion", !(await roles()).includes("Third role") && !(await page.$eval("body", (el) => el.innerText)).includes("Undo"));
+await page.locator("::-p-aria(Add position)").click();
+await sleep(200);
+await page.locator("::-p-aria(Job title)").fill("Third role");
+await clickButton("Save");
+await sleep(700);
+
 // Eye toggle
 await page.click("button[aria-label='Hide Second role from resume']");
 await sleep(700);

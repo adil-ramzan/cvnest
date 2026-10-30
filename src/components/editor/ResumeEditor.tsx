@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Eye, Loader2, PencilLine, X } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import type { Resume } from "@/data/resume";
 import { site } from "@/data/site";
 import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
@@ -17,6 +17,7 @@ import { type EditorTab, EditorTopBar, tabId, tabPanelId } from "./EditorTopBar"
 import { Notice } from "./Notice";
 import { formatUpdated, OverviewTab } from "./OverviewTab";
 import { PreviewPanel } from "./PreviewPanel";
+import { UndoToast } from "./UndoToast";
 import { usePdfExport } from "./usePdfExport";
 import { usePhotoUrl } from "./usePhotoUrl";
 import { useResumeStore } from "./useResumeStore";
@@ -40,6 +41,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const [backupState, setBackupState] = useState<BackupState>(loadBackupState);
   const [restoreMode, setRestoreMode] = useState<"merge" | "replace">("merge");
   const restoreInput = useRef<HTMLInputElement>(null);
+  const [undo, setUndo] = useState<{ id: number; resumeId: string; message: string; restore: () => void } | null>(null);
+  const dismissUndo = useCallback(() => setUndo(null), []);
 
   const { activeResume: active } = store;
   const photoUrl = usePhotoUrl(active?.profile.photo);
@@ -83,6 +86,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     const { profile, sections } = duplicateResume(sample, active.name);
     store.updateActive((resume) => ({ ...resume, profile, sections }));
   };
+
+  const offerUndo = (message: string, restore: () => void) => setUndo({ id: Date.now(), resumeId: active.id, message, restore });
 
   const updateBackupState = (patch: Partial<BackupState>) => {
     const next = { ...backupState, ...patch };
@@ -212,6 +217,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 openSections={openSections}
                 onToggleSection={toggleSection}
                 onOpenSection={openSection}
+                onUndoable={offerUndo}
               />
             )}
             {tab === "customize" && (
@@ -296,6 +302,17 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             </button>
           )}
         </div>
+      )}
+      {undo?.resumeId === active.id && (
+        <UndoToast
+          key={undo.id}
+          message={undo.message}
+          onDismiss={dismissUndo}
+          onUndo={() => {
+            undo.restore();
+            setUndo(null);
+          }}
+        />
       )}
       {pdf.printView}
 
