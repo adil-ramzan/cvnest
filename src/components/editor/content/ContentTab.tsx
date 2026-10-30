@@ -43,6 +43,7 @@ import {
   newProject,
   newVolunteering,
 } from "@/lib/resumes";
+import { LIMITS } from "@/lib/resume-limits";
 import { Menu, type MenuItem } from "../Menu";
 import { EntryList } from "./EntryList";
 import { TagInput, TextArea, TextField } from "./fields";
@@ -134,7 +135,7 @@ function RenameField({ initial, placeholder, onDone }: { initial: string; placeh
         onBlur={() => onDone(value.trim())}
         placeholder={placeholder}
         autoFocus
-        maxLength={120}
+        maxLength={LIMITS.title}
         className={`${inputClass} h-11 text-lg font-bold`}
       />
     </div>
@@ -243,6 +244,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
                   label="Achievements and responsibilities"
                   value={job.highlights.join("\n")}
                   onChange={(value) => set({ highlights: value.split("\n") })}
+                  maxLines={LIMITS.lines}
                   rows={5}
                   placeholder={"Led a redesign that increased sign-ups by 20%\nManaged a team of four designers"}
                   hint="One bullet point per line."
@@ -273,6 +275,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
                   label="What you did"
                   value={item.highlights.join("\n")}
                   onChange={(value) => set({ highlights: value.split("\n") })}
+                  maxLines={LIMITS.lines}
                   rows={4}
                   hint="One bullet point per line."
                   className="sm:col-span-2"
@@ -500,18 +503,24 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
         );
       })}
 
-      <Menu
-        label="Add section"
-        items={addItems}
-        menuClassName="w-72"
-        triggerClassName={buttonClass("secondary", "lg", "h-14 w-full")}
-        trigger={
-          <>
-            <Plus aria-hidden="true" className="size-5" />
-            Add section
-          </>
-        }
-      />
+      {sections.length < LIMITS.sections ? (
+        <Menu
+          label="Add section"
+          items={addItems}
+          menuClassName="w-72"
+          triggerClassName={buttonClass("secondary", "lg", "h-14 w-full")}
+          trigger={
+            <>
+              <Plus aria-hidden="true" className="size-5" />
+              Add section
+            </>
+          }
+        />
+      ) : (
+        <p role="status" className="text-center text-[0.875rem] font-medium text-[#b42318]">
+          Limit reached: {LIMITS.sections} sections maximum
+        </p>
+      )}
     </div>
   );
 }

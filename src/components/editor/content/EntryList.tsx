@@ -3,6 +3,7 @@
 import { Eye, EyeOff, GripVertical, Plus, Trash2 } from "lucide-react";
 import { type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { buttonClass, focusRing, iconButtonClass } from "@/components/ui/styles";
+import { LIMITS } from "@/lib/resume-limits";
 
 type Entry = { id?: string; hidden?: boolean };
 
@@ -198,10 +199,16 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
       )}
 
       <div className={`flex justify-center ${items.length > 0 ? "mt-3" : ""}`}>
-        <button type="button" onClick={add} aria-label={`Add ${itemName}`} className={buttonClass("secondary", "sm")}>
-          <Plus aria-hidden="true" className="size-4" />
-          Add entry
-        </button>
+        {items.length < LIMITS.entries ? (
+          <button type="button" onClick={add} aria-label={`Add ${itemName}`} className={buttonClass("secondary", "sm")}>
+            <Plus aria-hidden="true" className="size-4" />
+            Add entry
+          </button>
+        ) : (
+          <p role="status" className="text-[0.875rem] font-medium text-[#b42318]">
+            Limit reached: {LIMITS.entries} entries maximum in a section
+          </p>
+        )}
       </div>
     </div>
   );

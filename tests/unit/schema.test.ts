@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { prepareResume } from "@/components/resume/prepareResume";
 import { type ExperienceSection, RESUME_SCHEMA_VERSION } from "@/data/resume";
+import { findOverLimits, LIMITS } from "@/lib/resume-limits";
 import { type IdContext, sanitizeResume } from "@/lib/resume-schema";
 
 let counter = 0;
@@ -80,9 +81,9 @@ describe("sanitizeResume", () => {
     assert.equal(svg.profile.photo?.id, "p");
   });
 
-  it("caps very long text", () => {
+  it("keeps very long text in full", () => {
     const resume = sanitizeResume({ profile: { fullName: "x".repeat(20_000) } }, ctx())!;
-    assert.equal(resume.profile.fullName.length, 10_000);
+    assert.equal(resume.profile.fullName.length, 20_000);
   });
 
   it("keeps an unknown template id for the storage layer to resolve", () => {
@@ -138,5 +139,35 @@ describe("hidden entries", () => {
     assert.ok(text.includes("Shown role") && text.includes("Shown language"));
     assert.ok(!text.includes("Secret"));
     assert.equal(prepared.sections.some((section) => section.type === "certifications"), false);
+  });
+});
+
+describe("editing limits", () => {
+  const big = {
+    id: "r",
+    name: "Big",
+    sections: [
+      { id: "s", type: "summary", title: "Profile", visible: true, content: "x".repeat(LIMITS.text + 5000) },
+      { id: "e", type: "experience", title: "Experience", visible: true, entries: Array.from({ length: LIMITS.entries + 50 }, (_, i) => ({ id: `j${i}`, role: "R", company: "", highlights: [] })) },
+      ...Array.from({ length: LIMITS.sections + 10 }, (_, i) => ({ id: `c${i}`, type: "custom", title: "C", visible: true, entries: [] })),
+    ],
+  };
+
+  it("loads content over the limits without cutting it", () => {
+    const resume = sanitizeResume(big, ctx())!;
+    assert.equal(resume.sections.length, LIMITS.sections + 12);
+    assert.equal((resume.sections[0] as { content: string }).content.length, LIMITS.text + 5000);
+    assert.equal((resume.sections[1] as ExperienceSection).entries.length, LIMITS.entries + 50);
+  });
+
+  it("reports what is over the limits", () => {
+    const found = findOverLimits(sanitizeResume(big, ctx())!).join(" | ");
+    assert.ok(found.includes("15,000 characters"));
+    assert.ok(found.includes("250 entries"));
+    assert.ok(found.includes("62 sections"));
+  });
+
+  it("reports nothing for ordinary resumes", () => {
+    assert.deepEqual(findOverLimits(sanitizeResume({ id: "r", name: "Small" }, ctx())!), []);
   });
 });

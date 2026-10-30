@@ -6,6 +6,7 @@ import type { Resume } from "@/data/resume";
 import { site } from "@/data/site";
 import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
 import { backupFileName, createBackup, downloadTextFile, MAX_BACKUP_BYTES, readBackup } from "@/lib/backup";
+import { findOverLimits } from "@/lib/resume-limits";
 import { type BackupState, loadBackupState, saveBackupState } from "@/lib/resume-storage";
 import { duplicateResume, isResumeEmpty } from "@/lib/resumes";
 import { ContentTab } from "./content/ContentTab";
@@ -87,6 +88,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     store.updateActive((resume) => ({ ...resume, profile, sections }));
   };
 
+  const overLimits = findOverLimits(active);
   const offerUndo = (message: string, restore: () => void) => setUndo({ id: Date.now(), resumeId: active.id, message, restore });
 
   const updateBackupState = (patch: Partial<BackupState>) => {
@@ -174,6 +176,26 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                   changes will be lost when you close this tab.
                 </p>
               </div>
+            )}
+
+            {overLimits.length > 0 && (
+              <Notice
+                tone="warning"
+                title="Some content is over the editing limits"
+                actions={
+                  <button type="button" onClick={downloadBackup} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
+                    Download backup
+                  </button>
+                }
+              >
+                <p>Nothing has been cut, and it all stays in this resume. To keep editing these, shorten them:</p>
+                <ul className="mt-1 list-disc pl-4">
+                  {overLimits.slice(0, 4).map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+                {overLimits.length > 4 && <p className="mt-1">and {overLimits.length - 4} more</p>}
+              </Notice>
             )}
 
             {!isResumeEmpty(active) && !backupState.lastBackupAt && !backupState.reminderDismissed && (

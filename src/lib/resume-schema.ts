@@ -28,9 +28,8 @@ export const isSectionType = (value: unknown): value is SectionType =>
 // ---------------------------------------------------------------------------
 // Validation of untrusted data in the current schema. Malformed values are
 // coerced to safe defaults rather than thrown, so partially damaged saves load.
+// Content over the editing limits is kept in full; see findOverLimits.
 
-const MAX_TEXT = 10_000;
-const MAX_ITEMS = 200;
 const MAX_ID = 100;
 
 type UnknownRecord = Record<string, unknown>;
@@ -38,10 +37,9 @@ type UnknownRecord = Record<string, unknown>;
 export const isRecord = (value: unknown): value is UnknownRecord =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-const str = (value: unknown): string => (typeof value === "string" ? value.slice(0, MAX_TEXT) : "");
-const optStr = (value: unknown): string | undefined => (typeof value === "string" ? value.slice(0, MAX_TEXT) : undefined);
-const strList = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").slice(0, MAX_ITEMS).map(str) : [];
+const str = (value: unknown): string => (typeof value === "string" ? value : "");
+const optStr = (value: unknown): string | undefined => (typeof value === "string" ? value : undefined);
+const strList = (value: unknown): string[] => (Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []);
 const num = (value: unknown, fallback: number) => (typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : fallback);
 
 /** Tracks ids across everything being loaded so duplicates are replaced. */
@@ -58,7 +56,7 @@ function takeId(value: unknown, ctx: IdContext): string {
 }
 
 function list<T>(value: unknown, parse: (item: UnknownRecord) => T): T[] {
-  return Array.isArray(value) ? value.filter(isRecord).slice(0, MAX_ITEMS).map(parse) : [];
+  return Array.isArray(value) ? value.filter(isRecord).map(parse) : [];
 }
 
 const PHOTO_MIME = ["image/jpeg", "image/png", "image/webp"];
@@ -106,7 +104,7 @@ function sanitizeSection(raw: UnknownRecord, ctx: IdContext): ResumeSection | nu
   if (!isSectionType(type)) return null;
   const base = {
     id: takeId(raw.id, ctx),
-    title: typeof raw.title === "string" ? raw.title.slice(0, 120) : DEFAULT_SECTION_TITLES[type],
+    title: typeof raw.title === "string" ? raw.title : DEFAULT_SECTION_TITLES[type],
     visible: raw.visible !== false,
   };
   // Only written when true, so visible entries stay exactly as they were saved.
@@ -190,13 +188,11 @@ export function sanitizeResume(value: unknown, ctx: IdContext): Resume | null {
   return {
     schemaVersion: RESUME_SCHEMA_VERSION,
     id: takeId(value.id, ctx),
-    name: str(value.name).trim().slice(0, 120) || DEFAULT_RESUME_NAME,
+    name: str(value.name).trim() || DEFAULT_RESUME_NAME,
     createdAt,
     updatedAt: num(value.updatedAt, createdAt) || createdAt,
     profile: sanitizeProfile(value.profile, ctx),
-    sections: list(value.sections, (section) => sanitizeSection(section, ctx))
-      .filter((section): section is ResumeSection => section !== null)
-      .slice(0, 50),
+    sections: list(value.sections, (section) => sanitizeSection(section, ctx)).filter((section): section is ResumeSection => section !== null),
     design: {
       // Checked against the template registry by the storage loader.
       templateId: typeof design.templateId === "string" && design.templateId ? design.templateId.slice(0, MAX_ID) : DEFAULT_TEMPLATE,

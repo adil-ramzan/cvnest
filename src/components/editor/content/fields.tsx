@@ -3,10 +3,22 @@
 import { Plus, X } from "lucide-react";
 import { type HTMLInputTypeAttribute, useId, useState } from "react";
 import type { Skill } from "@/data/resume";
+import { COUNTER_THRESHOLD, LIMITS } from "@/lib/resume-limits";
 import { newSkill } from "@/lib/resumes";
 import { buttonClass, hintClass, inputClass, labelClass } from "@/components/ui/styles";
 
 export { inputClass };
+
+/** Shown as a field nears its limit; the message at the limit is announced to screen readers. */
+function LimitNote({ length, limit }: { length: number; limit: number }) {
+  if (length < limit * COUNTER_THRESHOLD) return null;
+  const full = length >= limit;
+  return (
+    <p role={full ? "status" : undefined} className={`mt-1.5 text-right text-[0.875rem] ${full ? "font-medium text-[#b42318]" : "text-muted"}`}>
+      {full ? `Limit reached: ${limit.toLocaleString("en-US")} characters maximum` : `${length.toLocaleString("en-US")} / ${limit.toLocaleString("en-US")}`}
+    </p>
+  );
+}
 
 type TextFieldProps = {
   label: string;
@@ -18,9 +30,10 @@ type TextFieldProps = {
   autoFocus?: boolean;
   hint?: string;
   className?: string;
+  maxLength?: number;
 };
 
-export function TextField({ label, value, onChange, placeholder, type = "text", autoComplete, autoFocus, hint, className = "" }: TextFieldProps) {
+export function TextField({ label, value, onChange, placeholder, type = "text", autoComplete, autoFocus, hint, className = "", maxLength = LIMITS.text }: TextFieldProps) {
   const id = useId();
   return (
     <div className={className}>
@@ -35,6 +48,7 @@ export function TextField({ label, value, onChange, placeholder, type = "text", 
         placeholder={placeholder}
         autoComplete={autoComplete ?? "off"}
         autoFocus={autoFocus}
+        maxLength={maxLength}
         aria-describedby={hint ? `${id}-hint` : undefined}
         className={`${inputClass} mt-2 h-11`}
       />
@@ -43,6 +57,7 @@ export function TextField({ label, value, onChange, placeholder, type = "text", 
           {hint}
         </p>
       )}
+      <LimitNote length={value.length} limit={maxLength} />
     </div>
   );
 }
@@ -55,10 +70,13 @@ type TextAreaProps = {
   rows?: number;
   hint?: string;
   className?: string;
+  /** One item per line, as in bullet points. */
+  maxLines?: number;
 };
 
-export function TextArea({ label, value, onChange, placeholder, rows = 4, hint, className = "" }: TextAreaProps) {
+export function TextArea({ label, value, onChange, placeholder, rows = 4, hint, className = "", maxLines }: TextAreaProps) {
   const id = useId();
+  const lineCount = value.split("\n").length;
   return (
     <div className={className}>
       <label htmlFor={id} className={labelClass}>
@@ -67,15 +85,25 @@ export function TextArea({ label, value, onChange, placeholder, rows = 4, hint, 
       <textarea
         id={id}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          const next = event.target.value;
+          onChange(maxLines ? next.split("\n").slice(0, Math.max(maxLines, lineCount)).join("\n") : next);
+        }}
         placeholder={placeholder}
         rows={rows}
+        maxLength={LIMITS.text}
         aria-describedby={hint ? `${id}-hint` : undefined}
         className={`${inputClass} mt-2 resize-y py-2.5 leading-relaxed`}
       />
       {hint && (
         <p id={`${id}-hint`} className={hintClass}>
           {hint}
+        </p>
+      )}
+      <LimitNote length={value.length} limit={LIMITS.text} />
+      {maxLines && lineCount >= maxLines && (
+        <p role="status" className="mt-1.5 text-right text-[0.875rem] font-medium text-[#b42318]">
+          Limit reached: {maxLines} bullet points maximum
         </p>
       )}
     </div>
@@ -99,6 +127,8 @@ export function TagInput({ label, itemName, items, onChange, onDeleted, placehol
   const id = useId();
   const [draft, setDraft] = useState("");
 
+  const full = items.length >= LIMITS.entries;
+
   const add = () => {
     const values = draft
       .split(",")
@@ -111,7 +141,7 @@ export function TagInput({ label, itemName, items, onChange, onDeleted, placehol
       existing.add(key);
       return true;
     });
-    if (fresh.length) onChange([...items, ...fresh.map(newSkill)]);
+    if (fresh.length) onChange([...items, ...fresh.slice(0, LIMITS.entries - items.length).map(newSkill)]);
     setDraft("");
   };
 
@@ -139,15 +169,15 @@ export function TagInput({ label, itemName, items, onChange, onDeleted, placehol
         <button
           type="button"
           onClick={add}
-          disabled={!draft.trim()}
+          disabled={!draft.trim() || full}
           className={buttonClass("secondary", "md", "shrink-0")}
         >
           <Plus aria-hidden="true" className="size-4" />
           Add
         </button>
       </div>
-      <p id={`${id}-hint`} className={hintClass}>
-        {hint ?? "Press Enter or comma to add."}
+      <p id={`${id}-hint`} role={full ? "status" : undefined} className={hintClass}>
+        {full ? `Limit reached: ${LIMITS.entries} maximum.` : (hint ?? "Press Enter or comma to add.")}
       </p>
 
       {items.length > 0 && (
