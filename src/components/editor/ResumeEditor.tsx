@@ -9,6 +9,7 @@ import { backupFileName, createBackup, downloadTextFile, MAX_BACKUP_BYTES, readB
 import { findOverLimits } from "@/lib/resume-limits";
 import { type BackupState, loadBackupState, readRawResumes, saveBackupState } from "@/lib/resume-storage";
 import { duplicateResume, isResumeEmpty } from "@/lib/resumes";
+import { isAtRisk } from "@/lib/unsaved";
 import { ContentTab } from "./content/ContentTab";
 import { buttonClass } from "@/components/ui/styles";
 import { inputClass } from "./content/fields";
@@ -16,11 +17,13 @@ import { CustomizeTab } from "./CustomizeTab";
 import { Dialog, dialogButtonClass } from "./Dialog";
 import { type EditorTab, EditorTopBar, tabId, tabPanelId } from "./EditorTopBar";
 import { Notice } from "./Notice";
+import { LeaveGuardDialog } from "./LeaveGuardDialog";
 import { formatUpdated, OverviewTab } from "./OverviewTab";
 import { PreviewPanel } from "./PreviewPanel";
 import { UndoToast } from "./UndoToast";
 import { usePdfExport } from "./usePdfExport";
 import { useOtherTabs } from "./useOtherTabs";
+import { useUnsavedGuard } from "./useUnsavedGuard";
 import { usePhotoUrl } from "./usePhotoUrl";
 import { useResumeStore } from "./useResumeStore";
 
@@ -51,6 +54,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const photoUrl = usePhotoUrl(active?.profile.photo);
   const pdf = usePdfExport();
   const openElsewhere = useOtherTabs(active?.id ?? null);
+  const guard = useUnsavedGuard(isAtRisk(active, store.saveStatus), store.flushSave);
   const dialogResume = dialog && "id" in dialog ? store.resumes.find((r) => r.id === dialog.id) : undefined;
 
   useEffect(() => {
@@ -103,7 +107,10 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const downloadBackup = async () => {
     downloadTextFile(backupFileName(site.name), await createBackup(store.resumes));
     updateBackupState({ lastBackupAt: Date.now() });
+    store.markCopied("lastBackupAt");
   };
+
+  const startPdf = () => pdf.start(active, photoUrl, () => store.markCopied("lastExportAt", active.id));
 
   const onRestoreFile = async (file: File | undefined) => {
     if (restoreInput.current) restoreInput.current.value = "";
@@ -144,7 +151,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         onDelete={() => setDialog({ type: "delete", id: active.id })}
         onDownloadBackup={downloadBackup}
         onRestoreBackup={() => restoreInput.current?.click()}
-        onDownload={() => (isResumeEmpty(active) ? setDialog({ type: "empty" }) : pdf.start(active, photoUrl))}
+        onDownload={() => (isResumeEmpty(active) ? setDialog({ type: "empty" }) : startPdf())}
         downloading={pdf.status === "preparing"}
       />
 
@@ -362,6 +369,18 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           )}
         </div>
       )}
+      <LeaveGuardDialog
+        open={guard.pending !== null}
+        saveFailed={store.saveStatus === "error" || store.saveStatus === "unavailable" || store.saveStatus === "blocked"}
+        onDownloadBackup={downloadBackup}
+        onSavePdf={() => {
+          guard.stay();
+          startPdf();
+        }}
+        onStay={guard.stay}
+        onLeave={guard.leave}
+      />
+
       {undo?.resumeId === active.id && (
         <UndoToast
           key={undo.id}
@@ -396,7 +415,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             type="button"
             onClick={() => {
               setDialog(null);
-              pdf.start(active, photoUrl);
+              startPdf();
             }}
             className={dialogButtonClass.secondary}
           >
