@@ -20,6 +20,7 @@ import { formatUpdated, OverviewTab } from "./OverviewTab";
 import { PreviewPanel } from "./PreviewPanel";
 import { UndoToast } from "./UndoToast";
 import { usePdfExport } from "./usePdfExport";
+import { useOtherTabs } from "./useOtherTabs";
 import { usePhotoUrl } from "./usePhotoUrl";
 import { useResumeStore } from "./useResumeStore";
 
@@ -49,6 +50,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const { activeResume: active } = store;
   const photoUrl = usePhotoUrl(active?.profile.photo);
   const pdf = usePdfExport();
+  const openElsewhere = useOtherTabs(active?.id ?? null);
   const dialogResume = dialog && "id" in dialog ? store.resumes.find((r) => r.id === dialog.id) : undefined;
 
   useEffect(() => {
@@ -177,6 +179,12 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                   changes will be lost when you close this tab.
                 </p>
               </div>
+            )}
+
+            {openElsewhere && (
+              <Notice tone="warning" title="This resume is open in another tab">
+                Edits made in both tabs at once can overwrite each other. Keep working in just one.
+              </Notice>
             )}
 
             {store.saveStatus === "error" && (
