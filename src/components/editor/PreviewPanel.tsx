@@ -4,7 +4,9 @@ import { ChevronDown, Maximize, Minus, Plus } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { pageSizes } from "@/components/resume/ResumePaper";
 import { ResumePreview } from "@/components/resume/ResumePreview";
+import { buttonClass } from "@/components/ui/styles";
 import { getTemplate, type TemplateSlug, templateCategories, templates } from "@/data/templates";
+import { isResumeEmpty } from "@/lib/resumes";
 import type { Zoom } from "@/lib/resume-storage";
 import type { Resume } from "@/data/resume";
 
@@ -18,12 +20,13 @@ type PreviewPanelProps = {
   zoom: Zoom;
   onZoomChange: (zoom: Zoom) => void;
   onTemplateChange: (template: TemplateSlug) => void;
+  onLoadSample: () => void;
 };
 
 const toolbarButton =
-  "inline-flex h-10 items-center justify-center rounded-lg text-ink-soft hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-35";
+  "inline-flex h-9 items-center justify-center rounded-lg text-muted hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-35";
 
-export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateChange }: PreviewPanelProps) {
+export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateChange, onLoadSample }: PreviewPanelProps) {
   const selectId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [pageElement, setPageElement] = useState<HTMLDivElement | null>(null);
@@ -59,12 +62,13 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
   const zoomOut = [...ZOOM_STEPS].reverse().find((step) => step < scale - 0.001);
   const zoomIn = ZOOM_STEPS.find((step) => step > scale + 0.001);
   const template = getTemplate(resume.design.templateId) ?? templates[0];
+  const empty = isResumeEmpty(resume);
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-sheet">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-surface px-4 py-2.5 sm:px-5">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-1.5 sm:px-5">
         <div className="flex items-center gap-2">
-          <label htmlFor={selectId} className="text-sm font-medium text-muted">
+          <label htmlFor={selectId} className="text-[0.875rem] text-muted">
             Template
           </label>
           <div className="relative">
@@ -72,7 +76,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
               id={selectId}
               value={template.slug}
               onChange={(event) => onTemplateChange(event.target.value)}
-              className="h-10 appearance-none rounded-lg border border-line-strong bg-surface pr-9 pl-3 text-sm font-medium text-ink hover:border-ink/35 focus:border-accent focus:outline-2 focus:outline-offset-0 focus:outline-accent/25"
+              className="h-9 appearance-none rounded-lg border border-line bg-transparent pr-8 pl-2.5 text-[0.875rem] text-ink-soft hover:border-ink/35 focus:border-accent focus:outline-2 focus:outline-offset-0 focus:outline-accent"
             >
               {templateCategories.map((category) => (
                 <optgroup key={category.id} label={category.label}>
@@ -91,7 +95,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
         </div>
 
         <div className="flex items-center gap-1">
-          <span className="mr-3 hidden text-sm text-muted sm:inline">
+          <span className="mr-2 hidden text-[0.875rem] text-muted sm:inline">
             {page.label} · {pageCount} {pageCount === 1 ? "page" : "pages"}
           </span>
           <button
@@ -103,7 +107,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
           >
             <Minus aria-hidden="true" className="size-4" />
           </button>
-          <span className="w-12 text-center text-sm font-medium text-ink tabular-nums" aria-label={`Zoom ${Math.round(scale * 100)}%`}>
+          <span className="w-11 text-center text-[0.875rem] text-muted tabular-nums" aria-label={`Zoom ${Math.round(scale * 100)}%`}>
             {Math.round(scale * 100)}%
           </span>
           <button
@@ -119,7 +123,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
             type="button"
             onClick={() => onZoomChange("fit")}
             aria-pressed={zoom === "fit"}
-            className={`${toolbarButton} gap-1.5 px-3 text-sm font-medium aria-pressed:bg-ink/5 aria-pressed:text-ink`}
+            className={`${toolbarButton} gap-1.5 px-2.5 text-[0.875rem] aria-pressed:bg-ink/5 aria-pressed:text-ink`}
           >
             <Maximize aria-hidden="true" className="size-3.5" />
             Fit
@@ -127,18 +131,29 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
         </div>
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto px-4 py-6 sm:px-12 sm:py-12" role="region" aria-label="Resume preview">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto px-4 pt-2 pb-6 sm:px-12 sm:pb-12" role="region" aria-label="Resume preview">
         {fitScale !== null && (
           <div className="mx-auto" style={{ width: page.width * scale }}>
-            <ResumePreview
-              template={template}
-              resume={resume}
-              photoUrl={photoUrl}
-              size={resume.design.pageSize}
-              flow
-              pageRef={setPageElement}
-              className="shadow-sheet"
-            />
+            {empty && (
+              <div className="sticky top-2 z-10 mx-auto mb-3 flex w-fit max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl bg-surface px-4 py-2 shadow-pop">
+                <p className="text-[0.875rem] text-muted">Sample shown until you add your details</p>
+                <button type="button" onClick={onLoadSample} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
+                  Load sample data
+                </button>
+              </div>
+            )}
+            {/* The sample stands in here only; PDF export always renders the real resume. */}
+            <div aria-hidden={empty || undefined}>
+              <ResumePreview
+                template={template}
+                resume={empty ? undefined : resume}
+                photoUrl={empty ? undefined : photoUrl}
+                size={resume.design.pageSize}
+                flow
+                pageRef={setPageElement}
+                className={`shadow-sheet ${empty ? "[&_.resume-page]:opacity-35" : ""}`}
+              />
+            </div>
             {pageCount > 1 && (
               <p className="mt-4 text-center text-sm text-muted">
                 Your content runs to {pageCount} pages. Faint lines mark where each page ends.

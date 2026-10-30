@@ -1,8 +1,9 @@
 "use client";
 
 import { AlertTriangle, Eye, Loader2, PencilLine, X } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
-import type { TemplateSlug } from "@/data/templates";
+import { type FormEvent, useEffect, useRef, useState } from "react";
+import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
+import { duplicateResume } from "@/lib/resumes";
 import { ContentTab } from "./content/ContentTab";
 import { inputClass } from "./content/fields";
 import { CustomizeTab } from "./CustomizeTab";
@@ -10,10 +11,11 @@ import { Dialog, dialogButtonClass } from "./Dialog";
 import { type EditorTab, EditorTopBar, tabId, tabPanelId } from "./EditorTopBar";
 import { OverviewTab } from "./OverviewTab";
 import { PreviewPanel } from "./PreviewPanel";
-import { PrivacyNote } from "./PrivacyNote";
 import { usePdfExport } from "./usePdfExport";
 import { usePhotoUrl } from "./usePhotoUrl";
 import { useResumeStore } from "./useResumeStore";
+
+const tabCard = "m-4 overflow-hidden rounded-[22px] bg-surface shadow-soft sm:m-5";
 
 type DialogState = { type: "rename" | "delete"; id: string } | null;
 
@@ -22,7 +24,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const [tab, setTab] = useState<EditorTab>("content");
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set());
-  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+  const scrollTarget = useRef<string | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [nameDraft, setNameDraft] = useState("");
 
@@ -32,10 +34,10 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const dialogResume = dialog ? store.resumes.find((r) => r.id === dialog.id) : undefined;
 
   useEffect(() => {
-    if (!scrollTarget) return;
-    document.getElementById(`section-${scrollTarget}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setScrollTarget(null);
-  }, [scrollTarget]);
+    if (!scrollTarget.current) return;
+    document.getElementById(`section-${scrollTarget.current}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollTarget.current = null;
+  }, [openSections]);
 
   if (!store.ready || !active) {
     return (
@@ -55,12 +57,18 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
   const openSection = (id: string) => {
     setOpenSections(new Set([id]));
-    setScrollTarget(id);
+    scrollTarget.current = id;
   };
 
   const editSection = (id: string) => {
     changeTab("content");
     openSection(id);
+  };
+
+  const loadSample = () => {
+    const { sample } = getTemplate(active.design.templateId) ?? templates[0];
+    const { profile, sections } = duplicateResume(sample, active.name);
+    store.updateActive((resume) => ({ ...resume, profile, sections }));
   };
 
   const openRename = (id: string) => {
@@ -126,6 +134,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             )}
 
             {tab === "overview" && (
+              <div className={tabCard}>
               <OverviewTab
                 resumes={store.resumes}
                 active={active}
@@ -136,6 +145,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 onDelete={(id) => setDialog({ type: "delete", id })}
                 onEditSection={editSection}
               />
+              </div>
             )}
             {tab === "content" && (
               <ContentTab
@@ -150,6 +160,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               />
             )}
             {tab === "customize" && (
+              <div className={tabCard}>
               <CustomizeTab
                 resume={active}
                 photoUrl={photoUrl}
@@ -158,9 +169,9 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 onTemplateChange={store.setTemplate}
                 onPageSizeChange={store.setPageSize}
               />
+              </div>
             )}
           </div>
-          <PrivacyNote />
         </div>
 
         <div className={`min-h-0 w-full min-w-0 lg:block lg:flex-1 ${mobileView === "preview" ? "block" : "hidden"}`}>
@@ -170,6 +181,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             zoom={store.zoom}
             onZoomChange={store.setZoom}
             onTemplateChange={store.setTemplate}
+            onLoadSample={loadSample}
           />
         </div>
       </main>

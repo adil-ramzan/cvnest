@@ -32,6 +32,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
               Try again
             </button>
             {/* A full page load, since client-side navigation may be what failed. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/"
               className="inline-flex h-11 items-center rounded-lg border border-line-strong bg-surface px-5 text-base font-medium text-ink hover:bg-canvas"

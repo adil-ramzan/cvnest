@@ -1,22 +1,24 @@
 "use client";
 
-import { AlertTriangle, ChevronDown, Copy, Download, HardDrive, Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Copy, Download, HardDrive, Info, LayoutDashboard, Loader2, type LucideIcon, MoreHorizontal, Pencil, PencilLine, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { type KeyboardEvent, useRef } from "react";
 import { getTemplate } from "@/data/templates";
 import { site } from "@/data/site";
 import type { Resume } from "@/data/resume";
-import { buttonClass } from "@/components/ui/styles";
+import { buttonClass, focusRing } from "@/components/ui/styles";
 import { Menu, type MenuItem } from "./Menu";
 import type { SaveStatus } from "./useResumeStore";
 
 export type EditorTab = "overview" | "content" | "customize";
 
-export const editorTabs: { id: EditorTab; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "content", label: "Content" },
-  { id: "customize", label: "Customize" },
+export const editorTabs: { id: EditorTab; label: string; icon: LucideIcon }[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "content", label: "Content", icon: PencilLine },
+  { id: "customize", label: "Customize", icon: SlidersHorizontal },
 ];
+
+const STORAGE_NOTE = "Stored in this browser only. Never uploaded.";
 
 export const tabId = (tab: EditorTab) => `editor-tab-${tab}`;
 export const tabPanelId = "editor-tabpanel";
@@ -69,16 +71,34 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
   const isProblem = status === "error" || status === "unavailable";
   return (
     <>
-      <span title={detail} className={`inline-flex items-center gap-1.5 text-sm font-medium whitespace-nowrap ${className}`}>
+      <span title={detail} className={`inline-flex items-center gap-1.5 text-[0.875rem] whitespace-nowrap ${className}`}>
         <Icon aria-hidden="true" className={`size-4 ${status === "saving" ? "animate-spin" : ""}`} />
-        <span className="hidden sm:inline">{text}</span>
-        <span className="sr-only sm:hidden">{text}</span>
+        <span className="hidden xl:inline">{text}</span>
+        <span className="sr-only xl:hidden">{text}</span>
       </span>
+      <StorageInfo />
       {/* Only announce problems; announcing every autosave would be noisy. */}
       <span role="status" className="sr-only">
         {isProblem ? `${text}. ${detail}` : ""}
       </span>
     </>
+  );
+}
+
+/** Focusing the button also shows the note, so it works by keyboard and by tapping on touch screens. */
+function StorageInfo() {
+  return (
+    <span className="group relative inline-flex">
+      <button type="button" aria-label={STORAGE_NOTE} className={`inline-flex size-7 items-center justify-center rounded-full text-muted hover:text-ink ${focusRing}`}>
+        <Info aria-hidden="true" className="size-4" />
+      </button>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-full right-0 z-40 mt-2 hidden w-56 rounded-xl bg-ink px-3 py-2 text-[0.875rem] text-white shadow-pop group-focus-within:block group-hover:block"
+      >
+        {STORAGE_NOTE}
+      </span>
+    </span>
   );
 }
 
@@ -112,8 +132,9 @@ function Tabs({ tab, onTabChange, className = "" }: { tab: EditorTab; onTabChang
             tabIndex={selected ? 0 : -1}
             onClick={() => onTabChange(item.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`relative inline-flex h-10 items-center rounded-lg px-3.5 text-sm font-medium transition-colors ${selected ? "bg-ink/[0.06] text-ink" : "text-muted hover:text-ink"}`}
+            className={`relative inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-2 text-[0.875rem] lg:px-3.5 font-medium transition-colors lg:flex-none ${selected ? "bg-accent-soft text-accent-ink" : "text-muted hover:text-ink"}`}
           >
+            <item.icon aria-hidden="true" className="hidden size-4 shrink-0 min-[400px]:block" />
             {item.label}
           </button>
         );
@@ -157,8 +178,9 @@ export function EditorTopBar({
   ];
 
   return (
-    <header className="sticky top-0 z-30 border-b border-line bg-surface">
-      <div className="flex h-14 items-center gap-2 px-3 sm:gap-3 sm:px-4">
+    <header className="z-30 bg-canvas px-3 pt-3 pb-1.5 sm:px-4">
+      <div className="rounded-2xl bg-surface shadow-soft">
+      <div className="flex h-15 items-center gap-2 px-3 sm:gap-3 sm:px-4">
         <Link
           href="/"
           aria-label={`${site.name} home`}
@@ -171,7 +193,6 @@ export function EditorTopBar({
             {site.name[0]}
           </span>
           <span className="hidden text-xl font-bold tracking-tight text-ink sm:inline">{site.name}</span>
-          <span className="hidden text-sm text-muted xl:inline">Free resume builder</span>
         </Link>
 
         <span aria-hidden="true" className="mx-1 hidden h-6 w-px bg-line sm:block" />
@@ -180,8 +201,8 @@ export function EditorTopBar({
           label={`Switch resume. Current resume: ${active.name}`}
           items={resumeItems}
           menuClassName="max-h-[70vh] w-72 overflow-y-auto"
-          className="min-w-0"
-          triggerClassName="inline-flex h-10 max-w-full items-center gap-1.5 rounded-lg px-2.5 text-base font-medium text-ink hover:bg-ink/5 sm:max-w-60"
+          className="min-w-0 sm:max-w-60"
+          triggerClassName="inline-flex h-10 max-w-full items-center gap-1.5 rounded-lg px-2 text-base font-medium text-ink hover:bg-ink/5"
           trigger={
             <>
               <span className="truncate">{active.name}</span>
@@ -190,7 +211,7 @@ export function EditorTopBar({
           }
         />
 
-        <Tabs tab={tab} onTabChange={onTabChange} className="mx-auto hidden lg:flex" />
+        <Tabs tab={tab} onTabChange={onTabChange} className="mx-auto hidden shrink-0 lg:flex" />
 
         <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 lg:ml-0">
           <SaveIndicator status={saveStatus} />
@@ -205,7 +226,7 @@ export function EditorTopBar({
             {downloading ? (
               <Loader2 aria-hidden="true" className="size-4 animate-spin" />
             ) : (
-              <Download aria-hidden="true" className="size-4" />
+              <Download aria-hidden="true" className="hidden size-4 min-[360px]:block" />
             )}
             <span className="sm:hidden">PDF</span>
             <span className="hidden sm:inline">{downloading ? "Preparing PDF…" : "Download PDF"}</span>
@@ -220,8 +241,9 @@ export function EditorTopBar({
         </div>
       </div>
 
-      <div className="border-t border-line px-2 py-1 lg:hidden">
+      <div className="border-t border-line p-1.5 lg:hidden">
         <Tabs tab={tab} onTabChange={onTabChange} />
+      </div>
       </div>
     </header>
   );

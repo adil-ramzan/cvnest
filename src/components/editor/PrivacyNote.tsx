@@ -1,18 +1,4 @@
-import { LockKeyhole } from "lucide-react";
-
-export const PRIVACY_STATEMENT = "Your resume data is stored locally in this browser. It is not uploaded to our servers.";
-
-/** Compact note pinned to the bottom of the editor panel. */
-export function PrivacyNote() {
-  return (
-    <p className="flex items-start gap-2.5 border-t border-line bg-surface px-4 py-2.5 text-sm leading-snug text-muted sm:px-6">
-      <LockKeyhole aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
-      <span>
-        Free to use. {PRIVACY_STATEMENT}
-      </span>
-    </p>
-  );
-}
+const PRIVACY_STATEMENT = "Your resume data is stored locally in this browser. It is not uploaded to our servers.";
 
 /** Full explanation shown on the Overview tab. */
 export function PrivacyDetails() {

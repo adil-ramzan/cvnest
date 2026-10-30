@@ -32,10 +32,11 @@ export function Menu({ label, trigger, triggerClassName = "", className = "", it
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const menuButtons = () => [...(rootRef.current?.querySelectorAll<HTMLButtonElement>("[role^='menuitem']") ?? [])];
 
   const focusItem = (index: number) => {
-    const buttons = itemRefs.current.filter((el): el is HTMLButtonElement => el !== null);
+    const buttons = menuButtons();
     if (!buttons.length) return;
     buttons[(index + buttons.length) % buttons.length].focus();
   };
@@ -50,7 +51,8 @@ export function Menu({ label, trigger, triggerClassName = "", className = "", it
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]); // Only when the menu opens; items are read once to focus the checked one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the menu opens; items are read once to focus the checked one.
+  }, [open]);
 
   const close = (restoreFocus = true) => {
     setOpen(false);
@@ -58,7 +60,7 @@ export function Menu({ label, trigger, triggerClassName = "", className = "", it
   };
 
   const onMenuKeyDown = (event: React.KeyboardEvent) => {
-    const buttons = itemRefs.current.filter((el): el is HTMLButtonElement => el !== null);
+    const buttons = menuButtons();
     const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
     switch (event.key) {
       case "ArrowDown":
@@ -87,8 +89,6 @@ export function Menu({ label, trigger, triggerClassName = "", className = "", it
     }
   };
 
-  let buttonIndex = 0;
-  itemRefs.current = [];
 
   return (
     <div ref={rootRef} className={`relative ${className}`}>
@@ -123,15 +123,11 @@ export function Menu({ label, trigger, triggerClassName = "", className = "", it
             if (item === "separator") {
               return <div key={`sep-${index}`} role="separator" className="my-1.5 h-px bg-line" />;
             }
-            const refIndex = buttonIndex++;
             const Icon = item.icon;
             const isRadio = item.checked !== undefined;
             return (
               <button
                 key={`${item.label}-${index}`}
-                ref={(el) => {
-                  itemRefs.current[refIndex] = el;
-                }}
                 type="button"
                 role={isRadio ? "menuitemradio" : "menuitem"}
                 aria-checked={isRadio ? item.checked : undefined}

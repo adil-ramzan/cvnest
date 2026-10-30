@@ -454,7 +454,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
                     type="button"
                     onClick={() => setRenamingId(section.id)}
                     aria-label={`Rename ${heading} section`}
-                    className={`h-8 rounded-full border border-line px-3 text-[0.875rem] font-medium text-ink-soft hover:border-ink/35 ${focusRing}`}
+                    className={`hidden h-8 rounded-full border border-line px-3 text-[0.875rem] font-medium text-ink-soft hover:border-ink/35 min-[400px]:block ${focusRing}`}
                   >
                     Rename
                   </button>

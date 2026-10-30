@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye, EyeOff, GripVertical, Plus, Trash2 } from "lucide-react";
-import { type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { buttonClass, focusRing, iconButtonClass } from "@/components/ui/styles";
 
 type Entry = { id?: string; hidden?: boolean };
@@ -33,7 +33,9 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
   const refocusKey = useRef<string | null>(null);
   // Pointer listeners outlive a render, so they read the latest values from here.
   const latest = useRef({ items, onChange });
-  latest.current = { items, onChange };
+  useLayoutEffect(() => {
+    latest.current = { items, onChange };
+  });
 
   const keyOf = (item: T, index: number) => item.id ?? String(index);
 

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { RESUME_SCHEMA_VERSION } from "@/data/resume";
+import { prepareResume } from "@/components/resume/prepareResume";
+import { type ExperienceSection, RESUME_SCHEMA_VERSION } from "@/data/resume";
 import { type IdContext, sanitizeResume } from "@/lib/resume-schema";
 
 let counter = 0;
@@ -87,5 +88,55 @@ describe("sanitizeResume", () => {
   it("keeps an unknown template id for the storage layer to resolve", () => {
     const resume = sanitizeResume({ design: { templateId: "retired-template", pageSize: "a4" } }, ctx())!;
     assert.deepEqual(resume.design, { templateId: "retired-template", pageSize: "a4" });
+  });
+});
+
+describe("hidden entries", () => {
+  const saved = (entry: Record<string, unknown>) => ({
+    id: "r",
+    name: "Saved",
+    sections: [{ id: "s", type: "experience", title: "Experience", visible: true, entries: [{ id: "e", role: "Pilot", company: "Air", highlights: [], ...entry }] }],
+  });
+
+  it("loads entries saved before the field existed unchanged", () => {
+    const resume = sanitizeResume(saved({}), ctx())!;
+    const entry = (resume.sections[0] as ExperienceSection).entries[0];
+    assert.equal("hidden" in entry, false);
+    assert.equal(prepareResume(resume).sections.length, 1);
+  });
+
+  it("keeps hidden entries through a save and load", () => {
+    const resume = sanitizeResume(saved({ hidden: true }), ctx())!;
+    const reloaded = sanitizeResume(JSON.parse(JSON.stringify(resume)), ctx())!;
+    assert.equal((reloaded.sections[0] as ExperienceSection).entries[0].hidden, true);
+  });
+
+  it("ignores anything other than true", () => {
+    const resume = sanitizeResume(saved({ hidden: "yes" }), ctx())!;
+    assert.equal("hidden" in (resume.sections[0] as ExperienceSection).entries[0], false);
+  });
+
+  it("leaves the schema version alone", () => {
+    assert.equal(RESUME_SCHEMA_VERSION, 2);
+  });
+
+  it("skips hidden entries in what templates render, for every kind of list", () => {
+    const resume = sanitizeResume(
+      {
+        id: "r",
+        name: "Saved",
+        sections: [
+          { id: "a", type: "experience", title: "", visible: true, entries: [{ id: "a1", role: "Shown role", company: "", highlights: [] }, { id: "a2", role: "Secret role", company: "", highlights: [], hidden: true }] },
+          { id: "b", type: "languages", title: "", visible: true, entries: [{ id: "b1", name: "Shown language" }, { id: "b2", name: "Secret language", hidden: true }] },
+          { id: "c", type: "certifications", title: "", visible: true, entries: [{ id: "c1", name: "Only one", hidden: true }] },
+        ],
+      },
+      ctx(),
+    )!;
+    const prepared = prepareResume(resume);
+    const text = JSON.stringify(prepared.sections);
+    assert.ok(text.includes("Shown role") && text.includes("Shown language"));
+    assert.ok(!text.includes("Secret"));
+    assert.equal(prepared.sections.some((section) => section.type === "certifications"), false);
   });
 });

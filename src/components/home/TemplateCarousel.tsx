@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useRef, useState } from "react";
 import { focusRing } from "@/components/ui/styles";
 import type { TemplateCategory } from "@/data/templates";
 
@@ -48,16 +48,17 @@ export function TemplateCarousel({ cards, filters }: { cards: CarouselCard[]; fi
     track.scrollTo({ left: item.offsetLeft - track.offsetLeft, behavior: smooth ? "smooth" : "auto" });
   };
 
-  useEffect(() => {
-    trackRef.current?.scrollTo({ left: 0 });
+  const changeFilter = (next: Filter) => {
+    setFilter(next);
     setActive(0);
-  }, [filter]);
+    trackRef.current?.scrollTo({ left: 0 });
+  };
 
   return (
     <div className="mt-10">
       <div role="group" aria-label="Filter templates by category" className="flex flex-wrap gap-2">
         {[{ id: "all" as const, label: "All" }, ...filters].map((option) => (
-          <button key={option.id} type="button" aria-pressed={filter === option.id} onClick={() => setFilter(option.id)} className={chipClass}>
+          <button key={option.id} type="button" aria-pressed={filter === option.id} onClick={() => changeFilter(option.id)} className={chipClass}>
             {option.label}
           </button>
         ))}

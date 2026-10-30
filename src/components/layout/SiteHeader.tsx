@@ -10,14 +10,15 @@ import { mainNav } from "@/data/site";
 import { Logo } from "./Logo";
 
 export function SiteHeader() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+  // The page the menu was opened on, so it closes itself on navigation.
+  const [openedOn, setOpenedOn] = useState<string | null>(null);
+  const menuOpen = openedOn === pathname;
+  const setMenuOpen = (open: boolean) => setOpenedOn(open ? pathname : null);
 
-  // Close the mobile menu on navigation and on Escape.
-  useEffect(() => setMenuOpen(false), [pathname]);
   useEffect(() => {
     if (!menuOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && setMenuOpen(false);
+    const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && setOpenedOn(null);
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [menuOpen]);
@@ -60,7 +61,7 @@ export function SiteHeader() {
             className="-mr-1 inline-flex size-11 items-center justify-center justify-self-end rounded-[14px] text-ink hover:bg-ink/5 md:hidden"
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            onClick={() => setMenuOpen((open) => !open)}
+            onClick={() => setMenuOpen(!menuOpen)}
           >
             <span className="sr-only">{menuOpen ? "Close menu" : "Open menu"}</span>
             {menuOpen ? <X aria-hidden="true" className="size-6" /> : <Menu aria-hidden="true" className="size-6" />}
