@@ -52,7 +52,7 @@ export default function TemplatesPage() {
             ]
               .join(" ")
               .toLowerCase()}
-            className="[contain-intrinsic-size:auto_620px] [content-visibility:auto]"
+            className="[contain-intrinsic-block-size:auto_620px] [content-visibility:auto]"
           >
             <TemplateCard template={template} detailed />
           </li>

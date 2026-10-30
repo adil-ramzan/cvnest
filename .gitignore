@@ -34,3 +34,7 @@ coverage
 Thumbs.db
 *.swp
 .idea
+
+# Compiled unit tests
+.test-build
+.e2e-output

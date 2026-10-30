@@ -41,7 +41,17 @@ Other scripts:
 npm run build      # production build
 npm run start      # serve the production build
 npm run typecheck  # TypeScript check without emitting files
+npm run verify     # typecheck + unit tests + production build
 ```
+
+## Testing
+
+- **Unit tests** (`npm run test:unit`): schema validation, migrations, storage, the render model and the template registry. They use Node's built-in test runner and the project's own TypeScript compiler, with no extra dependencies.
+- **Browser tests** (`npm run build && npm run test:e2e`): `tests/e2e/run.mjs` starts the production build on a free port and runs every `*.test.mjs` suite against it in Chrome via `puppeteer-core`. The suites cover the editor, migration and recovery, all 45 templates, layout at phone to desktop widths, error screens, and PDF export.
+  - Run some suites only: `npm run test:e2e -- layout pdf`.
+  - Chrome is found automatically. Set `CHROME_PATH` to override.
+  - The PDF suite also needs poppler-utils (`pdfinfo`, `pdftotext`, `pdfimages`) and skips itself without them.
+  - Screenshots and PDFs from the last run go to `.e2e-output/`.
 
 ## Project structure
 
@@ -54,6 +64,9 @@ src/
     home/, layout/, templates/, ui/   Public pages and shared UI
   data/                Resume data model, template registry, sample resumes, site config
   lib/                 Storage, schema validation, migrations, photo storage
+tests/
+  unit/                Unit tests (node:test)
+  e2e/                 Browser suites, fixtures and runner
 ```
 
 ### Browser storage keys
@@ -81,11 +94,11 @@ When the resume shape changes, add a step to `src/lib/migrations.ts` and bump `R
 | Free messaging, SEO and CVNest rebrand | Complete |
 | UI/UX, typography and editor redesign | Complete; font, color and spacing controls deferred |
 | Browser-based PDF export | Complete |
+| 5. Stabilisation: tests, mobile gallery fix, error screens | Complete |
 
 ### Known limitations
 
 - PDF export goes through the browser's print dialog, where you choose "Save as PDF"; there's no one-click file download. Safari can't repeat page padding on continuation pages, so it falls back to page margins, which leave thin white bands across sidebar backgrounds.
 - The Contact page has no contact address, and the Privacy and Terms pages are short placeholders.
 - There is no favicon or Open Graph image.
-- There are no automated tests in the repository yet.
 - When two tabs edit at the same time, the last save wins.

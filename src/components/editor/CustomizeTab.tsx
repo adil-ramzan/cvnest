@@ -54,7 +54,7 @@ export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateC
             {shown.map((item) => {
               const selected = item.slug === template;
               return (
-                <label key={item.slug} className="group cursor-pointer [contain-intrinsic-size:auto_280px] [content-visibility:auto]">
+                <label key={item.slug} className="group cursor-pointer [contain-intrinsic-block-size:auto_280px] [content-visibility:auto]">
                   <input
                     type="radio"
                     name="template"
