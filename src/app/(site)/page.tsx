@@ -6,16 +6,17 @@ import { Hero } from "@/components/home/Hero";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { Templates } from "@/components/home/Templates";
 import { ValueProps } from "@/components/home/ValueProps";
-import { site, siteDescription } from "@/data/site";
+import { homeCopy } from "@/data/copy";
+import { site } from "@/data/site";
 import { templates } from "@/data/templates";
 
-const description = siteDescription(templates.length);
+const { title, description } = homeCopy(templates.length, site.name).seo;
 
 export const metadata: Metadata = {
-  title: { absolute: `Free Online Resume Builder | ${site.name}` },
+  title: { absolute: title },
   description,
   alternates: { canonical: "/" },
-  openGraph: { title: `Free Online Resume Builder | ${site.name}`, description, url: "/" },
+  openGraph: { title, description, url: "/" },
 };
 
 export default function HomePage() {

@@ -2,29 +2,32 @@ import { ArrowRight, Check } from "lucide-react";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
-import { getTemplate } from "@/data/templates";
+import { homeCopy } from "@/data/copy";
+import { site } from "@/data/site";
+import { getTemplate, templates } from "@/data/templates";
 
 export function Hero() {
   const template = getTemplate("professional")!;
+  const { hero } = homeCopy(templates.length, site.name);
 
   return (
     <section aria-labelledby="hero-heading">
       <Container className="grid items-center gap-12 py-16 md:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:py-24">
         <div>
-          <p className="text-small font-bold tracking-wide text-muted uppercase">Free resume builder</p>
+          <p className="text-small font-bold tracking-wide text-muted uppercase">{hero.eyebrow}</p>
           <h1 id="hero-heading" className="mt-4 text-display text-balance text-ink">
-            Your story, clearly told
+            {hero.title}
           </h1>
           <p className="mt-6 max-w-xl text-lead text-muted">
-            Fill in your details. Pick a template.
+            {hero.lines[0]}
             <br />
-            Save a PDF when it looks right.
+            {hero.lines[1]}
           </p>
           <ButtonLink href="/editor" size="xl" className="mt-9">
-            Start your resume
+            {hero.action}
             <ArrowRight aria-hidden="true" className="size-5" />
           </ButtonLink>
-          <p className="mt-4 text-base text-muted">No account, no watermark, and your resume stays in your browser.</p>
+          <p className="mt-4 text-base text-muted">{hero.reassurance}</p>
         </div>
 
         <div className="relative mx-auto w-full max-w-md pb-6 lg:max-w-lg">
@@ -33,7 +36,7 @@ export function Hero() {
             <span className="flex size-6 items-center justify-center rounded-full bg-accent-soft text-accent">
               <Check aria-hidden="true" className="size-4" strokeWidth={2.5} />
             </span>
-            ATS-friendly layout
+            {hero.badge}
           </p>
         </div>
       </Container>

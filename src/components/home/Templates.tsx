@@ -3,6 +3,8 @@ import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Section } from "@/components/ui/Section";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { homeCopy } from "@/data/copy";
+import { site } from "@/data/site";
 import { type TemplateCategory, templateCategories, templates } from "@/data/templates";
 import { type CarouselCard, TemplateCarousel } from "./TemplateCarousel";
 
@@ -11,6 +13,7 @@ const CARDS_FOR_ALL = 3;
 const filters: TemplateCategory[] = ["simple", "modern", "creative"];
 
 export function Templates() {
+  const copy = homeCopy(templates.length, site.name).templates;
   const cards: CarouselCard[] = filters.flatMap((category) =>
     templates
       .filter((template) => template.category === category)
@@ -37,9 +40,9 @@ export function Templates() {
     <Section id="templates" labelledBy="templates-heading">
       <SectionHeading
         id="templates-heading"
-        eyebrow="Templates"
-        title={`${templates.length} designs, all of them free`}
-        description="Start from a calm single column or something with more character. You can change your mind at any point."
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+        description={copy.description}
       />
       <TemplateCarousel
         cards={cards}
@@ -47,7 +50,7 @@ export function Templates() {
       />
       <div className="mt-10">
         <ButtonLink href="/templates" variant="secondary" size="lg">
-          View all templates
+          {copy.action}
         </ButtonLink>
       </div>
     </Section>

@@ -1,21 +1,22 @@
 import { BadgeCheck, LockKeyhole, ScanText } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { FeatureCard } from "@/components/ui/FeatureCard";
+import { homeCopy } from "@/data/copy";
+import { site } from "@/data/site";
+import { templates } from "@/data/templates";
 
-const values = [
-  { icon: BadgeCheck, title: "Free to use", description: "Every template and the PDF export cost nothing." },
-  { icon: LockKeyhole, title: "Private by default", description: "Your resume is saved in your browser, not on our servers." },
-  { icon: ScanText, title: "ATS-friendly layouts", description: "Single-column templates use standard headings and real text." },
-];
+const icons = [BadgeCheck, LockKeyhole, ScanText];
 
 export function ValueProps() {
+  const { values } = homeCopy(templates.length, site.name);
+
   return (
-    <section aria-label="Why use this builder">
+    <section aria-label={values.label}>
       <Container>
         <ul className="grid gap-5 md:grid-cols-3">
-          {values.map((value) => (
+          {values.items.map((value, index) => (
             <li key={value.title}>
-              <FeatureCard {...value} />
+              <FeatureCard icon={icons[index]} {...value} />
             </li>
           ))}
         </ul>
