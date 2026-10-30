@@ -14,6 +14,7 @@ Production domain: https://getcvnest.com
 - **Optional profile photo**, resized in the browser.
 - **Private by design.** Resumes autosave to `localStorage` and photos to IndexedDB. Nothing is uploaded and no account is needed. Edits sync across open tabs.
 - **Safe data migration** from the earlier storage format, with the original data kept as a backup.
+- **PDF export** for every template on Letter or A4 pages. It uses the browser's own print engine ("Save as PDF"), so the PDF has selectable text, embedded fonts and correct page breaks, and it is created on your device.
 
 ## Tech stack
 
@@ -79,11 +80,11 @@ When the resume shape changes, add a step to `src/lib/migrations.ts` and bump `R
 | 3. Unified data model and safe migration | Complete |
 | Free messaging, SEO and CVNest rebrand | Complete |
 | UI/UX, typography and editor redesign | Complete; font, color and spacing controls deferred |
-| **Next:** PDF export | Not started |
+| Browser-based PDF export | Complete |
 
 ### Known limitations
 
-- PDF export is not available yet; the editor's Download button is marked "Soon".
+- PDF export goes through the browser's print dialog, where you choose "Save as PDF"; there's no one-click file download. Safari can't repeat page padding on continuation pages, so it falls back to page margins, which leave thin white bands across sidebar backgrounds.
 - The Contact page has no contact address, and the Privacy and Terms pages are short placeholders.
 - There is no favicon or Open Graph image.
 - There are no automated tests in the repository yet.

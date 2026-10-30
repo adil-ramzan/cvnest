@@ -213,7 +213,7 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
   switch (placement) {
     case "right":
       return (
-        <div className="break-inside-avoid">
+        <div>
           <div className="flex items-baseline justify-between gap-4">
             {title || subtitle}
             {dates}
@@ -662,7 +662,17 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   return (
     <article className={`relative flex min-w-0 flex-col ${C.bodyFont} ${C.ink}`} style={vars}>
       {design.stripe === "top" && <div aria-hidden="true" className={`h-2 shrink-0 ${C.bgAccent}`} />}
-      {design.stripe === "left" && <div aria-hidden="true" className={`absolute inset-y-0 left-0 w-2 ${C.bgAccent}`} />}
+      {design.stripe === "left" && (
+        <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 left-0 w-2 ${C.bgAccent}`} />
+      )}
+      {design.layout === "sidebar" && design.side?.bg && (
+        // Print only: repeats the sidebar color down every PDF page.
+        <div
+          aria-hidden="true"
+          className="print-sidebar-bg"
+          style={{ backgroundColor: design.side.bg, width, [sideLeft ? "left" : "right"]: 0 }}
+        />
+      )}
       {design.header === "banner" && <Banner t={t} showContact={!contactInSide} />}
       {body}
     </article>

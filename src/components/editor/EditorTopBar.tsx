@@ -6,6 +6,7 @@ import { type KeyboardEvent, useRef } from "react";
 import { getTemplate } from "@/data/templates";
 import { site } from "@/data/site";
 import type { Resume } from "@/data/resume";
+import { buttonClass } from "@/components/ui/styles";
 import { Menu, type MenuItem } from "./Menu";
 import type { SaveStatus } from "./useResumeStore";
 
@@ -31,6 +32,9 @@ type EditorTopBarProps = {
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onDownload: () => void;
+  /** True while the PDF is being prepared or the print dialog is open. */
+  downloading: boolean;
 };
 
 const statusContent: Record<SaveStatus, { icon: typeof HardDrive; text: string; detail: string; className: string }> = {
@@ -129,6 +133,8 @@ export function EditorTopBar({
   onRename,
   onDuplicate,
   onDelete,
+  onDownload,
+  downloading,
 }: EditorTopBarProps) {
   const resumeItems: MenuItem[] = [
     ...[...resumes]
@@ -189,13 +195,19 @@ export function EditorTopBar({
           <SaveIndicator status={saveStatus} />
           <button
             type="button"
-            disabled
-            title="PDF download is coming soon"
-            className="ml-1 inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-lg bg-ink/80 px-3.5 text-sm font-medium text-white opacity-60"
+            onClick={onDownload}
+            disabled={downloading}
+            aria-busy={downloading}
+            title="Download your resume as a PDF"
+            className={buttonClass("primary", "sm", "ml-1 disabled:cursor-progress disabled:opacity-70")}
           >
-            <Download aria-hidden="true" className="size-4" />
-            <span className="hidden sm:inline">Download</span>
-            <span className="rounded bg-white/20 px-1.5 py-0.5 text-xs leading-none">Soon</span>
+            {downloading ? (
+              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            ) : (
+              <Download aria-hidden="true" className="size-4" />
+            )}
+            <span className="sm:hidden">PDF</span>
+            <span className="hidden sm:inline">{downloading ? "Preparing PDF…" : "Download PDF"}</span>
           </button>
           <Menu
             label="More actions"

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Eye, PencilLine, X } from "lucide-react";
+import { AlertTriangle, Eye, Loader2, PencilLine, X } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import type { TemplateSlug } from "@/data/templates";
 import { ContentTab } from "./content/ContentTab";
@@ -11,6 +11,7 @@ import { type EditorTab, EditorTopBar, tabId, tabPanelId } from "./EditorTopBar"
 import { OverviewTab } from "./OverviewTab";
 import { PreviewPanel } from "./PreviewPanel";
 import { PrivacyNote } from "./PrivacyNote";
+import { usePdfExport } from "./usePdfExport";
 import { usePhotoUrl } from "./usePhotoUrl";
 import { useResumeStore } from "./useResumeStore";
 
@@ -27,6 +28,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
   const { activeResume: active } = store;
   const photoUrl = usePhotoUrl(active?.profile.photo);
+  const pdf = usePdfExport();
   const dialogResume = dialog ? store.resumes.find((r) => r.id === dialog.id) : undefined;
 
   useEffect(() => {
@@ -91,6 +93,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         onRename={() => openRename(active.id)}
         onDuplicate={() => store.duplicateResume(active.id)}
         onDelete={() => setDialog({ type: "delete", id: active.id })}
+        onDownload={() => pdf.start(active, photoUrl)}
+        downloading={pdf.status === "preparing"}
       />
 
       <main id="main" className="flex min-h-0 flex-1">
@@ -197,6 +201,41 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           ))}
         </div>
       </div>
+
+      {pdf.status !== "idle" && (
+        <div
+          role={pdf.status === "error" ? "alert" : "status"}
+          className={`fixed right-4 bottom-20 left-4 z-40 flex items-start gap-3 rounded-xl border p-4 text-sm shadow-pop sm:left-auto sm:w-96 lg:bottom-6 ${
+            pdf.status === "preparing" ? "border-line bg-surface text-ink" : "border-[#fedf89] bg-[#fffaeb] text-[#93370d]"
+          }`}
+        >
+          {pdf.status === "preparing" ? (
+            <Loader2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 animate-spin text-accent" />
+          ) : (
+            <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          )}
+          <div className="min-w-0 flex-1">
+            {pdf.status === "preparing" ? (
+              <>
+                <p className="font-medium">Preparing your PDF…</p>
+                <p className="mt-1 text-muted">
+                  When the print window opens, choose <strong className="font-medium text-ink">Save as PDF</strong> as the
+                  destination. File name: <span className="break-all">{pdf.fileName}</span>
+                </p>
+                {pdf.message && <p className="mt-1">{pdf.message}</p>}
+              </>
+            ) : (
+              <p>{pdf.message}</p>
+            )}
+          </div>
+          {pdf.status !== "preparing" && (
+            <button type="button" onClick={pdf.dismiss} aria-label="Dismiss message" className="rounded p-0.5 hover:bg-black/5">
+              <X aria-hidden="true" className="size-4" />
+            </button>
+          )}
+        </div>
+      )}
+      {pdf.printView}
 
       <Dialog
         open={dialog?.type === "rename" && !!dialogResume}

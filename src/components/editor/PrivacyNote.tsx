@@ -36,7 +36,7 @@ export function PrivacyDetails() {
           Browser storage is not encrypted. Anyone with access to this browser profile could read it, so avoid editing
           on shared or public computers.
         </li>
-        <li>When PDF export becomes available, download a copy of your resume to keep your own backup.</li>
+        <li>Download a PDF of your resume from time to time so you always have your own copy.</li>
       </ul>
     </div>
   );

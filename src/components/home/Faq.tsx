@@ -11,7 +11,7 @@ const faqs = [
   {
     question: "Can I download my resume as PDF?",
     answer:
-      "Not yet. PDF export is still being built. For now you can create, edit and preview your resume in your browser, and your work is saved there as you go.",
+      "Yes. Choose Download PDF in the editor, then pick Save as PDF in your browser's print window. The PDF is created on your device, keeps your template's layout and has selectable text.",
   },
   {
     question: "Can I change templates?",

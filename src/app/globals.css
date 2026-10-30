@@ -153,3 +153,110 @@ body {
     rgb(0 0 0 / 0.14) var(--page-height)
   );
 }
+
+/*
+  PDF export. The editor mounts a print-only copy of the resume in .print-root
+  and opens the browser's print dialog, whose "Save as PDF" produces a vector
+  PDF with selectable text. Page size and margins are set by an @page rule the
+  export injects. Nothing here affects the screen.
+*/
+
+/* Print-only helpers rendered by templates (repeating sidebar backgrounds, edge stripes). */
+.print-root,
+.print-sidebar-bg {
+  display: none;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body {
+    display: block !important;
+  }
+
+  body > :not(.print-root) {
+    display: none !important;
+  }
+
+  .print-root {
+    display: block;
+    width: 100%;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /*
+    Print the page at true size: 1u = 16px at full page width for both Letter
+    (816px) and A4 (794px). Dropping container sizing also lets fixed-position
+    helpers repeat on every printed page.
+  */
+  .print-root .resume-paper {
+    container-type: normal;
+    --u: 16px;
+    background: transparent;
+  }
+
+  .print-root .resume-page {
+    --page-height: 1056px;
+    min-height: calc(var(--page-height) - 2px);
+    background-image: none;
+  }
+
+  .print-root .resume-paper--a4 .resume-page {
+    --page-height: 1122.5px;
+  }
+
+  /* Repeat each element's padding on every page it spans, so continuation pages get top and bottom margins. */
+  .print-root * {
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* Keep lines whole and headings with the content that follows them. */
+  .print-root :is(li, p, h1, h2, h3, img) {
+    break-inside: avoid;
+  }
+
+  .print-root :is(h1, h2, h3) {
+    break-after: avoid;
+  }
+
+  /* Keep an entry's title row, subtitle and first bullet together; longer entries may continue on the next page. */
+  .print-root :is(.flex:has(> h3), h3 + p) {
+    break-after: avoid;
+  }
+
+  /*
+    Break hints on grid cells apply to their whole grid row in Chrome, which
+    would make label-column and timeline sections unbreakable. Leave those
+    cells to the browser's defaults.
+  */
+  .print-root .grid > h2 {
+    break-inside: auto;
+    break-after: auto;
+  }
+
+  .print-root ul {
+    break-before: avoid;
+  }
+
+  /* Sidebar backgrounds and edge stripes fill the full height of every page. */
+  .print-root .print-sidebar-bg {
+    display: block;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    z-index: -1;
+  }
+
+  .print-root .print-fixed-edge {
+    position: fixed;
+  }
+}

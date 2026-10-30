@@ -109,6 +109,8 @@ export function ModernTemplate({ resume }: { resume: PreparedResume }) {
 
   return (
     <article className="grid grid-cols-[34%_1fr] font-sans text-[#25292e]">
+      {/* Print only: repeats the sidebar color down every PDF page. */}
+      <div aria-hidden="true" className="print-sidebar-bg left-0 w-[34%] bg-[#eef4f2]" />
       <aside className="bg-[#eef4f2] px-8 py-12">
         <div className="flex size-20 items-center justify-center rounded-full bg-[#2c6e66] text-2xl font-semibold text-white">
           {resume.initials}
