@@ -130,7 +130,7 @@ for (const id of ["empty", "long"]) {
   for (const slug of slugs) {
     await page.select("select", slug);
     const t = await previewText();
-    if (id === "empty" && !t.includes("Your Name")) bad.push(slug);
+    if (id === "empty" && !t.includes("Load sample data")) bad.push(slug);
     if ((await overflow()) > 1) bad.push(slug + "(overflow)");
   }
   if (id === "long") await page.screenshot({ path: `${OUT}/p3-long.png` });
