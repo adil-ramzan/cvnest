@@ -14,9 +14,10 @@ type TemplateGalleryProps = {
   categories: GalleryCategory[];
   items: GalleryTemplate[];
   eager: Record<string, ReactNode>;
+  total: number;
 };
 
-export function TemplateGallery({ categories, items, eager }: TemplateGalleryProps) {
+export function TemplateGallery({ categories, items, eager, total }: TemplateGalleryProps) {
   const searchId = useId();
   const [query, setQuery] = useState("");
   const [previewing, setPreviewing] = useState<GalleryTemplate | null>(null);
@@ -53,7 +54,7 @@ export function TemplateGallery({ categories, items, eager }: TemplateGalleryPro
       {searching ? (
         <Container className="pt-8 pb-16 md:pb-24">
           <p role="status" className="text-small text-muted">
-            {matches.length} {matches.length === 1 ? "template" : "templates"} found
+            {matches.length} of {total} templates
           </p>
           {matches.length > 0 ? (
             <ul className="mt-6 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">

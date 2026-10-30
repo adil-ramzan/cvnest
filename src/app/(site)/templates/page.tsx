@@ -6,15 +6,17 @@ import type { GalleryTemplate } from "@/components/templates/gallery";
 import { TemplateGallery } from "@/components/templates/TemplateGallery";
 import { Container } from "@/components/ui/Container";
 import { site } from "@/data/site";
+import { TEMPLATE_COUNT } from "@/data/template-count";
 import { getCategory, templateCategories, templates } from "@/data/templates";
 
-const description = `Browse ${templates.length} free resume templates, from free ATS-friendly single-column designs to modern, creative, photo and executive layouts. Customize any of them online without an account.`;
+const title = `${TEMPLATE_COUNT} Free Resume Templates`;
+const description = `Browse ${TEMPLATE_COUNT} free resume templates, from clean single-column designs to modern, creative, photo and executive layouts. Customize any of them online without an account.`;
 
 export const metadata: Metadata = {
-  title: "Free Resume Templates",
+  title,
   description,
   alternates: { canonical: "/templates" },
-  openGraph: { title: `Free Resume Templates | ${site.name}`, description, url: "/templates" },
+  openGraph: { title: `${title} | ${site.name}`, description, url: "/templates" },
 };
 
 /** Cards in view on load are rendered here, so the first thumbnails don't wait for JavaScript. */
@@ -65,7 +67,7 @@ export default function TemplatesPage() {
             </li>
           </ol>
         </nav>
-        <h1 className="mt-5 text-display text-balance text-ink">Resume templates</h1>
+        <h1 className="mt-5 text-display text-balance text-ink">{TEMPLATE_COUNT} free resume templates</h1>
         <p className="mt-5 max-w-xl text-lead text-muted">
           Pick a design and make it yours.
           <br />
@@ -73,7 +75,7 @@ export default function TemplatesPage() {
         </p>
         <p className="mt-5 text-small text-ink-soft">Free to use · No watermark · No account needed</p>
       </Container>
-      <TemplateGallery categories={categories} items={items} eager={eager} />
+      <TemplateGallery categories={categories} items={items} eager={eager} total={TEMPLATE_COUNT} />
     </>
   );
 }
