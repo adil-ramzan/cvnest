@@ -2,11 +2,14 @@
  * All home page wording, in one place. Strings marked ACCOUNTS depend on "no
  * account" or "browser-only storage" and must change if accounts are added.
  */
-export const homeCopy = (templateCount: number, siteName: string) => ({
+import { site } from "./site";
+import { TEMPLATE_COUNT } from "./template-count";
+
+export const homeCopy = {
   seo: {
-    title: `Free Online Resume Builder | ${siteName}`,
+    title: `Free Online Resume Builder | ${site.name}`,
     // ACCOUNTS
-    description: `Create a professional resume for free with ${templateCount} customizable resume templates. Edit your resume online, keep your data private and get started without an account.`,
+    description: `Create a professional resume for free with ${TEMPLATE_COUNT} customizable resume templates. Edit your resume online, keep your data private and get started without an account.`,
   },
   hero: {
     eyebrow: "Free resume builder",
@@ -43,7 +46,7 @@ export const homeCopy = (templateCount: number, siteName: string) => ({
   },
   templates: {
     eyebrow: "Templates",
-    title: `${templateCount} designs, all of them free`,
+    title: `${TEMPLATE_COUNT} designs, all of them free`,
     description: "Start from a calm single column or something with more character. You can change your mind at any point.",
     action: "View all templates",
   },
@@ -52,7 +55,7 @@ export const homeCopy = (templateCount: number, siteName: string) => ({
     title: "The parts that matter, and nothing extra",
     items: [
       { title: "Live preview", description: "Your page updates beside the form as you type." },
-      { title: `${templateCount} templates`, description: "Simple, modern, creative, photo, compact, first-job and executive designs." },
+      { title: `${TEMPLATE_COUNT} templates`, description: "Simple, modern, creative, photo, compact, first-job and executive designs." },
       { title: "Your section order", description: "Rename, hide and reorder sections to suit your story." },
       { title: "Several resumes", description: "Keep a version for each kind of job, and duplicate one to start the next." },
       { title: "Hide, don’t delete", description: "Take an entry off the page and keep it saved for later." },
@@ -74,7 +77,7 @@ export const homeCopy = (templateCount: number, siteName: string) => ({
     items: [
       {
         question: "Is the resume builder free?",
-        answer: `Yes. All ${templateCount} templates, editing, customization, autosave and PDF export are free, with no subscription, hidden fees or watermark.`,
+        answer: `Yes. All ${TEMPLATE_COUNT} templates, editing, customization, autosave and PDF export are free, with no subscription, hidden fees or watermark.`,
       },
       {
         question: "Can I download my resume as PDF?",
@@ -119,5 +122,5 @@ export const homeCopy = (templateCount: number, siteName: string) => ({
     action: "Start your resume",
   },
   // ACCOUNTS
-  footer: `${siteName} is a free online resume builder with ${templateCount} templates, no watermarks and no account to create.`,
-});
+  footer: `${site.name} is a free online resume builder with ${TEMPLATE_COUNT} templates, no watermarks and no account to create.`,
+};

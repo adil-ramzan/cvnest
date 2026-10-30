@@ -1,15 +1,13 @@
 import { Section } from "@/components/ui/Section";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { homeCopy } from "@/data/copy";
-import { site } from "@/data/site";
-import { templates } from "@/data/templates";
 import { StepRow } from "./StepRow";
 import { DetailsCard, LayoutCard, SaveCard } from "./StepVisuals";
 
 const visuals = [<DetailsCard key="details" />, <LayoutCard key="layout" />, <SaveCard key="save" />];
 
 export function HowItWorks() {
-  const { steps } = homeCopy(templates.length, site.name);
+  const { steps } = homeCopy;
 
   return (
     <Section id="how-it-works" labelledBy="how-heading">

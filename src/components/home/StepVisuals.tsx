@@ -1,7 +1,7 @@
 import { Check, FileDown } from "lucide-react";
 import { homeCopy } from "@/data/copy";
 
-const { details, layout, save } = homeCopy(0, "").steps.visuals;
+const { details, layout, save } = homeCopy.steps.visuals;
 
 const card = "rounded-[20px] bg-surface p-5 shadow-soft sm:p-6";
 

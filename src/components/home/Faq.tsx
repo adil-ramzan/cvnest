@@ -1,12 +1,10 @@
 import { Section } from "@/components/ui/Section";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { homeCopy } from "@/data/copy";
-import { site } from "@/data/site";
-import { templates } from "@/data/templates";
 import { FaqItem } from "./FaqItem";
 
 export function Faq() {
-  const { faq } = homeCopy(templates.length, site.name);
+  const { faq } = homeCopy;
 
   return (
     <Section labelledBy="faq-heading">

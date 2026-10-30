@@ -2,13 +2,11 @@ import { BadgeCheck, LockKeyhole, ScanText } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { FeatureCard } from "@/components/ui/FeatureCard";
 import { homeCopy } from "@/data/copy";
-import { site } from "@/data/site";
-import { templates } from "@/data/templates";
 
 const icons = [BadgeCheck, LockKeyhole, ScanText];
 
 export function ValueProps() {
-  const { values } = homeCopy(templates.length, site.name);
+  const { values } = homeCopy;
 
   return (
     <section aria-label={values.label}>

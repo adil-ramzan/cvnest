@@ -4,7 +4,6 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Section } from "@/components/ui/Section";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { homeCopy } from "@/data/copy";
-import { site } from "@/data/site";
 import { type TemplateCategory, templateCategories, templates } from "@/data/templates";
 import { type CarouselCard, TemplateCarousel } from "./TemplateCarousel";
 
@@ -13,7 +12,7 @@ const CARDS_FOR_ALL = 3;
 const filters: TemplateCategory[] = ["simple", "modern", "creative"];
 
 export function Templates() {
-  const copy = homeCopy(templates.length, site.name).templates;
+  const copy = homeCopy.templates;
   const cards: CarouselCard[] = filters.flatMap((category) =>
     templates
       .filter((template) => template.category === category)

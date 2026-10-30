@@ -7,10 +7,8 @@ import { HowItWorks } from "@/components/home/HowItWorks";
 import { Templates } from "@/components/home/Templates";
 import { ValueProps } from "@/components/home/ValueProps";
 import { homeCopy } from "@/data/copy";
-import { site } from "@/data/site";
-import { templates } from "@/data/templates";
 
-const { title, description } = homeCopy(templates.length, site.name).seo;
+const { title, description } = homeCopy.seo;
 
 export const metadata: Metadata = {
   title: { absolute: title },

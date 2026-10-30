@@ -17,14 +17,12 @@ import { FeatureCard } from "@/components/ui/FeatureCard";
 import { Section } from "@/components/ui/Section";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { homeCopy } from "@/data/copy";
-import { site } from "@/data/site";
-import { templates } from "@/data/templates";
 
 /** In the same order as the feature list in copy.ts. */
 const icons: LucideIcon[] = [Eye, LayoutTemplate, ListOrdered, CopyPlus, EyeOff, PanelTop, ImageIcon, Sparkles, ArchiveRestore, FileText, UserRoundCheck, ShieldCheck];
 
 export function Features() {
-  const { features } = homeCopy(templates.length, site.name);
+  const { features } = homeCopy;
 
   return (
     <Section labelledBy="features-heading">

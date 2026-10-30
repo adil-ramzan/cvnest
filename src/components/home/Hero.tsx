@@ -3,12 +3,11 @@ import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
 import { homeCopy } from "@/data/copy";
-import { site } from "@/data/site";
-import { getTemplate, templates } from "@/data/templates";
+import { getTemplate } from "@/data/templates";
 
 export function Hero() {
   const template = getTemplate("professional")!;
-  const { hero } = homeCopy(templates.length, site.name);
+  const { hero } = homeCopy;
 
   return (
     <section aria-labelledby="hero-heading">

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { homeCopy } from "@/data/copy";
 import { footerNav, site } from "@/data/site";
-import { templates } from "@/data/templates";
 import { Logo } from "./Logo";
 
 export function SiteFooter() {
@@ -15,7 +14,7 @@ export function SiteFooter() {
           <div className="max-w-sm">
             <Logo />
             <p className="mt-4 text-base leading-relaxed text-muted">
-              {homeCopy(templates.length, site.name).footer}
+              {homeCopy.footer}
             </p>
           </div>
           <nav aria-label="Footer" className="grid grid-cols-2 gap-8 sm:grid-cols-3">

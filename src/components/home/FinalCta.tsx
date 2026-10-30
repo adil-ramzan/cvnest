@@ -2,11 +2,9 @@ import { ArrowRight } from "lucide-react";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
 import { homeCopy } from "@/data/copy";
-import { site } from "@/data/site";
-import { templates } from "@/data/templates";
 
 export function FinalCta() {
-  const { cta } = homeCopy(templates.length, site.name);
+  const { cta } = homeCopy;
 
   return (
     <section aria-labelledby="cta-heading" className="pb-16 md:pb-24 lg:pb-32">
