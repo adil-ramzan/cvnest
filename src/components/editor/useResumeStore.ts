@@ -15,7 +15,7 @@ import {
 } from "@/lib/resume-storage";
 import { createResume, defaultPageSize, duplicateResume, isResumeEmpty } from "@/lib/resumes";
 
-export type SaveStatus = "saved" | "saving" | "error" | "unavailable";
+export type SaveStatus = "saved" | "saving" | "error" | "unavailable" | "blocked";
 
 const AUTOSAVE_DELAY = 400;
 
@@ -73,6 +73,11 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     setZoom(settings.zoom);
     setRecovered(result.recovered);
     if (!result.available) setSaveStatus("unavailable");
+    if (result.newerData) {
+      // Never write over data this version can't fully read.
+      storageAvailable.current = false;
+      setSaveStatus("blocked");
+    }
 
     // Remove photos no resume uses any more (kept for a day in case another tab is mid-save).
     deleteUnusedPhotos(photoIds(list)).catch(() => {});
@@ -150,7 +155,12 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== RESUMES_STORAGE_KEY) return;
-      const { resumes: incoming } = parseResumes(event.newValue);
+      const { resumes: incoming, newerData } = parseResumes(event.newValue);
+      if (newerData) {
+        storageAvailable.current = false;
+        setSaveStatus("blocked");
+        return;
+      }
       const next = incoming.length > 0 ? incoming : [createResume(undefined, defaultPageSize())];
       skipNextSave.current = incoming.length > 0;
       setResumes(next);

@@ -104,10 +104,19 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   const good = { schemaVersion: 2, id: "dup", name: "A", createdAt: 5, updatedAt: 6, profile: { fullName: "Partial Pat" }, sections: [{ id: "s1", type: "experience", title: "Work", visible: true, entries: [{ id: "e1", role: "Dev" }, { id: "e1", role: "Dup entry" }] }, { id: "s2", type: "bogus" }], design: { templateId: "no-such-template" } };
   const dupe = { ...good, name: "B" };
   const future = { schemaVersion: 99, id: "future", name: "From the future" };
-  await seed(page, { "folio.resumes.v2": JSON.stringify({ schemaVersion: 2, resumes: [good, dupe, future, "garbage", null] }), "folio.editor-settings": JSON.stringify({ activeResumeId: "dup", zoom: "fit" }) });
+  const newerData = JSON.stringify({ schemaVersion: 2, resumes: [good, dupe, future] });
+  await seed(page, { "folio.resumes.v2": newerData, "folio.editor-settings": JSON.stringify({ activeResumeId: "dup", zoom: "fit" }) });
   await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
   await page.waitForSelector("select");
-  check("Loading alone does not rewrite stored data", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2"))).includes("From the future"));
+  await openProfile(page);
+  await page.locator("::-p-aria(Job title)").fill("Edited");
+  await sleep(800);
+  check("Data from a newer version is never overwritten", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2"))) === newerData);
+  check("Newer data shows a warning with a copy option", await page.$eval("[role=tabpanel]", (el) => el.innerText.includes("Saved by a newer version") && el.innerText.includes("Download a copy")));
+  await seed(page, { "folio.resumes.v2": JSON.stringify({ schemaVersion: 2, resumes: [good, dupe, "garbage", null] }), "folio.editor-settings": JSON.stringify({ activeResumeId: "dup", zoom: "fit" }) });
+  await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
+  await page.waitForSelector("select");
+  check("Loading alone does not rewrite stored data", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2"))).includes("garbage"));
   await openProfile(page);
   await page.locator("::-p-aria(Job title)").fill("Edited");
   await sleep(800);
@@ -118,7 +127,7 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   check("Duplicate entry ids replaced", ents[0] === "e1" && ents[1] !== "e1");
   check("Unknown section type dropped, missing fields filled", d.resumes[0].sections.length === 1 && d.resumes[0].profile.email === "" && d.resumes[0].sections[0].title === "Work");
   check("Unknown template falls back to Professional", (await page.$eval("select", (s) => s.value)) === "professional");
-  check("Newer-schema data preserved in backup", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2.unreadable-backup"))).includes("From the future"));
+  check("Unreadable data preserved in backup", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2.unreadable-backup"))).includes("garbage"));
   check("Missing optional fields render", (await preview(page)).includes("Partial Pat") && (await preview(page)).includes("Dup entry"));
   await ctx.close();
 }

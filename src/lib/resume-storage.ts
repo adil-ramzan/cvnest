@@ -46,9 +46,11 @@ export type LoadResult = {
   migratedFrom: number | null;
   /** False when migrated data could not be written yet (it is kept in memory and saved on the next change). */
   persisted: boolean;
+  /** Stored data came from a newer version of the app, so this version must not write over it. */
+  newerData?: boolean;
 };
 
-type ParseResult = { resumes: Resume[]; recovered: boolean; oldestVersion: number };
+type ParseResult = { resumes: Resume[]; recovered: boolean; oldestVersion: number; newerData: boolean };
 
 function getStorage(): Storage | null {
   try {
@@ -76,7 +78,7 @@ function trySet(storage: Storage, key: string, value: string): boolean {
  * current schema in memory. Exported so cross-tab `storage` events can reuse it.
  */
 export function parseResumes(raw: string | null): ParseResult {
-  const empty = { resumes: [], recovered: false, oldestVersion: RESUME_SCHEMA_VERSION };
+  const empty = { resumes: [], recovered: false, oldestVersion: RESUME_SCHEMA_VERSION, newerData: false };
   if (raw === null) return empty;
 
   let parsed: unknown;
@@ -91,6 +93,10 @@ export function parseResumes(raw: string | null): ParseResult {
     typeof parsed === "object" && parsed !== null && "resumes" in parsed ? (parsed as { resumes: unknown }).resumes : parsed;
   if (!Array.isArray(items)) return { ...empty, recovered: true };
 
+  const isNewer = (value: unknown) =>
+    typeof value === "object" && value !== null && "schemaVersion" in value && Number(value.schemaVersion) > RESUME_SCHEMA_VERSION;
+  const newerData = isNewer(parsed) || items.some(isNewer);
+
   const ids = { seen: new Set<string>(), makeId: createId };
   const resumes: Resume[] = [];
   let oldestVersion = RESUME_SCHEMA_VERSION;
@@ -101,7 +107,7 @@ export function parseResumes(raw: string | null): ParseResult {
     oldestVersion = Math.min(oldestVersion, migrated.fromVersion);
     resumes.push(withKnownTemplate(resume));
   }
-  return { resumes, recovered: resumes.length !== items.length, oldestVersion };
+  return { resumes, recovered: resumes.length !== items.length, oldestVersion, newerData };
 }
 
 const serialize = (resumes: Resume[]) => JSON.stringify({ schemaVersion: RESUME_SCHEMA_VERSION, resumes });
@@ -133,6 +139,7 @@ export function loadResumes(): LoadResult {
     if (raw !== null) {
       const result = parseResumes(raw);
       if (result.recovered) trySet(storage, UNREADABLE_BACKUP_KEY, raw);
+      if (result.newerData) return { resumes: result.resumes, recovered: false, available: true, migratedFrom: null, persisted: true, newerData: true };
 
       // In-place upgrade of the current key (future schema versions): back up first, then write.
       if (result.oldestVersion < RESUME_SCHEMA_VERSION) {
@@ -179,6 +186,15 @@ export function loadResumes(): LoadResult {
     return { resumes: result.resumes, available: true, recovered: result.recovered, migratedFrom: 1, persisted };
   } catch {
     return { resumes: [], available: false, recovered: false, migratedFrom: null, persisted: false };
+  }
+}
+
+/** The stored text exactly as it is, for saving a copy. */
+export function readRawResumes(): string {
+  try {
+    return window.localStorage.getItem(RESUMES_KEY) ?? "";
+  } catch {
+    return "";
   }
 }
 

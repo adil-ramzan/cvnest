@@ -7,7 +7,7 @@ import { site } from "@/data/site";
 import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
 import { backupFileName, createBackup, downloadTextFile, MAX_BACKUP_BYTES, readBackup } from "@/lib/backup";
 import { findOverLimits } from "@/lib/resume-limits";
-import { type BackupState, loadBackupState, saveBackupState } from "@/lib/resume-storage";
+import { type BackupState, loadBackupState, readRawResumes, saveBackupState } from "@/lib/resume-storage";
 import { duplicateResume, isResumeEmpty } from "@/lib/resumes";
 import { ContentTab } from "./content/ContentTab";
 import { buttonClass } from "@/components/ui/styles";
@@ -176,6 +176,20 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                   changes will be lost when you close this tab.
                 </p>
               </div>
+            )}
+
+            {store.saveStatus === "blocked" && (
+              <Notice
+                tone="warning"
+                title="Saved by a newer version of this site"
+                actions={
+                  <button type="button" onClick={() => downloadTextFile(`${site.name}-saved-data.json`, readRawResumes())} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
+                    Download a copy
+                  </button>
+                }
+              >
+                To protect your resumes, nothing will be saved here until you reload to get the latest version. Changes in this tab will be lost.
+              </Notice>
             )}
 
             {overLimits.length > 0 && (

@@ -66,6 +66,12 @@ const statusContent: Record<SaveStatus, { icon: typeof HardDrive; text: string; 
     detail: "Browser storage is blocked or disabled, so changes will be lost when you close this tab.",
     className: "text-[#b54708]",
   },
+  blocked: {
+    icon: AlertTriangle,
+    text: "Not saving",
+    detail: "These resumes were saved by a newer version of this site, so this version won't write over them.",
+    className: "text-[#b54708]",
+  },
 };
 
 function SaveIndicator({ status }: { status: SaveStatus }) {
