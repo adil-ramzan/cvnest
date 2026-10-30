@@ -52,8 +52,10 @@ const browser = await launch();
   await page.setViewport({ width: 1280, height: 900 });
   page.on("pageerror", () => {});
   await page.evaluateOnNewDocument(() => {
-    CSS.escape = () => {
-      throw new Error("Simulated page failure");
+    window.IntersectionObserver = class {
+      constructor() {
+        throw new Error("Simulated page failure");
+      }
     };
   });
   await page.goto(`${BASE}/templates`, { waitUntil: "networkidle0" });

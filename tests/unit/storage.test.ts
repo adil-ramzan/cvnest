@@ -93,10 +93,20 @@ describe("loadResumes: damaged or partial current data", () => {
 
   it("keeps valid resumes and skips invalid ones", () => {
     const good = { ...createResume("classic"), id: "good" };
-    storage.setItem("folio.resumes.v2", JSON.stringify({ schemaVersion: 2, resumes: [good, "junk", null, { schemaVersion: 99 }] }));
+    storage.setItem("folio.resumes.v2", JSON.stringify({ schemaVersion: 2, resumes: [good, "junk", null] }));
     const result = loadResumes();
     assert.equal(result.recovered, true);
     assert.deepEqual(result.resumes.map((r) => r.id), ["good"]);
+  });
+
+  it("flags data from a newer version so it is never overwritten", () => {
+    const good = { ...createResume("classic"), id: "good" };
+    const raw = JSON.stringify({ schemaVersion: 2, resumes: [good, { schemaVersion: 99 }] });
+    storage.setItem("folio.resumes.v2", raw);
+    const result = loadResumes();
+    assert.equal(result.newerData, true);
+    assert.deepEqual(result.resumes.map((r) => r.id), ["good"]);
+    assert.equal(storage.getItem("folio.resumes.v2"), raw);
   });
 
   it("falls back to the default template when a stored template no longer exists", () => {
