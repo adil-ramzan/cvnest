@@ -90,7 +90,7 @@ async function imagesReady(root: HTMLElement): Promise<boolean> {
   return results.every(Boolean);
 }
 
-type Job = { id: number; resume: Resume; photoUrl: string };
+type Job = { id: number; resume: Resume; photoUrl: string; onPrinted?: () => void };
 
 export function usePdfExport() {
   const [job, setJob] = useState<Job | null>(null);
@@ -98,7 +98,8 @@ export function usePdfExport() {
   const [message, setMessage] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const start = useCallback((resume: Resume, photoUrl: string) => {
+  /** `onPrinted` runs when the print window closes. Browsers don't say whether a PDF was actually saved. */
+  const start = useCallback((resume: Resume, photoUrl: string, onPrinted?: () => void) => {
     if (typeof window.print !== "function") {
       setStatus("error");
       setMessage("This browser can't save PDFs from a web page. Try Chrome, Edge, Firefox or Safari.");
@@ -106,7 +107,7 @@ export function usePdfExport() {
     }
     setMessage("");
     setStatus("preparing");
-    setJob({ id: Date.now(), resume, photoUrl });
+    setJob({ id: Date.now(), resume, photoUrl, onPrinted });
   }, []);
 
   const dismiss = useCallback(() => {
@@ -121,7 +122,8 @@ export function usePdfExport() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let photoFailed = false;
 
-    const finish = () => {
+    const finish = (event?: Event) => {
+      if (event) job.onPrinted?.();
       window.removeEventListener("afterprint", finish);
       clearTimeout(timer);
       document.title = previousTitle;
@@ -150,7 +152,7 @@ export function usePdfExport() {
         }
         document.title = pdfFileName(job.resume.profile.fullName);
         window.addEventListener("afterprint", finish);
-        timer = setTimeout(finish, PRINT_FALLBACK_MS);
+        timer = setTimeout(() => finish(), PRINT_FALLBACK_MS);
         window.print();
       } catch {
         if (cancelled) return;

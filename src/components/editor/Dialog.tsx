@@ -27,6 +27,7 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
   return (
     <dialog
       ref={ref}
+      aria-modal="true"
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
       onClose={onClose}

@@ -191,6 +191,8 @@ export function sanitizeResume(value: unknown, ctx: IdContext): Resume | null {
     name: str(value.name).trim() || DEFAULT_RESUME_NAME,
     createdAt,
     updatedAt: num(value.updatedAt, createdAt) || createdAt,
+    ...(num(value.lastBackupAt, 0) ? { lastBackupAt: num(value.lastBackupAt, 0) } : {}),
+    ...(num(value.lastExportAt, 0) ? { lastExportAt: num(value.lastExportAt, 0) } : {}),
     profile: sanitizeProfile(value.profile, ctx),
     sections: list(value.sections, (section) => sanitizeSection(section, ctx)).filter((section): section is ResumeSection => section !== null),
     design: {

@@ -129,23 +129,15 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     }
   }, [resumes]);
 
-  // Write any pending change immediately when the page is hidden, closed, or the editor unmounts.
-  useEffect(() => {
-    const flush = () => {
-      if (pendingSave.current && latest.current && storageAvailable.current) {
-        pendingSave.current = false;
-        saveResumes(latest.current);
-      }
-    };
-    const onVisibilityChange = () => document.visibilityState === "hidden" && flush();
-    window.addEventListener("pagehide", flush);
-    document.addEventListener("visibilitychange", onVisibilityChange);
-    return () => {
-      flush();
-      window.removeEventListener("pagehide", flush);
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
+  /** Writes any pending change straight away. */
+  const flushSave = useCallback(() => {
+    if (pendingSave.current && latest.current && storageAvailable.current) {
+      pendingSave.current = false;
+      saveResumes(latest.current);
+    }
   }, []);
+
+  useEffect(() => flushSave, [flushSave]);
 
   useEffect(() => {
     if (resumes !== null && storageAvailable.current) saveSettings({ activeResumeId: activeId, zoom });
@@ -253,9 +245,16 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     [resumes, activeId, releasePhoto],
   );
 
+  /** Records that a copy now exists outside this browser, without counting as an edit. */
+  const markCopied = useCallback((field: "lastBackupAt" | "lastExportAt", id?: string) => {
+    const now = Date.now();
+    setResumes((list) => list?.map((r) => (!id || r.id === id ? { ...r, [field]: now } : r)) ?? list);
+  }, []);
+
   /** Adds restored resumes to the list, or replaces the list. Ids are renewed so they can't clash. */
   const restoreResumes = useCallback((incoming: Resume[], mode: "merge" | "replace") => {
-    const restored = incoming.map((resume) => duplicateResume(resume, resume.name));
+    // These just came from a backup file, so a copy already exists.
+    const restored = incoming.map((resume) => ({ ...duplicateResume(resume, resume.name), lastBackupAt: Date.now() }));
     setResumes((list) => (mode === "merge" ? [...(list ?? []), ...restored] : restored));
     setActiveId(restored[0].id);
   }, []);
@@ -273,6 +272,8 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     setZoom,
     selectResume: setActiveId,
     restoreResumes,
+    markCopied,
+    flushSave,
     updateActive,
     setTemplate,
     setPageSize,

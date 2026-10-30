@@ -141,6 +141,9 @@ export type Resume = {
   name: string;
   createdAt: number;
   updatedAt: number;
+  /** When a backup or PDF last captured this resume. Optional; missing means never. */
+  lastBackupAt?: number;
+  lastExportAt?: number;
   profile: ResumeProfile;
   /** Ordered; the main resume column follows this order. */
   sections: ResumeSection[];
