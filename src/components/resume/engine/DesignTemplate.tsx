@@ -581,7 +581,7 @@ function NameBlock({ t, align = "start", compactName = false }: { t: Theme; alig
   const n = d.name ?? {};
   const size = compactName ? "text-3xl" : { md: "text-3xl", lg: "text-4xl", xl: "text-5xl" }[n.size ?? (d.density === "compact" ? "md" : "lg")];
   const weight = { light: "font-light", normal: "font-normal", semibold: "font-semibold", bold: "font-bold", black: "font-black" }[n.weight ?? "semibold"];
-  const tracking = { tight: "tracking-tight", normal: "", wide: "tracking-[0.12em]" }[n.tracking ?? (n.upper ? "wide" : "tight")];
+  const tracking = { tight: "tracking-tight", normal: "", wide: "tracking-[0.05em]" }[n.tracking ?? (n.upper ? "wide" : "tight")];
   const titleClass = {
     accent: `mt-1 ${d.density === "compact" ? "text-sm" : "text-base"} font-medium ${C.accent}`,
     muted: `mt-1 ${d.density === "compact" ? "text-sm" : "text-base"} ${C.muted}`,

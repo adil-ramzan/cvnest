@@ -2284,7 +2284,7 @@ export const templates: ResumeTemplate[] = [
       colors: { accent: "#4a4e69", ink: "#1f2030" },
       side: {
         position: "left",
-        width: "32%",
+        width: "35%",
         bg: "#2b2d42",
         ink: "#f8f9fb",
         muted: "#c3c6d4",
