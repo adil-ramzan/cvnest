@@ -96,7 +96,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
 
         <div className="flex items-center gap-1">
           <span className="mr-2 hidden text-[0.875rem] text-muted sm:inline">
-            {page.label} · {pageCount} {pageCount === 1 ? "page" : "pages"}
+            {page.label} · about {pageCount} {pageCount === 1 ? "page" : "pages"}
           </span>
           <button
             type="button"
@@ -154,11 +154,9 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
                 className={`shadow-sheet ${empty ? "[&_.resume-page]:opacity-35" : ""}`}
               />
             </div>
-            {pageCount > 1 && (
-              <p className="mt-4 text-center text-sm text-muted">
-                Your content runs to {pageCount} pages. Faint lines mark where each page ends.
-              </p>
-            )}
+            <p className="mt-4 text-center text-sm text-muted">
+              {pageCount > 1 ? `Your content runs to about ${pageCount} pages. ` : ""}The PDF is the final check, because page breaks can differ slightly.
+            </p>
           </div>
         )}
       </div>
