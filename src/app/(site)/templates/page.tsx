@@ -69,7 +69,7 @@ export default function TemplatesPage() {
             </li>
           </ol>
         </nav>
-        <h1 className="mt-5 text-display text-balance text-ink">{TEMPLATE_COUNT_LABEL} free resume templates</h1>
+        <h1 className="mt-5 text-display text-balance text-ink max-[480px]:text-[2.4rem]">{TEMPLATE_COUNT_LABEL} free resume templates</h1>
         <p className="mt-5 max-w-xl text-lead text-muted">
           Pick a design and make it yours.
           <br />
