@@ -7,6 +7,7 @@ import { HowItWorks } from "@/components/home/HowItWorks";
 import { Templates } from "@/components/home/Templates";
 import { ValueProps } from "@/components/home/ValueProps";
 import { homeCopy } from "@/data/copy";
+import { socialImage } from "@/data/site";
 
 const { title, description } = homeCopy.seo;
 
