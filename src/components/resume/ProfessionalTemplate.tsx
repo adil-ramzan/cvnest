@@ -122,12 +122,14 @@ export function ProfessionalTemplate({ resume }: { resume: PreparedResume }) {
         )}
         {resume.contactItems.length > 0 && (
           <p className="mt-3 font-resume-sans text-2xs text-[#4b5563]">
-            {resume.contactItems.map((item, i) => (
-              <Fragment key={i}>
-                {i > 0 && "  ·  "}
-                <LinkText value={item} links={resume.links} />
-              </Fragment>
-            ))}
+            {resume.links
+              ? resume.contactItems.map((item, i) => (
+                  <Fragment key={i}>
+                    {i > 0 && "  ·  "}
+                    <LinkText value={item} links />
+                  </Fragment>
+                ))
+              : resume.contactItems.join("  ·  ")}
           </p>
         )}
       </header>
