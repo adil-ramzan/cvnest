@@ -61,6 +61,7 @@ type ContentTabProps = {
   onOpenSection: (id: string) => void;
   /** Offers a just-deleted item for undo. */
   onUndoable: (message: string, restore: () => void) => void;
+  onAnnounce: (message: string) => void;
 };
 
 const sectionIcons: Record<SectionType, LucideIcon> = {
@@ -153,7 +154,7 @@ function sectionSummary(section: ResumeSection): string {
 const sectionHeading = (section: ResumeSection) =>
   section.title.trim() || (section.type === "custom" ? "Untitled section" : DEFAULT_SECTION_TITLES[section.type]);
 
-export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSections, onToggleSection, onOpenSection, onUndoable }: ContentTabProps) {
+export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSections, onToggleSection, onOpenSection, onUndoable, onAnnounce }: ContentTabProps) {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const { profile, sections } = resume;
 
@@ -444,10 +445,10 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
         const options: MenuItem[] = [
           { label: "Rename section", icon: Pencil, onSelect: () => setRenamingId(section.id) },
           section.visible
-            ? { label: "Hide from resume", icon: EyeOff, onSelect: () => updateSection(section.id, (s) => ({ ...s, visible: false })) }
-            : { label: "Show on resume", icon: Eye, onSelect: () => updateSection(section.id, (s) => ({ ...s, visible: true })) },
-          ...(index > 0 ? [{ label: "Move up", icon: ArrowUp, onSelect: () => moveSection(index, -1) }] : []),
-          ...(index < sections.length - 1 ? [{ label: "Move down", icon: ArrowDown, onSelect: () => moveSection(index, 1) }] : []),
+            ? { label: "Hide from resume", icon: EyeOff, onSelect: () => { updateSection(section.id, (s) => ({ ...s, visible: false })); onAnnounce(`${heading} hidden from resume`); } }
+            : { label: "Show on resume", icon: Eye, onSelect: () => { updateSection(section.id, (s) => ({ ...s, visible: true })); onAnnounce(`${heading} shown on resume`); } },
+          ...(index > 0 ? [{ label: "Move up", icon: ArrowUp, onSelect: () => { moveSection(index, -1); onAnnounce(`${heading} moved up`); } }] : []),
+          ...(index < sections.length - 1 ? [{ label: "Move down", icon: ArrowDown, onSelect: () => { moveSection(index, 1); onAnnounce(`${heading} moved down`); } }] : []),
           "separator",
           {
             label: "Delete section",

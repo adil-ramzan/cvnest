@@ -18,7 +18,7 @@ type CustomizeTabProps = {
 
 const groupClass = "border-b border-line px-4 py-6 sm:px-6";
 const chipClass =
-  "inline-flex h-9 items-center rounded-full border border-line px-3.5 text-sm text-ink-soft transition-colors hover:border-line-strong hover:text-ink aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white";
+  "inline-flex h-10 items-center rounded-full border border-line px-3.5 text-sm text-ink-soft transition-colors hover:border-line-strong hover:text-ink aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white";
 
 export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateChange, onPageSizeChange }: CustomizeTabProps) {
   const current = getTemplate(template);

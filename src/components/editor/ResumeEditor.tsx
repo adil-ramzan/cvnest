@@ -114,6 +114,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     downloadTextFile(backupFileName(site.name), await createBackup(store.resumes));
     updateBackupState({ lastBackupAt: Date.now() });
     store.markCopied("lastBackupAt");
+    setAnnouncement("Backup downloaded");
   };
 
   const startPdf = () => pdf.start(active, photoUrl, () => store.markCopied("lastExportAt", active.id));
@@ -128,6 +129,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     const result = readBackup(await file.text());
     setRestoreMode("merge");
     setDialog(result.ok ? { type: "restore", resumes: result.resumes, skipped: result.skipped } : { type: "restore-error", message: result.message });
+    if (!result.ok) setAnnouncement("Restore failed");
   };
 
   const openRename = (id: string) => {
@@ -290,6 +292,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 onToggleSection={toggleSection}
                 onOpenSection={openSection}
                 onUndoable={offerUndo}
+                onAnnounce={setAnnouncement}
               />
             )}
             {tab === "customize" && (
@@ -493,6 +496,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 type="button"
                 onClick={() => {
                   store.restoreResumes(dialog.resumes, restoreMode);
+                  setAnnouncement(`${dialog.resumes.length} ${dialog.resumes.length === 1 ? "resume" : "resumes"} restored`);
                   setDialog(null);
                 }}
                 className={restoreMode === "replace" ? dialogButtonClass.danger : dialogButtonClass.primary}
