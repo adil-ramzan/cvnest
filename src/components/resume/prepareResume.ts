@@ -33,6 +33,8 @@ export type PreparedResume = {
   /** Contact details in display order, blanks removed. */
   contactItems: string[];
   sections: RenderSection[];
+  /** Render URLs and emails as real links. */
+  links?: boolean;
 };
 
 const text = (value: string | undefined) => value?.trim() ?? "";

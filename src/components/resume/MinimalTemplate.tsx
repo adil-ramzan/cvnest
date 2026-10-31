@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LinkText } from "./LinkText";
 import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
@@ -30,17 +31,23 @@ function ExperienceEntry({ entry }: { entry: RenderEntry }) {
   );
 }
 
-function SimpleEntry({ entry, meta, textClass }: { entry: RenderEntry; meta: string; textClass: string }) {
+function SimpleEntry({ entry, meta, textClass, link, links }: { entry: RenderEntry; meta: string; textClass: string; link?: string; links?: boolean }) {
   return (
     <div>
       <h3 className="text-sm font-medium">{entry.title}</h3>
-      {meta && <p className="mt-0.5 text-2xs text-[#8a8a8a]">{meta}</p>}
+      {(meta || link) && (
+        <p className="mt-0.5 text-2xs text-[#8a8a8a]">
+          {meta}
+          {meta && link && " · "}
+          {link && <LinkText value={link} links={links} />}
+        </p>
+      )}
       {entry.text && <p className={`${textClass} text-xs leading-relaxed whitespace-pre-line text-[#333333]`}>{entry.text}</p>}
     </div>
   );
 }
 
-function RowBody({ section }: { section: RenderSection }) {
+function RowBody({ section, links }: { section: RenderSection; links?: boolean }) {
   if (section.kind === "text") {
     return <p className="text-xs leading-relaxed whitespace-pre-line text-[#333333]">{section.text}</p>;
   }
@@ -82,7 +89,7 @@ function RowBody({ section }: { section: RenderSection }) {
       return (
         <div className="space-y-4">
           {section.entries.map((entry) => (
-            <SimpleEntry key={entry.id} entry={entry} meta={joinParts([entry.subtitle, entry.dates, entry.link], " · ")} textClass="mt-1.5" />
+            <SimpleEntry key={entry.id} entry={entry} meta={joinParts([entry.subtitle, entry.dates], " · ")} link={entry.link} links={links} textClass="mt-1.5" />
           ))}
         </div>
       );
@@ -111,7 +118,9 @@ export function MinimalTemplate({ resume }: { resume: PreparedResume }) {
         {contactItems.length > 0 && (
           <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-2xs text-[#555555]">
             {contactItems.map((item, i) => (
-              <span key={i}>{item}</span>
+              <span key={i}>
+                <LinkText value={item} links={resume.links} />
+              </span>
             ))}
           </p>
         )}
@@ -120,7 +129,7 @@ export function MinimalTemplate({ resume }: { resume: PreparedResume }) {
       <div className="space-y-6">
         {resume.sections.map((section) => (
           <Row key={section.id} label={section.title}>
-            <RowBody section={section} />
+            <RowBody section={section} links={resume.links} />
           </Row>
         ))}
       </div>

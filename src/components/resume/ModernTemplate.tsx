@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { SectionType } from "@/data/resume";
+import { LinkText } from "./LinkText";
 import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
 
 /** Section types shown in the sidebar, in this template's own order. Everything else follows the user's order in the main column. */
@@ -35,11 +36,13 @@ function EntryHeader({ title, dates }: { title: string; dates: string }) {
   );
 }
 
-function SidebarList({ items }: { items: string[] }) {
+function SidebarList({ items, links }: { items: string[]; links?: boolean }) {
   return (
     <ul className="space-y-1.5 text-xs break-words text-[#3f474e]">
       {items.map((item, i) => (
-        <li key={i}>{item}</li>
+        <li key={i}>
+          <LinkText value={item} links={links} />
+        </li>
       ))}
     </ul>
   );
@@ -62,13 +65,20 @@ function SidebarBody({ section }: { section: RenderSection }) {
   );
 }
 
-function MainEntry({ entry, type }: { entry: RenderEntry; type: SectionType }) {
+function MainEntry({ entry, type, links }: { entry: RenderEntry; type: SectionType; links?: boolean }) {
   const hasBullets = type === "experience" || type === "volunteering";
-  const subtitle = hasBullets ? joinParts([entry.subtitle, entry.location], " · ") : joinParts([entry.subtitle, entry.link], " · ");
+  const subtitle = hasBullets ? joinParts([entry.subtitle, entry.location], " · ") : entry.subtitle;
+  const link = hasBullets ? "" : entry.link;
   return (
     <div>
       <EntryHeader title={entry.title} dates={entry.dates} />
-      {(hasBullets || subtitle) && <p className="text-xs font-medium text-[#2c6e66]">{subtitle}</p>}
+      {(hasBullets || subtitle || link) && (
+        <p className="text-xs font-medium text-[#2c6e66]">
+          {subtitle}
+          {subtitle && link && " · "}
+          {link && <LinkText value={link} links={links} />}
+        </p>
+      )}
       {entry.bullets.length > 0 && (
         <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[#3f474e]">
           {entry.bullets.map((item, i) => (
@@ -84,7 +94,7 @@ function MainEntry({ entry, type }: { entry: RenderEntry; type: SectionType }) {
   );
 }
 
-function MainBody({ section }: { section: RenderSection }) {
+function MainBody({ section, links }: { section: RenderSection; links?: boolean }) {
   if (section.kind === "text") {
     return <p className="text-xs leading-relaxed whitespace-pre-line text-[#3f474e]">{section.text}</p>;
   }
@@ -93,7 +103,7 @@ function MainBody({ section }: { section: RenderSection }) {
   return (
     <div className={spacing}>
       {section.entries.map((entry) => (
-        <MainEntry key={entry.id} entry={entry} type={section.type} />
+        <MainEntry key={entry.id} entry={entry} type={section.type} links={links} />
       ))}
     </div>
   );
@@ -122,7 +132,7 @@ export function ModernTemplate({ resume }: { resume: PreparedResume }) {
 
         {contactItems.length > 0 && (
           <SidebarSection title="Contact">
-            <SidebarList items={contactItems} />
+            <SidebarList items={contactItems} links={resume.links} />
           </SidebarSection>
         )}
 
@@ -141,7 +151,7 @@ export function ModernTemplate({ resume }: { resume: PreparedResume }) {
 
         {main.map((section) => (
           <MainSection key={section.id} title={section.title}>
-            <MainBody section={section} />
+            <MainBody section={section} links={resume.links} />
           </MainSection>
         ))}
       </div>

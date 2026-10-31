@@ -1,6 +1,7 @@
 import { Globe, Link2, type LucideIcon, Mail, MapPin, Phone } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import { type CSSProperties, Fragment, type ReactNode } from "react";
 import type { SectionType } from "@/data/resume";
+import { LinkText } from "../LinkText";
 import { joinParts, type PreparedResume, type RenderSection } from "../prepareResume";
 import { fontStacks, type HeadingStyle, type SidebarSection, type TemplateDesign } from "./design";
 
@@ -220,7 +221,7 @@ function Section({ title, t, area, children }: { title: string; t: Theme; area: 
 // ---------------------------------------------------------------------------
 // Entries
 
-type EntryData = { key: string; title: string; subtitle: string; dates: string; bullets: string[]; text: string };
+type EntryData = { key: string; title: string; subtitle: string; link?: string; dates: string; bullets: string[]; text: string };
 
 function Bullets({ items, t }: { items: string[]; t: Theme }) {
   const { bullets } = t.d;
@@ -268,7 +269,15 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
 
   const inline = d.entryStyle === "inline" && area === "main" && !!e.title;
   const datesInline = placement === "inline";
-  const subtitleText = datesInline ? [e.subtitle, e.dates].filter(Boolean).join(" · ") : e.subtitle;
+  const subtitleParts = [e.subtitle, e.link, datesInline ? e.dates : ""].filter(Boolean);
+  const subtitleText: ReactNode = t.r.links && e.link
+    ? subtitleParts.map((part, i) => (
+        <Fragment key={i}>
+          {i > 0 && " · "}
+          <LinkText value={part!} links />
+        </Fragment>
+      ))
+    : subtitleParts.join(" · ");
   const title = e.title && (
     <h3 className={`${dens.title} font-semibold ${C.ink}`}>
       {e.title}
@@ -447,7 +456,9 @@ function ContactDetails({ t, mode, align = "start" }: { t: Theme; mode: "inline"
         {contactEntries(t.r).map(({ icon: Icon, value }, i) => (
           <li key={i} className="flex min-w-0 items-center gap-1.5 [overflow-wrap:anywhere]">
             {t.d.contactIcons && <Icon aria-hidden="true" className={`size-[1.1em] shrink-0 ${C.accent}`} />}
-            <span className="min-w-0">{value}</span>
+            <span className="min-w-0">
+              <LinkText value={value} links={t.r.links} />
+            </span>
           </li>
         ))}
       </ul>
@@ -464,7 +475,9 @@ function ContactDetails({ t, mode, align = "start" }: { t: Theme; mode: "inline"
         {items.map(({ icon: Icon, value }, i) => (
           <li key={i} className={`flex items-start gap-2 [overflow-wrap:anywhere] ${align === "end" ? "justify-end" : ""}`}>
             {icons && <Icon aria-hidden="true" className={`mt-[0.2em] size-[1.05em] shrink-0 ${C.accent}`} />}
-            <span>{value}</span>
+            <span>
+              <LinkText value={value} links={t.r.links} />
+            </span>
           </li>
         ))}
       </ul>
@@ -486,7 +499,7 @@ function ContactDetails({ t, mode, align = "start" }: { t: Theme; mode: "inline"
               </span>
             )
           )}
-          {value}
+          <LinkText value={value} links={t.r.links} />
         </li>
       ))}
     </ul>
@@ -525,7 +538,8 @@ function renderSection(section: RenderSection, t: Theme, area: Area): ReactNode 
         entries={section.entries.map((entry) => ({
           key: entry.id,
           title: entry.title,
-          subtitle: withLocation ? joinParts([entry.subtitle, entry.location], ", ") : joinParts([entry.subtitle, entry.link], " · "),
+          subtitle: withLocation ? joinParts([entry.subtitle, entry.location], ", ") : entry.subtitle,
+          link: withLocation ? undefined : entry.link,
           dates: entry.dates,
           bullets: entry.bullets,
           text: entry.text,

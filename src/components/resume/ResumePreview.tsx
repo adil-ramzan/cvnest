@@ -15,11 +15,11 @@ const customComponents: Record<string, ComponentType<{ resume: PreparedResume }>
   minimal: MinimalTemplate,
 };
 
-type TemplateRendererProps = { template: ResumeTemplate; resume: Resume; photoUrl?: string };
+type TemplateRendererProps = { template: ResumeTemplate; resume: Resume; photoUrl?: string; links?: boolean };
 
 /** Renders resume content with a template. Templates only ever read content; they never change it. */
-export function TemplateRenderer({ template, resume, photoUrl }: TemplateRendererProps) {
-  const prepared = prepareResume(resume, photoUrl);
+export function TemplateRenderer({ template, resume, photoUrl, links }: TemplateRendererProps) {
+  const prepared = { ...prepareResume(resume, photoUrl), links };
   if (template.design) return <DesignTemplate resume={prepared} design={template.design} />;
   const Component = customComponents[template.slug] ?? ProfessionalTemplate;
   return <Component resume={prepared} />;
@@ -59,6 +59,7 @@ export function ResumePreview({ template, resume, photoUrl, thumbnail = false, f
         template={template}
         resume={resume ?? template.sample}
         photoUrl={resume ? photoUrl : template.samplePhoto}
+        links={flow}
       />
     </ResumePaper>
   );

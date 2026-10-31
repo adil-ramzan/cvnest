@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
+import { LinkText } from "./LinkText";
 import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -53,18 +54,23 @@ function EducationEntry({ entry }: { entry: RenderEntry }) {
 }
 
 /** Projects, awards and custom entries. */
-function DetailEntry({ entry }: { entry: RenderEntry }) {
-  const subtitle = joinParts([entry.subtitle, entry.link], " — ");
+function DetailEntry({ entry, links }: { entry: RenderEntry; links?: boolean }) {
   return (
     <div>
       <EntryHeader title={entry.title} dates={entry.dates} />
-      {subtitle && <p className="text-xs text-[#4b5563] italic">{subtitle}</p>}
+      {(entry.subtitle || entry.link) && (
+        <p className="text-xs text-[#4b5563] italic">
+          {entry.subtitle}
+          {entry.subtitle && entry.link && " — "}
+          {entry.link && <LinkText value={entry.link} links={links} />}
+        </p>
+      )}
       {entry.text && <p className="mt-1 text-xs leading-relaxed whitespace-pre-line">{entry.text}</p>}
     </div>
   );
 }
 
-function SectionBody({ section }: { section: RenderSection }) {
+function SectionBody({ section, links }: { section: RenderSection; links?: boolean }) {
   if (section.kind === "text") return <p className="text-xs leading-relaxed whitespace-pre-line">{section.text}</p>;
   if (section.kind === "list") {
     return section.type === "certifications" ? (
@@ -98,7 +104,7 @@ function SectionBody({ section }: { section: RenderSection }) {
   return (
     <div className="space-y-3">
       {section.entries.map((entry) => (
-        <DetailEntry key={entry.id} entry={entry} />
+        <DetailEntry key={entry.id} entry={entry} links={links} />
       ))}
     </div>
   );
@@ -115,13 +121,20 @@ export function ProfessionalTemplate({ resume }: { resume: PreparedResume }) {
           </p>
         )}
         {resume.contactItems.length > 0 && (
-          <p className="mt-3 font-resume-sans text-2xs text-[#4b5563]">{resume.contactItems.join("  ·  ")}</p>
+          <p className="mt-3 font-resume-sans text-2xs text-[#4b5563]">
+            {resume.contactItems.map((item, i) => (
+              <Fragment key={i}>
+                {i > 0 && "  ·  "}
+                <LinkText value={item} links={resume.links} />
+              </Fragment>
+            ))}
+          </p>
         )}
       </header>
 
       {resume.sections.map((section) => (
         <Section key={section.id} title={section.title}>
-          <SectionBody section={section} />
+          <SectionBody section={section} links={resume.links} />
         </Section>
       ))}
     </article>
