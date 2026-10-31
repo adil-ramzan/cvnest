@@ -17,8 +17,6 @@ const errors = [], leaks = [];
 async function newPage(ctx) {
   const page = await (ctx ?? browser).newPage();
   await page.setViewport({ width: 1440, height: 900 });
-  // Smooth scrolling never settles while the test tool keeps restarting its own scroll.
-  await page.emulateMediaFeatures([{ name: "prefers-reduced-motion", value: "reduce" }]);
   page.setDefaultTimeout(60000);
   page.setDefaultNavigationTimeout(60000);
   page.on("pageerror", (e) => errors.push(String(e)));

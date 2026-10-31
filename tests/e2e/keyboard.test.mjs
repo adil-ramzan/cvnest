@@ -67,6 +67,13 @@ await page.keyboard.press("Enter");
 await sleep(700);
 check("Undo restores it in place and returns to the list", (await roles()).length === 3 && (await roles())[1].includes("Third") && /job/.test(await active()), `${(await roles()).join()} | ${await active()}`);
 
+// Focus stays visible above the sticky header
+await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "instant" }));
+await sleep(200);
+await page.evaluate(() => [...document.querySelectorAll("h2 button")].at(0).focus());
+await sleep(500);
+check("Focused control isn't hidden behind the sticky header", await page.evaluate(() => document.activeElement.getBoundingClientRect().top >= document.querySelector("header").getBoundingClientRect().bottom));
+
 // Rings
 await page.evaluate(() => document.querySelector("a[href='/']").focus());
 const noRing = [];

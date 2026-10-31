@@ -182,6 +182,19 @@ body {
   }
 }
 
+/* Keeps focused and scrolled-to controls clear of the editor's sticky bars. */
+@media (min-height: 600px) {
+  html:has(.editor-page) {
+    scroll-padding-block: 9.5rem 5rem;
+  }
+}
+
+@media (min-height: 600px) and (min-width: 1024px) {
+  html:has(.editor-page) {
+    scroll-padding-block: 6rem 1rem;
+  }
+}
+
 /* Consistent keyboard focus for anything without its own focus style. */
 :where(a, button, summary, select, [tabindex]):focus-visible {
   outline: 2px solid var(--color-accent);

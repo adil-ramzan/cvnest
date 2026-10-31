@@ -145,7 +145,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-canvas">
+    <div className="editor-page flex min-h-dvh flex-col bg-canvas">
       <EditorTopBar
         resumes={store.resumes}
         active={active}
