@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 import type { Metadata } from "next";
 import { SimplePage } from "@/components/layout/SimplePage";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { freeFeatures, site } from "@/data/site";
+import { freeFeatures, site, socialImage } from "@/data/site";
 import { TEMPLATE_COUNT } from "@/data/template-count";
 
 const description = `Everything in ${site.name} is free: all ${TEMPLATE_COUNT} resume templates, editing, customization and browser autosave, with no watermarks, subscription or account.`;
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: "What's Free",
   description,
   alternates: { canonical: "/free" },
-  openGraph: { title: `What's Free | ${site.name}`, description, url: "/free" },
+  openGraph: { images: [socialImage], title: `What's Free | ${site.name}`, description, url: "/free" },
 };
 
 export default function FreePage() {

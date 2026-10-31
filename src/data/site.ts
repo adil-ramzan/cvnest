@@ -7,6 +7,9 @@ export const site = {
   tagline: "Free online resume builder",
 };
 
+/** Pages that set their own Open Graph data replace the site-wide image, so each includes this. */
+export const socialImage = { url: "/opengraph-image", width: 1200, height: 630, alt: `${SITE_NAME}: free resume builder` };
+
 // site.ts is imported by client components, so counts are passed in rather than
 // read from the template registry, which would pull it into those bundles.
 export const siteDescription = (templateCount: number) =>

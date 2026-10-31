@@ -21,6 +21,10 @@ for (const route of ["/", "/templates", "/free"]) {
   check(`${route} only states the real count`, numbers.length > 0 && numbers.every((n) => n === COUNT), numbers.join(","));
 }
 
+for (const route of ["/", "/templates", "/free", "/about", "/privacy", "/templates/slate"]) {
+  await page.goto(BASE + route, { waitUntil: "networkidle0" });
+  check(`${route} has social image tags`, await page.evaluate(() => !!document.querySelector("meta[property='og:image']") && !!document.querySelector("meta[name='twitter:image']")));
+}
 await page.goto(`${BASE}/templates`, { waitUntil: "networkidle0" });
 check("H1 shows the count", (await page.$eval("main h1", (el) => el.textContent)) === `${COUNT} free resume templates`);
 check("Page title shows the count", (await page.title()).startsWith(`${COUNT} Free Resume Templates`), await page.title());

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: { absolute: title },
   description,
   alternates: { canonical: "/" },
-  openGraph: { title, description, url: "/" },
+  openGraph: { images: [socialImage], title, description, url: "/" },
 };
 
 export default function HomePage() {

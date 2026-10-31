@@ -9,7 +9,7 @@ All fonts are licensed under the [SIL Open Font License 1.1](https://openfontlic
 | Plus Jakarta Sans | The website and editor interface |
 | Inter, Source Serif 4, Lora, Playfair Display, Montserrat, IBM Plex Sans, IBM Plex Mono, Space Grotesk, EB Garamond, Work Sans | Resume templates |
 
-Static copies of the resume fonts, used only for PDF export in Firefox, are in `public/fonts/print/` with their license files.
+Plus Jakarta Sans is also used to draw the social sharing image; a copy and its license are in `src/assets/`. Static copies of the resume fonts, used only for PDF export in Firefox, are in `public/fonts/print/` with their license files.
 
 ## Software
 

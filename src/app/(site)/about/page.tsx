@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SimplePage } from "@/components/layout/SimplePage";
-import { site } from "@/data/site";
+import { site, socialImage } from "@/data/site";
 
 export const metadata: Metadata = {
   title: "About",
   description: `Learn about ${site.name}, a free resume builder and CV maker focused on clear, professional documents.`,
   alternates: { canonical: "/about" },
-  openGraph: { url: "/about" },
+  openGraph: { images: [socialImage], url: "/about" },
 };
 
 export default function AboutPage() {

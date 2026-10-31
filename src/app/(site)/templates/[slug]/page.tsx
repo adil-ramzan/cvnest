@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
-import { site } from "@/data/site";
+import { site, socialImage } from "@/data/site";
 import { getCategory, getTemplate, templates } from "@/data/templates";
 
 type TemplatePageProps = {
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: TemplatePageProps): Promise<M
     title,
     description,
     alternates: { canonical: `/templates/${template.slug}` },
-    openGraph: { title: `${title} | ${site.name}`, description, url: `/templates/${template.slug}` },
+    openGraph: { images: [socialImage], title: `${title} | ${site.name}`, description, url: `/templates/${template.slug}` },
   };
 }
 

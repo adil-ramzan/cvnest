@@ -5,7 +5,7 @@ import { ResumePreview } from "@/components/resume/ResumePreview";
 import type { GalleryTemplate } from "@/components/templates/gallery";
 import { TemplateGallery } from "@/components/templates/TemplateGallery";
 import { Container } from "@/components/ui/Container";
-import { site } from "@/data/site";
+import { site, socialImage } from "@/data/site";
 import { TEMPLATE_COUNT } from "@/data/template-count";
 import { templateStructure } from "@/data/template-tags";
 import { getCategory, templateCategories, templates } from "@/data/templates";
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: "/templates" },
-  openGraph: { title: `${title} | ${site.name}`, description, url: "/templates" },
+  openGraph: { images: [socialImage], title: `${title} | ${site.name}`, description, url: "/templates" },
 };
 
 /** Cards in view on load are rendered here, so the first thumbnails don't wait for JavaScript. */
