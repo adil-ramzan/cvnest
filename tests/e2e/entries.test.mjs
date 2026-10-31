@@ -111,6 +111,33 @@ await page.click("button[aria-label='Show Second role on resume']");
 await sleep(700);
 check("Show clears the field and restores the entry", !("hidden" in (await entries())[1]) && (await preview()).includes("Second role"));
 
+// Focus
+const focusLabel = () => page.evaluate(() => document.activeElement.textContent.slice(0, 40));
+await openRow("Second role");
+await page.locator("::-p-aria(Job title)").click();
+await page.keyboard.press("Escape");
+await sleep(200);
+check("Escape closes the form and returns to the row", (await page.$("li input")) === null && (await focusLabel()).includes("Second role"));
+await openRow("Second role");
+await clickButton("Save");
+await sleep(200);
+check("Save returns focus to the row", (await focusLabel()).includes("Second role"));
+await openRow("Second role");
+await clickButton("Cancel");
+await sleep(200);
+check("Cancel returns focus to the row", (await focusLabel()).includes("Second role"));
+await openRow("Added role");
+await page.click("button[aria-label='Delete position']");
+await sleep(300);
+check("Delete moves focus to a neighbouring row", (await page.evaluate(() => document.activeElement.getAttribute("aria-expanded"))) !== null);
+await clickButton("Undo");
+await sleep(700);
+await page.click("button[aria-label='Hide Second role from resume']");
+await sleep(200);
+check("Hide is announced", await page.$$eval("[role=status]", (els) => els.some((el) => el.textContent.includes("Second role hidden from resume"))));
+await page.click("button[aria-label='Show Second role on resume']");
+await sleep(500);
+
 // Keyboard reorder
 await page.focus("[aria-label^='Reorder Saved role']");
 await page.keyboard.press("ArrowDown");
