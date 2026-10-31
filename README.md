@@ -16,6 +16,18 @@ Production domain: https://getcvnest.com
 - **Safe data migration** from the earlier storage format, with the original data kept as a backup.
 - **PDF export** for every template on Letter or A4 pages. It uses the browser's own print engine ("Save as PDF"), so the PDF has selectable text, embedded fonts and correct page breaks, and it is created on your device.
 
+## Changes to original templates
+
+Most of the 65 templates that predate the 120-template library are unchanged, but these were changed on purpose:
+
+| Templates | Change | Why |
+|---|---|---|
+| Ambassador, Boardroom, Classic, Coral, Keystone, Mosaic | Name letter-spacing reduced | Wide tracking split names in PDF text extraction |
+| Sterling | Sidebar widened from 32% to 35% | Long emails broke across lines |
+| Parallax, Monolith, Cameo, Telegraph, Capstone | Markup only: a class on the footer grid, no visual change | Firefox page breaks |
+
+Compared by rendered HTML and pixels against a baseline of the 65. Professional shifted slightly when links were added; that was fixed afterwards.
+
 ## Tech stack
 
 - [Next.js](https://nextjs.org) 16 (App Router) and React 19
