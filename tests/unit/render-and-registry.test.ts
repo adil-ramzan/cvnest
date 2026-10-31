@@ -5,14 +5,29 @@ import { getTemplate, templateCategories, templates } from "@/data/templates";
 import { createResume, duplicateResume, isResumeEmpty, isTemplateSlug } from "@/lib/resumes";
 
 describe("template registry", () => {
-  it("has 65 templates with unique slugs", () => {
-    assert.equal(templates.length, 65);
-    assert.equal(new Set(templates.map((t) => t.slug)).size, 65);
+  it("has 120 templates with unique slugs", () => {
+    assert.equal(templates.length, 120);
+    assert.equal(new Set(templates.map((t) => t.slug)).size, 120);
   });
 
   it("has the planned number of templates in each category", () => {
     const counts = Object.fromEntries(templateCategories.map((c) => [c.id, templates.filter((t) => t.category === c.id).length]));
-    assert.deepEqual(counts, { simple: 10, modern: 11, creative: 12, photo: 9, compact: 8, graduate: 8, executive: 7 });
+    assert.deepEqual(counts, { simple: 14, modern: 16, creative: 19, photo: 13, compact: 12, graduate: 12, executive: 10, technical: 9, academic: 7, business: 8 });
+  });
+
+  it("has no two designs with the same structure and type", () => {
+    const signatures = templates.filter((t) => t.design).map(({ slug, design }) => {
+      const d = design!;
+      return { slug, key: [d.layout, d.header, d.heading, d.bullets, d.skills, d.dates, d.fonts.heading, d.fonts.body].join("|") };
+    });
+    // Original templates that already share a structure; they differ in color and sample only.
+    const knownPairs = new Set(["campus"]);
+    const seen = new Map<string, string>();
+    for (const { slug, key } of signatures) {
+      if (knownPairs.has(slug)) continue;
+      assert.equal(seen.get(key), undefined, `${slug} repeats ${seen.get(key)}`);
+      seen.set(key, slug);
+    }
   });
 
   it("gives every template a sample resume with content", () => {

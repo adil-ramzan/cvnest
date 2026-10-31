@@ -52,13 +52,12 @@ const browser = await launch();
   await page.setViewport({ width: 1280, height: 900 });
   page.on("pageerror", () => {});
   await page.evaluateOnNewDocument(() => {
-    window.IntersectionObserver = class {
-      constructor() {
-        throw new Error("Simulated page failure");
-      }
+    // The gallery scrolls to a linked category as it loads.
+    Element.prototype.scrollIntoView = () => {
+      throw new Error("Simulated page failure");
     };
   });
-  await page.goto(`${BASE}/templates`, { waitUntil: "networkidle0" });
+  await page.goto(`${BASE}/templates?category=photo`, { waitUntil: "networkidle0" });
   await sleep(600);
   const text = await page.evaluate(() => document.querySelector("[role=alert]")?.textContent ?? "");
   check("Public page crash shows the site error screen", text.includes("This page didn't load") || text.includes("This page didn’t load"), text.slice(0, 80));

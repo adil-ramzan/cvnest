@@ -2,7 +2,7 @@ import { readStored } from "./adapter.mjs";
 import { BASE, FIXTURES, OUT, createChecks, isKnownMissingAsset, launch, sleep } from "./helpers.mjs";
 
 const PHOTO = `${FIXTURES}/photo.png`;
-const check = createChecks("Templates: gallery, all 65 templates, photos, page size, long and empty resumes");
+const check = createChecks("Templates: gallery, all 120 templates, photos, page size, long and empty resumes");
 const browser = await launch();
 const page = await browser.newPage();
 await page.setViewport({ width: 1440, height: 900 });
@@ -17,12 +17,12 @@ page.on("request", (req) => { if (req.url().startsWith("data:")) return; const b
 await page.goto(`${BASE}/templates`, { waitUntil: "networkidle0" });
 const cards = (scope = "main") => page.$$eval(`${scope} article.group`, (els) => els.length);
 const status = () => page.$eval("main [role=status]", (el) => el.textContent);
-check("Seven sections show their first 6 templates", (await cards()) === 42, String(await cards()));
+check("Seven sections show their first 6 templates", (await cards()) === 60, String(await cards()));
 const counts = await page.$$eval("[aria-label='Template categories'] a", (as) => as.map((a) => a.textContent));
-check("Category counts", counts.join("|") === "Simple10|Modern11|Creative12|Photo9|Compact8|First Job8|Executive7", counts.join("|"));
+check("Category counts", counts.join("|") === "Simple14|Modern16|Creative19|Photo13|Compact12|First Job12|Executive10|Technical9|Academic7|Business8", counts.join("|"));
 await page.click("#photo button[aria-expanded]");
 await sleep(200);
-check("See more reveals the rest of a category", (await cards("#photo")) === 9, String(await cards("#photo")));
+check("See more reveals the rest of a category", (await cards("#photo")) === 13, String(await cards("#photo")));
 await page.click("[aria-label='Template categories'] a[href='#compact']");
 await sleep(1200);
 check("Chip scrolls its section below the sticky bars", await page.$eval("#compact h2", (el) => { const top = el.getBoundingClientRect().top; return top > 120 && top < 300; }));
@@ -31,7 +31,7 @@ await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
 await page.type("input[type=search]", "serif");
 await sleep(200);
 const serifCount = await cards();
-check("Search 'serif' lists matches with a live count", serifCount > 3 && serifCount < 65 && (await status()).startsWith(`${serifCount} `), await status());
+check("Search 'serif' lists matches with a live count", serifCount > 3 && serifCount < 120 && (await status()).startsWith(`${serifCount} `), await status());
 check("Search hides the category chips", (await page.$("[aria-label='Template categories']")) === null);
 await page.$eval("input[type=search]", (el) => el.select());
 await page.type("input[type=search]", "zzzqqq");
@@ -54,7 +54,7 @@ await sleep(300);
 const slugs = await page.$$eval("main a[aria-label^='Use ']", (as) => as.map((a) => new URL(a.href).searchParams.get("template")));
 let okPages = 0;
 for (const slug of slugs) { const r = await fetch(`${BASE}/templates/${slug}`); if (r.ok) okPages++; }
-check("All 65 detail pages load", okPages === 65 && slugs.length === 65, `${okPages}/${slugs.length}`);
+check("All 120 detail pages load", okPages === 120 && slugs.length === 120, `${okPages}/${slugs.length}`);
 
 await page.goto(`${BASE}/templates/kinetic`, { waitUntil: "networkidle0" });
 await page.locator("::-p-text(Use This Free Template)").click();
@@ -76,7 +76,7 @@ for (const slug of slugs) {
   if (text.includes("Xylophone Testperson")) rendered++;
   if ((await overflow()) > 1) overflowed.push(slug);
 }
-check("Every template renders the user's content", rendered === 65, `${rendered}/65`);
+check("Every template renders the user's content", rendered === 120, `${rendered}/120`);
 check("No horizontal overflow", overflowed.length === 0, overflowed.join(","));
 await sleep(600);
 let saved = await readStored(page);

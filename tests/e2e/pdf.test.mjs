@@ -32,7 +32,7 @@ const datasets = [
   ["empty", "a4", { "folio.resumes.v2": JSON.stringify({ schemaVersion: 2, resumes: [empty] }), "folio.editor-settings": JSON.stringify({ activeResumeId: "empty", zoom: "fit" }) }],
 ];
 const expectedText = {
-  long: ["zz-end-marker", "seniorplatformengineer8", "m.s.computerscience3", "skill23", "cka", "alexandra", "opensourcecli", "supercalifragilistic"],
+  long: ["zz-end-marker", "seniorplatformengineer8", "m.s.computerscience3", "skill23", "cka", "alexandra", "opensourcecli", "supercalifragilistic", "2010"],
   fixture: ["legacylenafixture", "seniordataengineer", "streamline", "python", "german", "streamingatscale"],
   empty: ["yourname"],
 };
@@ -94,7 +94,7 @@ for (const [name, size, storage] of datasets) {
   }
 }
 await browser.close();
-check("Exported a PDF for every template and dataset", files.length === 260, String(files.length));
+check("Exported a PDF for every template and dataset", files.length === 480, String(files.length));
 check("No page errors during export", errors.length === 0, errors.slice(0, 2).join(" | "));
 check("No resume content in network requests", leaks.length === 0, leaks.join(", "));
 

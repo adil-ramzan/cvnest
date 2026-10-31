@@ -91,7 +91,7 @@ for (const [name, size, storage] of datasets) {
 }
 await wd("DELETE", s);
 driver.kill();
-check("Exported a PDF for every template and dataset", files.length === 260, String(files.length));
+check("Exported a PDF for every template and dataset", files.length === 480, String(files.length));
 
 // ---- Verify
 const run = (cmd, args) => execFileSync(cmd, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] });
