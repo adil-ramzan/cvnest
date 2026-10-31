@@ -32,9 +32,13 @@ describe("schemaVersionOf", () => {
   });
 });
 
+// Migrations produce untyped objects, and these tests read deep into them.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type LooseResume = Record<string, any>;
+
 describe("migrateResume v1 → v2", () => {
   const result = migrateResume(v1)!;
-  const r = result.value as Record<string, any>;
+  const r = result.value as LooseResume;
   const section = (type: string) => r.sections.find((s: { type: string }) => s.type === type);
 
   it("reports the source version and produces schema 2", () => {
@@ -89,7 +93,7 @@ describe("migrateResume v1 → v2", () => {
 
   it("tolerates missing and malformed v1 fields", () => {
     const partial = migrateResume({ id: "p", data: { skills: "not-an-array", experience: [null, { role: 5 }] } })!;
-    const value = partial.value as Record<string, any>;
+    const value = partial.value as LooseResume;
     assert.equal(value.profile.fullName, "");
     assert.deepEqual(value.sections.find((s: { type: string }) => s.type === "skills").entries, []);
   });

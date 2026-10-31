@@ -68,6 +68,8 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     }
 
     skipNextSave.current = !changed;
+    // Browser storage doesn't exist during server rendering, so this can only run after mounting.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResumes(list);
     setActiveId(active.id);
     setZoom(settings.zoom);
