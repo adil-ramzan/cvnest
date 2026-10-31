@@ -36,7 +36,9 @@ export type PreparedResume = {
 };
 
 const text = (value: string | undefined) => value?.trim() ?? "";
-const lines = (items: string[] | undefined) => (items ?? []).map((item) => item.trim()).filter(Boolean);
+/** Pasted lists often keep their own markers, which would print a second bullet. */
+const stripBullet = (item: string) => item.trim().replace(/^(?:[•‣◦▪·]\s*|[-*](?:\s+|$))/, "").trim();
+const lines = (items: string[] | undefined) => (items ?? []).map(stripBullet).filter(Boolean);
 
 export function dateRange(start?: string, end?: string) {
   const from = text(start);
