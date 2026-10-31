@@ -1,8 +1,10 @@
 import { BookOpen, Briefcase, ChartLine, CircleUserRound, Code, FileText, GraduationCap, LayoutPanelLeft, type LucideIcon, Palette, Rows3 } from "lucide-react";
+import type { TemplateStructure } from "@/data/template-tags";
 import type { ResumeTemplate, TemplateCategory } from "@/data/templates";
 
 /** What the gallery needs to know up front; the resume itself loads with its thumbnail. */
 export type GalleryTemplate = Pick<ResumeTemplate, "slug" | "name" | "category" | "layout" | "description" | "bestFor" | "photo"> & {
+  structure: TemplateStructure;
   search: string;
 };
 

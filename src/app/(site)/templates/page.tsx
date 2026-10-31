@@ -7,6 +7,7 @@ import { TemplateGallery } from "@/components/templates/TemplateGallery";
 import { Container } from "@/components/ui/Container";
 import { site } from "@/data/site";
 import { TEMPLATE_COUNT } from "@/data/template-count";
+import { templateStructure } from "@/data/template-tags";
 import { getCategory, templateCategories, templates } from "@/data/templates";
 
 const title = `${TEMPLATE_COUNT} Free Resume Templates`;
@@ -29,7 +30,7 @@ export default function TemplatesPage() {
     count: templates.filter((template) => template.category === id).length,
   }));
 
-  const items: GalleryTemplate[] = templates.map(({ slug, name, category, layout, description, bestFor, photo, tags }) => ({
+  const items: GalleryTemplate[] = templates.map(({ slug, name, category, layout, description, bestFor, photo, tags, design }) => ({
     slug,
     name,
     category,
@@ -37,7 +38,8 @@ export default function TemplatesPage() {
     description,
     bestFor,
     photo,
-    search: [name, layout, description, bestFor, getCategory(category).label, photo !== "none" ? "photo picture" : "no photo", ...tags]
+    structure: templateStructure({ slug, design }),
+    search: [name, layout, templateStructure({ slug, design }), description, bestFor, getCategory(category).label, photo !== "none" ? "photo picture" : "no photo", ...tags]
       .join(" ")
       .toLowerCase(),
   }));

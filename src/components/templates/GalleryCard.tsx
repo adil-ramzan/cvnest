@@ -16,7 +16,7 @@ export function photoLabel(photo: GalleryTemplate["photo"]) {
 }
 
 export function GalleryCard({ template, thumbnail, onPreview }: GalleryCardProps) {
-  const { name, slug, layout, description, photo } = template;
+  const { name, slug, structure, layout, description, photo } = template;
   const photoTag = photoLabel(photo);
 
   return (
@@ -29,7 +29,8 @@ export function GalleryCard({ template, thumbnail, onPreview }: GalleryCardProps
 
         <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-end gap-3 rounded-2xl bg-ink/92 p-5 text-white opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 motion-reduce:transition-none [@media(hover:none)]:hidden">
           <p className="flex flex-wrap gap-1.5 text-base">
-            <span className="rounded-full border border-white/40 px-3 py-0.5">{layout}</span>
+            <span className="rounded-full border border-white/40 px-3 py-0.5">{structure}</span>
+            {layout !== structure && <span className="rounded-full border border-white/40 px-3 py-0.5">{layout}</span>}
             {photoTag && <span className="rounded-full border border-white/40 px-3 py-0.5">{photoTag}</span>}
           </p>
           <p className="line-clamp-4 text-base leading-relaxed">{description}</p>

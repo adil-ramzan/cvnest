@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { focusRing } from "@/components/ui/styles";
+import { ORDER_NOTE } from "@/data/template-tags";
 import type { GalleryTemplate } from "./gallery";
 import { photoLabel } from "./GalleryCard";
 
@@ -66,7 +67,8 @@ export function PreviewModal({ template, categoryLabel, onClose }: PreviewModalP
             <p className="mt-4 text-base text-muted">
               <span className="font-medium text-ink">Best for:</span> {template.bestFor}
             </p>
-            {photoTag && <p className="mt-2 text-base text-muted">{photoTag}</p>}
+            <p className="mt-2 text-base text-muted">{[template.structure, photoTag].filter(Boolean).join(" · ")}</p>
+            {template.structure !== "Single column" && <p className="mt-2 text-[0.875rem] text-muted">{ORDER_NOTE}</p>}
             <ButtonLink href={`/editor?template=${template.slug}`} size="lg" className="mt-6 w-full">
               Use This Template
             </ButtonLink>

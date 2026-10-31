@@ -4,6 +4,7 @@ import { useState } from "react";
 import { type PageSize, pageSizes } from "@/components/resume/ResumePaper";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import type { Resume } from "@/data/resume";
+import { ORDER_NOTE, templateStructure } from "@/data/template-tags";
 import { getCategory, getTemplate, type TemplateCategory, type TemplateSlug, templateCategories, templates } from "@/data/templates";
 
 type CustomizeTabProps = {
@@ -38,6 +39,7 @@ export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateC
         <p className="mt-2 text-sm text-muted">
           Fonts, colors and spacing are part of each template. Switch any time; your content stays the same.
           {current?.photo === "always" && !resume.profile.photo && " This template shows your initials until you add a photo."}
+          {current && templateStructure(current) !== "Single column" && ` ${ORDER_NOTE}`}
         </p>
 
         <div role="group" aria-label="Template category" className="mt-5 flex flex-wrap gap-2">
@@ -69,7 +71,9 @@ export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateC
                     <ResumePreview template={item} resume={resume} photoUrl={photoUrl} thumbnail className="rounded-[2px] shadow-sm" />
                   </span>
                   <span className="mt-2.5 block text-base font-medium text-ink">{item.name}</span>
-                  <span className="block text-sm text-muted">{item.layout}</span>
+                  <span className="block text-sm text-muted">
+                    {[templateStructure(item), item.photo !== "none" && "Photo"].filter(Boolean).join(" · ")}
+                  </span>
                 </label>
               );
             })}
