@@ -14,7 +14,7 @@ import {
 } from "next/font/google";
 import type { ReactNode } from "react";
 import { site, siteDescription } from "@/data/site";
-import { TEMPLATE_COUNT } from "@/data/template-count";
+import { TEMPLATE_COUNT_LABEL } from "@/data/template-count";
 import "./globals.css";
 
 // The site's font. Everything below it is only used inside resume documents.
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     default: `Free Online Resume Builder | ${site.name}`,
     template: `%s | ${site.name}`,
   },
-  description: siteDescription(TEMPLATE_COUNT),
+  description: siteDescription(TEMPLATE_COUNT_LABEL),
   applicationName: site.name,
   openGraph: {
     type: "website",

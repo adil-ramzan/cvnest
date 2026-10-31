@@ -14,7 +14,7 @@ type TemplateGalleryProps = {
   categories: GalleryCategory[];
   items: GalleryTemplate[];
   eager: Record<string, ReactNode>;
-  total: number;
+  total: string;
 };
 
 export function TemplateGallery({ categories, items, eager, total }: TemplateGalleryProps) {

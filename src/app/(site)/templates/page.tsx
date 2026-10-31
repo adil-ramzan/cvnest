@@ -6,12 +6,12 @@ import type { GalleryTemplate } from "@/components/templates/gallery";
 import { TemplateGallery } from "@/components/templates/TemplateGallery";
 import { Container } from "@/components/ui/Container";
 import { site, socialImage } from "@/data/site";
-import { TEMPLATE_COUNT } from "@/data/template-count";
+import { TEMPLATE_COUNT_LABEL } from "@/data/template-count";
 import { templateStructure } from "@/data/template-tags";
 import { getCategory, templateCategories, templates } from "@/data/templates";
 
-const title = `${TEMPLATE_COUNT} Free Resume Templates`;
-const description = `Browse ${TEMPLATE_COUNT} free resume templates, from clean single-column designs to modern, creative, photo and executive layouts. Customize any of them online without an account.`;
+const title = `${TEMPLATE_COUNT_LABEL} Free Resume Templates`;
+const description = `Browse ${TEMPLATE_COUNT_LABEL} free resume templates, from clean single-column designs to modern, creative, photo and executive layouts. Customize any of them online without an account.`;
 
 export const metadata: Metadata = {
   title,
@@ -69,7 +69,7 @@ export default function TemplatesPage() {
             </li>
           </ol>
         </nav>
-        <h1 className="mt-5 text-display text-balance text-ink">{TEMPLATE_COUNT} free resume templates</h1>
+        <h1 className="mt-5 text-display text-balance text-ink">{TEMPLATE_COUNT_LABEL} free resume templates</h1>
         <p className="mt-5 max-w-xl text-lead text-muted">
           Pick a design and make it yours.
           <br />
@@ -77,7 +77,7 @@ export default function TemplatesPage() {
         </p>
         <p className="mt-5 text-small text-ink-soft">Free to use · No watermark · No account needed</p>
       </Container>
-      <TemplateGallery categories={categories} items={items} eager={eager} total={TEMPLATE_COUNT} />
+      <TemplateGallery categories={categories} items={items} eager={eager} total={TEMPLATE_COUNT_LABEL} />
     </>
   );
 }
