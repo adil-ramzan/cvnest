@@ -48,9 +48,6 @@ export function SiteHeader() {
           </nav>
 
           <div className="hidden items-center justify-end gap-2 md:flex">
-            <ButtonLink href="/sign-in" variant="ghost" size="sm">
-              Sign In
-            </ButtonLink>
             <ButtonLink href="/editor" size="sm">
               Create Resume
             </ButtonLink>
@@ -87,9 +84,6 @@ export function SiteHeader() {
               </ul>
             </nav>
             <div className="mt-4 grid gap-2 border-t border-line pt-4">
-              <ButtonLink href="/sign-in" variant="ghost" onClick={() => setMenuOpen(false)}>
-                Sign In
-              </ButtonLink>
               <ButtonLink href="/editor" onClick={() => setMenuOpen(false)}>
                 Create Resume
               </ButtonLink>
