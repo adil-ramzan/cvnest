@@ -191,7 +191,7 @@ export function EditorTopBar({
   ];
 
   return (
-    <header className="z-30 bg-canvas px-3 pt-3 pb-1.5 sm:px-4">
+    <header className="z-30 bg-canvas px-3 pt-3 pb-1.5 tall:sticky tall:top-0 sm:px-4">
       <div className="rounded-2xl bg-surface shadow-soft">
       <div className="flex h-15 items-center gap-2 px-3 sm:gap-3 sm:px-4">
         <Link

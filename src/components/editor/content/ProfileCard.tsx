@@ -33,7 +33,7 @@ export function ProfileCard({ profile, photoUrl, editing, onToggle, children }: 
   ].filter((row) => row.value.trim());
 
   return (
-    <section id="section-personal" aria-label="Personal information" className="scroll-mt-2 rounded-[22px] bg-surface p-4 shadow-soft sm:p-5">
+    <section id="section-personal" aria-label="Personal information" className="scroll-mt-36 rounded-[22px] lg:scroll-mt-24 bg-surface p-4 shadow-soft sm:p-5">
       <div className="flex items-start gap-3.5">
         <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent-soft text-lg font-bold text-accent-ink">
           {photoUrl ? <img src={photoUrl} alt="" className="size-full object-cover" /> : initials(name) || "?"}

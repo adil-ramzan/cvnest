@@ -25,7 +25,7 @@ export function SectionCard({ id, title, icon: Icon, summary, badge, open, onTog
   const bodyId = `section-body-${id}`;
 
   return (
-    <section id={`section-${id}`} className="scroll-mt-2 rounded-[22px] bg-surface shadow-soft">
+    <section id={`section-${id}`} className="scroll-mt-36 rounded-[22px] lg:scroll-mt-24 bg-surface shadow-soft">
       <div className="flex items-center gap-1.5 pr-2 pl-4 sm:pl-5">
         {headerOverride ?? (
           <h2 className="min-w-0 flex-1">

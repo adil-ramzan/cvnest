@@ -59,7 +59,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
   useEffect(() => {
     if (!scrollTarget.current) return;
-    document.getElementById(`section-${scrollTarget.current}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById(`section-${scrollTarget.current}`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
     scrollTarget.current = null;
   }, [openSections]);
 
@@ -77,7 +78,11 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   };
 
   const toggleSection = (id: string) =>
-    setOpenSections((current) => new Set(current.has(id) ? [] : [id]));
+    setOpenSections((current) => {
+      // Closing the section above moves this one, so bring it back into view.
+      scrollTarget.current = current.has(id) ? null : id;
+      return new Set(current.has(id) ? [] : [id]);
+    });
 
   const openSection = (id: string) => {
     setOpenSections(new Set([id]));
@@ -137,7 +142,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   };
 
   return (
-    <div className="flex h-dvh flex-col bg-canvas">
+    <div className="flex min-h-dvh flex-col bg-canvas">
       <EditorTopBar
         resumes={store.resumes}
         active={active}
@@ -155,16 +160,16 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         downloading={pdf.status === "preparing"}
       />
 
-      <main id="main" className="flex min-h-0 flex-1">
+      <main id="main" className="flex flex-1 items-start">
         <div
-          className={`min-h-0 w-full flex-col lg:flex lg:w-[40%] lg:max-w-[560px] lg:min-w-[420px] lg:shrink-0 lg:border-r lg:border-line lg:pr-2 ${mobileView === "edit" ? "flex" : "hidden"}`}
+          className={`w-full flex-col self-stretch lg:flex lg:w-[40%] lg:max-w-[560px] lg:min-w-[420px] lg:shrink-0 lg:border-r lg:border-line lg:pr-2 ${mobileView === "edit" ? "flex" : "hidden"}`}
         >
           <div
             id={tabPanelId}
             role="tabpanel"
             aria-labelledby={tabId(tab)}
             tabIndex={-1}
-            className="editor-scroll min-h-0 flex-1 overflow-y-auto outline-none"
+            className="outline-none"
           >
             {store.recovered && (
               <div className="mx-4 mt-4 flex items-start gap-3 rounded-lg border border-[#fedf89] bg-[#fffaeb] p-3.5 text-sm text-[#93370d] sm:mx-6">
@@ -301,7 +306,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           </div>
         </div>
 
-        <div className={`min-h-0 w-full min-w-0 lg:block lg:flex-1 ${mobileView === "preview" ? "block" : "hidden"}`}>
+        <div className={`w-full min-w-0 lg:block lg:flex-1 lg:tall:sticky lg:tall:top-[78px] lg:tall:h-[calc(100dvh-78px)] ${mobileView === "preview" ? "block" : "hidden"}`}>
           <PreviewPanel
             resume={active}
             photoUrl={photoUrl}
@@ -314,7 +319,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
       </main>
 
       {/* Mobile: switch between the form and the preview. */}
-      <div className="flex justify-center border-t border-line bg-surface px-4 py-2.5 lg:hidden">
+      <div className="z-20 flex justify-center border-t border-line bg-surface px-4 py-2.5 tall:sticky tall:bottom-0 lg:hidden">
         <div role="group" aria-label="View" className="flex w-full max-w-xs rounded-full border border-line bg-canvas p-1">
           {(
             [
