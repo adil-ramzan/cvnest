@@ -77,7 +77,7 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
     event.preventDefault();
     refocusKey.current = key;
     moveTo(index, target);
-    setAnnouncement(`Moved to position ${target + 1} of ${items.length}`);
+    setAnnouncement(`${getTitle(items[index]).trim() || `New ${itemName}`} moved to position ${target + 1} of ${items.length}`);
   };
 
   // Pointer events rather than HTML drag and drop, which doesn't work on touch screens.
@@ -185,7 +185,10 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
                     type="button"
                     aria-pressed={!!item.hidden}
                     aria-label={`${item.hidden ? "Show" : "Hide"} ${title} ${item.hidden ? "on" : "from"} resume`}
-                    onClick={() => onChange(items.map((current, i) => (i === index ? { ...current, hidden: current.hidden ? undefined : true } : current)))}
+                    onClick={() => {
+                      onChange(items.map((current, i) => (i === index ? { ...current, hidden: current.hidden ? undefined : true } : current)));
+                      setAnnouncement(`${title} ${item.hidden ? "shown on" : "hidden from"} resume`);
+                    }}
                     className={iconButtonClass}
                   >
                     {item.hidden ? <EyeOff aria-hidden="true" className="size-5" /> : <Eye aria-hidden="true" className="size-5" />}
