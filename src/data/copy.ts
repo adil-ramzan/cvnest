@@ -4,6 +4,9 @@
  */
 import { site } from "./site";
 import { TEMPLATE_COUNT } from "./template-count";
+import { templateCategories } from "./templates";
+
+const categoryList = new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(templateCategories.map((category) => category.label));
 
 export const homeCopy = {
   seo: {
@@ -55,7 +58,7 @@ export const homeCopy = {
     title: "The parts that matter, and nothing extra",
     items: [
       { title: "Live preview", description: "Your page updates beside the form as you type." },
-      { title: `${TEMPLATE_COUNT} templates`, description: "Simple, modern, creative, photo, compact, first-job and executive designs." },
+      { title: `${TEMPLATE_COUNT} templates`, description: `${categoryList} designs.` },
       { title: "Your section order", description: "Rename, hide and reorder sections to suit your story." },
       { title: "Several resumes", description: "Keep a version for each kind of job, and duplicate one to start the next." },
       { title: "Hide, don’t delete", description: "Take an entry off the page and keep it saved for later." },
