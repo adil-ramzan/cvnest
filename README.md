@@ -1,118 +1,188 @@
 # CVNest
 
-CVNest is a free, browser-based resume builder. You pick a template, fill in your details and see a live preview as you type. There are no accounts, and resume data never leaves the browser.
-
-Production domain: https://getcvnest.com
+CVNest is a free, browser-based resume builder. Choose a template, enter your information and see a live preview as you edit. Resume creation currently works without an account.
 
 ## Features
 
-- **120 free resume templates** in ten categories: Simple, Modern, Creative, Photo, Compact, First Job, Executive, Technical, Academic and Business.
+- **110+ free resume templates** across ten categories: Simple, Modern, Creative, Photo, Compact, First Job, Executive, Technical, Academic and Business. The library contains 120 templates.
 - **Template gallery** with category filters, search and a full-size preview page for each template.
-- **Resume editor** (`/editor`) with a live preview, zoom, US Letter or A4 pages, and Overview, Content and Customize tabs.
+- **Resume editor** (`/editor`) with live preview, zoom, US Letter or A4 pages, and Overview, Content and Customize tabs.
 - **Editable sections:** personal details, summary, experience, education, projects, skills, certifications, languages, awards, volunteering and custom sections. Sections and entries can be reordered, renamed and hidden.
-- **Multiple resumes** you can create, rename, duplicate and delete.
+- **Multiple resumes:** create, rename, duplicate and delete resumes.
 - **Optional profile photo**, resized in the browser.
-- **Private by design.** Resumes autosave to `localStorage` and photos to IndexedDB. Nothing is uploaded and no account is needed. Edits sync across open tabs.
-- **Safe data migration** from the earlier storage format, with the original data kept as a backup.
-- **PDF export** for every template on Letter or A4 pages. It uses the browser's own print engine ("Save as PDF"), so the PDF has selectable text, embedded fonts and correct page breaks, and it is created on your device.
+- **Local browser storage:** resume data is saved in `localStorage` and photos in IndexedDB. The current implementation does not upload resume content to a CVNest backend. Browser extensions, browser synchronization and other device software are outside the application's control.
+- **Cross-tab synchronization:** changes are shared across open tabs. When multiple tabs edit simultaneously, the last save wins.
+- **Data migration:** supports migration from the earlier storage format while preserving the original data as a backup.
+- **PDF export:** supports Letter and A4 page sizes using the browser's print engine. Selectable text and page layout are covered by automated PDF tests. The user selects "Save as PDF" in the print dialog.
+
+### Account and download flow
+
+The current implementation is browser-only and does not include authentication or cloud storage.
+
+The planned launch flow allows users to create and edit resumes without an account but requires signup or login when they choose to download a PDF. Guest resume data and photos must be migrated safely to the user's account before local data can be removed.
 
 ## Changes to original templates
 
-Most of the 65 templates that predate the 120-template library are unchanged, but these were changed on purpose:
+Most of the 65 templates that predate the 120-template library are unchanged. These templates received intentional modifications:
 
-| Templates | Change | Why |
+| Templates | Change | Reason |
 |---|---|---|
-| Ambassador, Boardroom, Classic, Coral, Keystone, Mosaic | Name letter-spacing reduced | Wide tracking split names in PDF text extraction |
-| Sterling | Sidebar widened from 32% to 35% | Long emails broke across lines |
-| Campus | Restyled with a banner, bands and a footer grid | It shared Horizon's structure |
-| Parallax, Monolith, Cameo, Telegraph, Capstone | Markup only: a class on the footer grid, no visual change | Firefox page breaks |
+| Ambassador, Boardroom, Classic, Coral, Keystone, Mosaic | Name letter-spacing reduced | Wide tracking caused names to split in PDF text extraction |
+| Sterling | Sidebar widened from 32% to 35% | Long email addresses broke across lines |
+| Campus | Restyled with a banner, bands and footer grid | It previously shared Horizon's structure |
+| Parallax, Monolith, Cameo, Telegraph, Capstone | Markup-only change: added a footer-grid class | Firefox page-break handling; no intended visual change |
 
-Compared by rendered HTML and pixels against a baseline of the 65. Professional shifted slightly when links were added; that was fixed afterwards.
+Template comparisons were performed using rendered HTML and pixel comparisons against a baseline of the original 65 templates. Professional also received a small alignment adjustment after links were added.
 
 ## Tech stack
 
-- [Next.js](https://nextjs.org) 16 (App Router) and React 19
+- [Next.js](https://nextjs.org) 16 (App Router)
+- [React](https://react.dev) 19
 - TypeScript 5.9
 - Tailwind CSS v4
 - lucide-react icons
 - Google Fonts through `next/font`
 
-There is no backend, database or authentication.
+The current implementation has no backend, database or authentication.
 
 ## Getting started
 
-You need Node.js 20.9 or later.
+Requirements:
+
+- Node.js 20.9 or later
+- npm
+
+Install dependencies and start the development server:
 
 ```bash
-npm install
-npm run dev        # http://localhost:3000
+npm ci
+npm run dev
 ```
 
-Other scripts:
+Open http://localhost:3000.
+
+### Available scripts
 
 ```bash
-npm run build      # production build
-npm run start      # serve the production build
+npm run dev        # Start the development server
+npm run build      # Create a production build
+npm run start      # Serve the production build
 npm run typecheck  # TypeScript check without emitting files
-npm run verify     # typecheck + unit tests + production build
+npm run verify     # Typecheck, unit tests and production build
+npm run test:unit  # Run unit tests
+npm run test:e2e   # Run browser tests
 ```
 
 ## Testing
 
-- **Unit tests** (`npm run test:unit`): schema validation, migrations, storage, the render model and the template registry. They use Node's built-in test runner and the project's own TypeScript compiler, with no extra dependencies.
-- **Browser tests** (`npm run build && npm run test:e2e`): `tests/e2e/run.mjs` starts the production build on a free port and runs every `*.test.mjs` suite against it in Chrome via `puppeteer-core`. The suites cover the editor, migration and recovery, all 120 templates, layout at phone to desktop widths, error screens, and PDF export.
-  - Run some suites only: `npm run test:e2e -- layout pdf`.
-  - Chrome is found automatically. Set `CHROME_PATH` to override.
-  - The PDF suites also need poppler-utils (`pdfinfo`, `pdftotext`, `pdfimages`, `pdffonts`) and skip themselves without them.
-  - `pdf-firefox.test.mjs` exports every template in real Firefox and needs `firefox` and `geckodriver`. To run the Chrome PDF suite in Edge, set `CHROME_PATH` to the Edge binary.
-  - Screenshots and PDFs from the last run go to `.e2e-output/`.
+### Unit tests
+
+Run with:
+
+```bash
+npm run test:unit
+```
+
+Unit tests cover schema validation, migrations, storage, the render model and template registry. They use Node's built-in test runner and the project's TypeScript compiler.
+
+### Browser tests
+
+Run with:
+
+```bash
+npm run build
+npm run test:e2e
+```
+
+The E2E runner (`tests/e2e/run.mjs`) starts the production build on an available port and runs the browser test suites in Chrome using `puppeteer-core`.
+
+Coverage includes:
+
+- Resume editor interactions.
+- Data migration and recovery.
+- All 120 templates.
+- Layout at phone-to-desktop viewport widths.
+- Error screens.
+- PDF export.
+
+Additional information:
+
+- Run selected suites with `npm run test:e2e -- layout pdf`.
+- Chrome is detected automatically. Set `CHROME_PATH` to override the browser executable.
+- PDF tests require Poppler utilities: `pdfinfo`, `pdftotext`, `pdfimages` and `pdffonts`. They skip themselves when these tools are unavailable.
+- `pdf-firefox.test.mjs` exports templates in Firefox and requires Firefox and `geckodriver`.
+- To run the Chrome PDF suite in Edge, set `CHROME_PATH` to the Edge executable.
+- Screenshots and PDFs from the last test run are saved in `.e2e-output/`.
+
+Automated browser tests do not replace testing on physical mobile devices, Safari or real screen readers.
 
 ## Project structure
 
-```
+```text
 src/
   app/                 Routes: (site) pages, /editor, sitemap, robots
   components/
     editor/            Resume editor UI and state (useResumeStore)
-    resume/            Resume rendering: hand-written templates and the design engine
-    home/, layout/, templates/, ui/   Public pages and shared UI
-  data/                Resume data model, template registry, sample resumes, site config
-  lib/                 Storage, schema validation, migrations, photo storage
+    resume/            Resume rendering: hand-written templates and design engine
+    home/              Homepage components
+    layout/            Shared layout components
+    templates/         Template gallery components
+    ui/                Shared UI components
+  data/                Resume data model, template registry, sample resumes and site config
+  lib/                 Storage, schema validation, migrations and photo storage
+
 tests/
   unit/                Unit tests (node:test)
-  e2e/                 Browser suites, fixtures and runner
+  e2e/                 Browser suites, fixtures and test runner
 ```
 
-### Browser storage keys
+## Browser storage
 
-The keys keep their original `folio.*` prefix so existing saved resumes keep working.
+The storage keys retain their original `folio.*` prefix so existing saved resumes continue to work.
 
 | Key | Contents |
-| --- | --- |
+|---|---|
 | `folio.resumes.v2` | Current resumes (schema v2) |
-| `folio.resumes` | Pre-migration v1 data, kept unchanged as a backup |
-| `folio.editor-settings` | Active resume and zoom |
+| `folio.resumes` | Pre-migration v1 data, retained as a backup |
+| `folio.editor-settings` | Active resume and zoom settings |
 | `folio.migrations` | Log of completed migrations |
 | IndexedDB `folio` / `photos` | Profile photo images |
 
-When the resume shape changes, add a step to `src/lib/migrations.ts` and bump `RESUME_SCHEMA_VERSION`.
+When the resume data structure changes, add a migration step to `src/lib/migrations.ts` and update `RESUME_SCHEMA_VERSION`.
 
 ## Development status
 
-| Phase | Status |
-| --- | --- |
-| 1. Homepage and template gallery | Complete |
-| 2. Browser-only resume editor | Complete |
-| Template library (120 templates) | Complete |
-| 3. Unified data model and safe migration | Complete |
-| Free messaging, SEO and CVNest rebrand | Complete |
-| UI/UX, typography and editor redesign | Complete; font, color and spacing controls deferred |
-| Browser-based PDF export | Complete |
-| 5. Stabilisation: tests, mobile gallery fix, error screens | Complete |
+CVNest is under active development and is not yet ready for public launch.
 
-### Known limitations
+Implemented areas include:
 
-- PDF export goes through the browser's print dialog, where you choose "Save as PDF"; there's no one-click file download. Firefox gets its own export path in `usePdfExport` (static font files from `public/fonts/print`, floats for page columns and a repeating page spacer), because its PDF output loses text set in variable fonts and it doesn't break CSS grids or repeat padding across pages. Safari hasn't been tested on a real device. From reading the code, it doesn't support `box-decoration-break: clone` without a prefix, so it should fall back to page margins, which would leave thin white bands across sidebar backgrounds.
-- The Contact page has no contact address, and the Privacy and Terms pages are short placeholders.
-- There is no favicon or Open Graph image.
-- When two tabs edit at the same time, the last save wins.
+- Homepage and template gallery.
+- Browser-based resume editor.
+- 120-template library.
+- Unified resume data model and migration.
+- Local browser storage.
+- Browser-based PDF export.
+- Automated unit and browser testing.
+
+Remaining pre-launch work includes:
+
+- Accessibility and editor improvements.
+- PDF testing on Safari and physical mobile devices.
+- Security headers and technical hardening.
+- Accurate legal, privacy and contact pages.
+- Final brand and domain confirmation.
+- Authentication and secure cloud storage for the planned download flow.
+- Production deployment and final launch verification.
+
+## Known limitations
+
+- **PDF download:** uses the browser's print dialog. Users must select "Save as PDF"; there is no one-click file download.
+- **Firefox PDF rendering:** uses a separate export path in `usePdfExport` because Firefox handles variable fonts, CSS grids and page breaks differently. This path uses static font files from `public/fonts/print`, floats for page columns and a repeating page spacer.
+- **Safari:** physical-device PDF export has not yet been verified. Do not assume Safari compatibility until it has been tested.
+- **Simultaneous editing:** when two tabs edit the same resume at the same time, the last save wins.
+- **Authentication and cloud storage:** not yet implemented. Resume data is currently stored locally in the browser.
+- **Legal pages:** Privacy and Terms content still needs to be completed and reviewed. The Contact page also needs appropriate contact information.
+- **Brand assets:** favicon and Open Graph image still need to be completed.
+- **Production readiness:** security headers, domain configuration and other launch requirements remain under review.
+
+See `docs/audit-final.md` for the detailed pre-launch audit and remaining work.
