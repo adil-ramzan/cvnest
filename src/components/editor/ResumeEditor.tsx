@@ -400,7 +400,6 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             undo.restore();
             setUndo(null);
             setAnnouncement("Restored");
-            document.getElementById(tabPanelId)?.focus();
           }}
         />
       )}

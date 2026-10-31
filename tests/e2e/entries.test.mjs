@@ -129,9 +129,10 @@ check("Cancel returns focus to the row", (await focusLabel()).includes("Second r
 await openRow("Added role");
 await page.click("button[aria-label='Delete position']");
 await sleep(300);
-check("Delete moves focus to a neighbouring row", (await page.evaluate(() => document.activeElement.getAttribute("aria-expanded"))) !== null);
-await clickButton("Undo");
+check("Delete moves focus to the Undo action", (await focusLabel()) === "Undo");
+await page.keyboard.press("Enter");
 await sleep(700);
+check("Undo returns focus to a row", (await page.evaluate(() => document.activeElement.getAttribute("aria-expanded"))) !== null);
 await page.click("button[aria-label='Hide Second role from resume']");
 await sleep(200);
 check("Hide is announced", await page.$$eval("[role=status]", (els) => els.some((el) => el.textContent.includes("Second role hidden from resume"))));
