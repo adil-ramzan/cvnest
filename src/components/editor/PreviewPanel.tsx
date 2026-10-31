@@ -143,7 +143,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
               </div>
             )}
             {/* The sample stands in here only; PDF export always renders the real resume. */}
-            <div aria-hidden={empty || undefined}>
+            <div aria-hidden={empty || undefined} inert={empty || undefined}>
               <ResumePreview
                 template={template}
                 resume={empty ? undefined : resume}

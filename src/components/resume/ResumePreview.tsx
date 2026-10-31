@@ -59,7 +59,7 @@ export function ResumePreview({ template, resume, photoUrl, thumbnail = false, f
         template={template}
         resume={resume ?? template.sample}
         photoUrl={resume ? photoUrl : template.samplePhoto}
-        links={flow}
+        links={flow && !!resume}
       />
     </ResumePaper>
   );
