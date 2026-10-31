@@ -30,6 +30,11 @@ describe("template registry", () => {
     }
   });
 
+  it("gives every template a unique name and description for search engines", () => {
+    assert.equal(new Set(templates.map((t) => t.name)).size, templates.length);
+    assert.equal(new Set(templates.map((t) => t.description)).size, templates.length);
+  });
+
   it("gives every template a sample resume with content", () => {
     for (const t of templates) {
       assert.ok(t.sample.profile.fullName, `${t.slug} sample has a name`);

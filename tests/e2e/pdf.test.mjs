@@ -123,6 +123,15 @@ for (const { file, name, size, slug } of files) {
     if (name === "long" && index < pages - 1) leastFilled = Math.min(leastFilled, Math.max(...words.map((x) => x[3])) / ph);
   });
 
+  if (name === "long" && size === "letter") {
+    const urls = run("pdfinfo", ["-url", file]);
+    for (const expected of ["https://linkedin.com/in/alexandra", "https://github.com/alexandra", "mailto:alexandra@example.com", "https://alexandra.example.com/portfolio"]) {
+      if (!urls.includes(expected)) problems.push(`${label}: no link to ${expected}`);
+    }
+    if (!/github\.com\/alexandra\/cli/.test(urls)) problems.push(`${label}: no project link`);
+    if (/javascript:|data:/i.test(urls)) problems.push(`${label}: unsafe link`);
+  }
+
   const images = run("pdfimages", ["-list", file]).split("\n").slice(2).filter((l) => l.trim()).length;
   const showsPhoto = name !== "empty" && photoMode[slug] !== "none" && !handWritten.has(slug);
   if (showsPhoto && images !== 1) problems.push(`${label}: expected the photo, found ${images} images`);
