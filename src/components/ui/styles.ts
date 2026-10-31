@@ -28,9 +28,9 @@ export function buttonClass(variant: ButtonVariant = "primary", size: ButtonSize
   return `inline-flex items-center justify-center gap-2 rounded-[14px] font-bold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 ${focusRing} ${buttonVariants[variant]} ${shape} ${extra}`;
 }
 
-/** Square icon-only button; 40px on touch screens, 36px on desktop. */
+/** Square icon-only button, 40px everywhere. */
 export const iconButtonClass =
-  "inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-30 lg:size-9 " +
+  "inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-30 " +
   focusRing;
 
 /** Editor fields: 15px text, 16px on phones so iOS doesn't zoom in on focus. */

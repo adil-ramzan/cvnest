@@ -163,7 +163,7 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
                     aria-label={`Reorder ${title}. Use the up and down arrow keys.`}
                     onPointerDown={(event) => startDrag(event, key)}
                     onKeyDown={(event) => onHandleKeyDown(event, index, key)}
-                    className={`inline-flex h-10 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted hover:text-ink active:cursor-grabbing ${focusRing}`}
+                    className={`inline-flex size-10 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted hover:text-ink active:cursor-grabbing ${focusRing}`}
                   >
                     <GripVertical aria-hidden="true" className="size-5" />
                   </button>

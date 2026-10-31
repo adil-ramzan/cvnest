@@ -97,7 +97,7 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
 function StorageInfo() {
   return (
     <span className="group relative inline-flex">
-      <button type="button" aria-label={STORAGE_NOTE} className={`inline-flex size-7 items-center justify-center rounded-full text-muted hover:text-ink ${focusRing}`}>
+      <button type="button" aria-label={STORAGE_NOTE} className={`inline-flex size-10 items-center justify-center rounded-full text-muted hover:text-ink ${focusRing}`}>
         <Info aria-hidden="true" className="size-4" />
       </button>
       <span
