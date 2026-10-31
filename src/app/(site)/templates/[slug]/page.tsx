@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: TemplatePageProps): Promise<M
   if (!template) return {};
 
   const title = `Free ${template.name} Resume Template`;
-  const description = `${template.description} Free to use and customize online, with no account required.`;
+  const description = `${template.description} Free to use, no account required.`;
   return {
     title,
     description,
