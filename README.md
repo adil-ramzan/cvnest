@@ -24,6 +24,7 @@ Most of the 65 templates that predate the 120-template library are unchanged, bu
 |---|---|---|
 | Ambassador, Boardroom, Classic, Coral, Keystone, Mosaic | Name letter-spacing reduced | Wide tracking split names in PDF text extraction |
 | Sterling | Sidebar widened from 32% to 35% | Long emails broke across lines |
+| Campus | Restyled with a banner, bands and a footer grid | It shared Horizon's structure |
 | Parallax, Monolith, Cameo, Telegraph, Capstone | Markup only: a class on the footer grid, no visual change | Firefox page breaks |
 
 Compared by rendered HTML and pixels against a baseline of the 65. Professional shifted slightly when links were added; that was fixed afterwards.
