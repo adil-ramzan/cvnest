@@ -20,11 +20,8 @@ describe("template registry", () => {
       const d = design!;
       return { slug, key: [d.layout, d.header, d.heading, d.bullets, d.skills, d.dates, d.fonts.heading, d.fonts.body].join("|") };
     });
-    // Original templates that already share a structure; they differ in color and sample only.
-    const knownPairs = new Set(["campus"]);
     const seen = new Map<string, string>();
     for (const { slug, key } of signatures) {
-      if (knownPairs.has(slug)) continue;
       assert.equal(seen.get(key), undefined, `${slug} repeats ${seen.get(key)}`);
       seen.set(key, slug);
     }
