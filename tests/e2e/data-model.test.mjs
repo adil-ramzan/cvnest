@@ -165,26 +165,32 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
     }
   }
   // Summary, skills, language, certification, project, education, experience
-  await page.locator("::-p-text(A short introduction)").click();
+  // Sections can sit behind the sticky header, where a click would land on the header.
+  const openSection = async (hint) => {
+    const el = await page.waitForSelector(`::-p-text(${hint})`);
+    await el.evaluate((node) => node.scrollIntoView({ behavior: "instant", block: "center" }));
+    await el.click();
+  };
+  await openSection("A short introduction");
   await page.locator("::-p-aria(Summary)").fill("Summary text here.");
-  await page.locator("::-p-text(Tools, technologies and strengths)").click();
+  await openSection("Tools, technologies and strengths");
   await page.locator("::-p-aria(Add a skill)").fill("Go, Rust");
   await page.keyboard.press("Enter");
-  await page.locator("::-p-text(Languages you speak)").click();
+  await openSection("Languages you speak");
   await page.locator("::-p-aria(Add language)").click();
   await page.locator("::-p-aria(Language)").fill("Japanese");
   await page.locator("::-p-aria(Proficiency)").fill("Intermediate");
-  await page.locator("::-p-text(Licenses and certificates)").click();
+  await openSection("Licenses and certificates");
   await page.locator("::-p-aria(Add certification)").click();
   await page.locator("::-p-aria(Certification)").fill("CKA");
   await page.locator("::-p-aria(Issuer)").fill("CNCF");
-  await page.locator("::-p-text(Personal, academic or open-source work)").click();
+  await openSection("Personal, academic or open-source work");
   await page.locator("::-p-aria(Add project)").click();
   await page.locator("::-p-aria(Project name)").fill("Tiny compiler");
-  await page.locator("::-p-text(Degrees, courses and schools)").click();
+  await openSection("Degrees, courses and schools");
   await page.locator("::-p-aria(Add education)").click();
   await page.locator("::-p-aria(Degree or qualification)").fill("B.S. Math");
-  await page.locator("::-p-text(Jobs, internships and volunteer roles)").click();
+  await openSection("Jobs, internships and volunteer roles");
   await page.locator("::-p-aria(Add position)").click();
   await page.locator("::-p-aria(Company)").fill("FirstCo");
   await page.locator("::-p-aria(Add position)").click();
