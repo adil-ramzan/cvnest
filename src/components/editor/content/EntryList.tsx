@@ -34,6 +34,10 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
   const listRef = useRef<HTMLUListElement>(null);
   const handles = useRef(new Map<string, HTMLButtonElement>());
   const refocusKey = useRef<string | null>(null);
+  const rows = useRef(new Map<string, HTMLButtonElement>());
+  const addButton = useRef<HTMLButtonElement>(null);
+  /** Where keyboard focus goes once the form closes: a row, or the Add button. */
+  const focusNext = useRef<string | "add" | null>(null);
   // Pointer listeners outlive a render, so they read the latest values from here.
   const latest = useRef({ items, onChange });
   useLayoutEffect(() => {
@@ -47,6 +51,17 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
     handles.current.get(refocusKey.current)?.focus();
     refocusKey.current = null;
   }, [items]);
+
+  useEffect(() => {
+    if (!focusNext.current) return;
+    (focusNext.current === "add" ? addButton.current : rows.current.get(focusNext.current))?.focus();
+    focusNext.current = null;
+  }, [items, openKey]);
+
+  const closeForm = (key: string | "add") => {
+    focusNext.current = key;
+    setOpenKey(null);
+  };
 
   const moveTo = (from: number, to: number) => {
     const next = [...latest.current.items];
@@ -110,8 +125,16 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
 
   const cancel = (index: number) => {
     const before = original.current;
+    const key = keyOf(items[index], index);
     onChange(before ? items.map((item, i) => (i === index ? before : item)) : items.filter((_, i) => i !== index));
-    setOpenKey(null);
+    closeForm(before ? key : "add");
+  };
+
+  const remove = (index: number, title: string) => {
+    const neighbour = items[index + 1] ?? items[index - 1];
+    onChange(items.filter((_, i) => i !== index));
+    closeForm(neighbour ? keyOf(neighbour, items.indexOf(neighbour)) : "add");
+    onDeleted(items[index], index, title);
   };
 
   return (
@@ -146,6 +169,10 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
                   </button>
                   <button
                     type="button"
+                    ref={(element) => {
+                      if (element) rows.current.set(key, element);
+                      else rows.current.delete(key);
+                    }}
                     onClick={() => openRow(item, key)}
                     aria-expanded={open}
                     aria-controls={bodyId}
@@ -165,18 +192,22 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
                   </button>
                 </div>
 
-                <div id={bodyId} hidden={!open} className="border-t border-line p-4">
+                <div
+                  id={bodyId}
+                  hidden={!open}
+                  className="border-t border-line p-4"
+                  onKeyDown={(event) => {
+                    // Edits are already saved as you type, so Escape keeps them. Cancel is the undo.
+                    if (event.key === "Escape") closeForm(key);
+                  }}
+                >
                   {open && (
                     <>
                       {renderFields(item, (patch) => onChange(items.map((current, i) => (i === index ? { ...current, ...patch } : current))), key === newKey)}
                       <div className="mt-5 flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            onChange(items.filter((_, i) => i !== index));
-                            setOpenKey(null);
-                            onDeleted(item, index, title);
-                          }}
+                          onClick={() => remove(index, title)}
                           aria-label={`Delete ${itemName}`}
                           className={buttonClass("ghost", "sm", "mr-auto w-10 px-0 text-[#b42318] hover:bg-[#fef3f2]")}
                         >
@@ -185,7 +216,7 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
                         <button type="button" onClick={() => cancel(index)} className={buttonClass("secondary", "sm")}>
                           Cancel
                         </button>
-                        <button type="button" onClick={() => setOpenKey(null)} className={buttonClass("primary", "sm")}>
+                        <button type="button" onClick={() => closeForm(key)} className={buttonClass("primary", "sm")}>
                           Save
                         </button>
                       </div>
@@ -200,7 +231,7 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
 
       <div className={`flex justify-center ${items.length > 0 ? "mt-3" : ""}`}>
         {items.length < LIMITS.entries ? (
-          <button type="button" onClick={add} aria-label={`Add ${itemName}`} className={buttonClass("secondary", "sm")}>
+          <button ref={addButton} type="button" onClick={add} aria-label={`Add ${itemName}`} className={buttonClass("secondary", "sm")}>
             <Plus aria-hidden="true" className="size-4" />
             Add entry
           </button>

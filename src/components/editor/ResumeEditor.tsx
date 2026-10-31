@@ -49,6 +49,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const restoreInput = useRef<HTMLInputElement>(null);
   const [undo, setUndo] = useState<{ id: number; resumeId: string; message: string; restore: () => void } | null>(null);
   const dismissUndo = useCallback(() => setUndo(null), []);
+  const [announcement, setAnnouncement] = useState("");
 
   const { activeResume: active } = store;
   const photoUrl = usePhotoUrl(active?.profile.photo);
@@ -374,6 +375,10 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           )}
         </div>
       )}
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
+
       <LeaveGuardDialog
         open={guard.pending !== null}
         saveFailed={store.saveStatus === "error" || store.saveStatus === "unavailable" || store.saveStatus === "blocked"}
@@ -394,6 +399,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           onUndo={() => {
             undo.restore();
             setUndo(null);
+            setAnnouncement("Restored");
+            document.getElementById(tabPanelId)?.focus();
           }}
         />
       )}

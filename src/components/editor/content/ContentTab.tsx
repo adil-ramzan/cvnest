@@ -165,7 +165,10 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
 
   /** Removes a section, keeping what's needed to put it back in the same place. */
   const removeSection = (section: ResumeSection, index: number) => {
+    const neighbour = sections[index + 1] ?? sections[index - 1];
     onChange((r) => ({ ...r, sections: r.sections.filter((s) => s.id !== section.id) }));
+    // The menu that held focus is about to disappear with its section.
+    requestAnimationFrame(() => document.querySelector<HTMLElement>(`[id="section-${neighbour?.id}"] h2 button`)?.focus());
     onUndoable(`“${sectionHeading(section)}” deleted`, () =>
       onChange((r) => ({ ...r, sections: [...r.sections.slice(0, index), section, ...r.sections.slice(index)] })),
     );
