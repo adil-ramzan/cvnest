@@ -7,7 +7,7 @@ import { site } from "@/data/site";
 import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
 import { backupFileName, createBackup, downloadTextFile, MAX_BACKUP_BYTES, readBackup } from "@/lib/backup";
 import { findOverLimits } from "@/lib/resume-limits";
-import { type BackupState, loadBackupState, readRawResumes, saveBackupState } from "@/lib/resume-storage";
+import { type BackupState, loadBackupState, loadOpenSection, readRawResumes, saveBackupState, saveOpenSection } from "@/lib/resume-storage";
 import { duplicateResume, isResumeEmpty } from "@/lib/resumes";
 import { isAtRisk } from "@/lib/unsaved";
 import { ContentTab } from "./content/ContentTab";
@@ -58,6 +58,17 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const guard = useUnsavedGuard(isAtRisk(active, store.saveStatus), store.flushSave);
   const dialogResume = dialog && "id" in dialog ? store.resumes.find((r) => r.id === dialog.id) : undefined;
 
+  // Reopens the section this resume was left on, after a reload or a switch between resumes.
+  const activeId = active?.id;
+  useEffect(() => {
+    if (!activeId) return;
+    const section = loadOpenSection(activeId);
+    scrollTarget.current = section;
+    // Browser storage doesn't exist during server rendering, so this can only run after mounting.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOpenSections(new Set(section ? [section] : []));
+  }, [activeId]);
+
   useEffect(() => {
     if (!scrollTarget.current) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -78,16 +89,18 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     setMobileView("edit");
   };
 
-  const toggleSection = (id: string) =>
-    setOpenSections((current) => {
-      // Closing the section above moves this one, so bring it back into view.
-      scrollTarget.current = current.has(id) ? null : id;
-      return new Set(current.has(id) ? [] : [id]);
-    });
+  const toggleSection = (id: string) => {
+    const next = openSections.has(id) ? null : id;
+    // Closing the section above moves this one, so bring it back into view.
+    scrollTarget.current = next;
+    setOpenSections(new Set(next ? [next] : []));
+    saveOpenSection(active.id, next);
+  };
 
   const openSection = (id: string) => {
     setOpenSections(new Set([id]));
     scrollTarget.current = id;
+    saveOpenSection(active.id, id);
   };
 
   const editSection = (id: string) => {

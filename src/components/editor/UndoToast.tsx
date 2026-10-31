@@ -18,13 +18,14 @@ export function UndoToast({ message, onUndo, onDismiss }: UndoToastProps) {
 
   // Runs after the list has moved focus off the deleted item, so that's where focus returns.
   useEffect(() => {
+    const undoButton = button.current;
     const frame = requestAnimationFrame(() => {
       returnTo.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      button.current?.focus();
+      undoButton?.focus();
     });
     return () => {
       cancelAnimationFrame(frame);
-      if (document.activeElement === button.current || document.activeElement === document.body) returnTo.current?.focus();
+      if (document.activeElement === undoButton || document.activeElement === document.body) returnTo.current?.focus();
     };
   }, []);
 

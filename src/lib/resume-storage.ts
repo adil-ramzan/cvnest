@@ -25,6 +25,7 @@ const SETTINGS_KEY = "folio.editor-settings";
 const UNREADABLE_BACKUP_KEY = "folio.resumes.v2.unreadable-backup";
 const BACKUP_STATE_KEY = "folio.backup-state";
 const MIGRATION_LOG_KEY = "folio.migrations";
+const OPEN_SECTIONS_KEY = "folio.open-sections";
 const upgradeBackupKey = (fromVersion: number) => `folio.resumes.backup-v${fromVersion}`;
 
 export const RESUMES_STORAGE_KEY = RESUMES_KEY;
@@ -252,5 +253,29 @@ export function saveSettings(settings: EditorSettings): void {
     window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch {
     // Settings are a convenience; ignore failures.
+  }
+}
+
+function readOpenSections(): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(window.localStorage.getItem(OPEN_SECTIONS_KEY) ?? "{}");
+  return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : {};
+}
+
+/** The section a resume was last left open on. Kept apart from the resume so it never counts as an edit. */
+export function loadOpenSection(resumeId: string): string | null {
+  try {
+    const section = readOpenSections()[resumeId];
+    return typeof section === "string" ? section : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveOpenSection(resumeId: string, sectionId: string | null): void {
+  try {
+    const { [resumeId]: _previous, ...others } = readOpenSections();
+    window.localStorage.setItem(OPEN_SECTIONS_KEY, JSON.stringify(sectionId ? { ...others, [resumeId]: sectionId } : others));
+  } catch {
+    // Only affects which section opens next time.
   }
 }

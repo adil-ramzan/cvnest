@@ -8,6 +8,10 @@ describe("TEMPLATE_COUNT", () => {
     assert.equal(TEMPLATE_COUNT, new Set(templates.map((t) => t.slug)).size);
   });
 
+  it("never drops below the 110 promised in public copy", () => {
+    assert.ok(TEMPLATE_COUNT >= 110, `only ${TEMPLATE_COUNT} templates`);
+  });
+
   it("keeps the public label true", () => {
     assert.ok(TEMPLATE_COUNT >= parseInt(TEMPLATE_COUNT_LABEL, 10));
   });
