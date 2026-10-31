@@ -97,7 +97,7 @@ export function PhotoField({ value, hasPhoto, onChange }: PhotoFieldProps) {
 
   return (
     <div>
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <div className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-panel ring-1 ring-line">
           {value ? (
             <img src={value} alt="Your profile photo" className="size-full object-cover" />
