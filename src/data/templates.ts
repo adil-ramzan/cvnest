@@ -2456,7 +2456,7 @@ export const templates: ResumeTemplate[] = [
       header: "left",
       fonts: { heading: "sourceSerif", body: "inter" },
       colors: { accent: "#4d4633", ink: "#1f1d16" },
-      side: { position: "right", width: "29%", bg: "#f4efe2", tint: "#e8e1cd", rule: "#dcd3ba", sections: ["contact", "skills", "education", "languages", "certifications"] },
+      side: { position: "right", width: "32%", bg: "#f4efe2", tint: "#e8e1cd", rule: "#dcd3ba", sections: ["contact", "skills", "education", "languages", "certifications"] },
       heading: "dotted",
       sideHeading: "caps",
       bullets: "square",
