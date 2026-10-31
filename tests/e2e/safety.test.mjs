@@ -80,10 +80,33 @@ await clickText(page, "Restore", "dialog[open] button");
 await sleep(1200);
 list = await stored(page);
 const restoredAlpha = list.find((r) => r.name === "Alpha");
-await page.waitForFunction(() => true);
-check("Restored photo returns to browser storage", !!restoredAlpha?.profile.photo?.id);
+check("Restored resume keeps its photo reference", !!restoredAlpha?.profile.photo?.id);
+
+// A true loss and recovery: wipe all browser storage, then restore from the file alone.
+await page.goto(`${BASE}/about`, { waitUntil: "networkidle0" });
+await page.evaluate(() => new Promise((resolve) => { localStorage.clear(); const request = indexedDB.deleteDatabase("folio"); request.onsuccess = request.onerror = request.onblocked = resolve; }));
+await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
+await page.waitForSelector("select");
+await sleep(400);
+await restoreFile(page, JSON.stringify({ ...backup, resumes: [{ ...backup.resumes[0], design: { ...backup.resumes[0].design, templateId: "portrait" } }] }));
+await page.evaluate(() => [...document.querySelectorAll("dialog[open] input[type=radio]")][1].click());
+await sleep(100);
+await clickText(page, "Replace and restore", "dialog[open] button");
+await sleep(1200);
+await page.reload({ waitUntil: "networkidle0" });
+await sleep(1000);
+const shownPhoto = await page.$eval("[aria-label='Resume preview'] .resume-paper img", (img) => ({ width: img.naturalWidth, height: img.naturalHeight, inMemory: img.src.startsWith("blob:") }));
+check("Restored photo displays at its real size after a reload", shownPhoto.width === 400 && shownPhoto.height === 400 && shownPhoto.inMemory, JSON.stringify(shownPhoto));
+await menu(page, "Download backup");
+await sleep(500);
+const secondBackup = JSON.parse(await backupText(page));
+check("Restored photo bytes are identical", secondBackup.resumes[0].profile.photo.inlineData === backup.resumes[0].profile.photo.inlineData);
 
 // ---- Rejected files
+await restoreFile(page, JSON.stringify({ ...backup, resumes: [backup.resumes[1], backup.resumes[0]] }));
+await clickText(page, "Restore", "dialog[open] button");
+await sleep(800);
+list = await stored(page);
 await restoreFile(page, "not json");
 check("Invalid file is rejected", (await page.$eval("dialog[open]", (el) => el.innerText)).includes("isn't a valid backup"));
 await clickText(page, "Close", "dialog[open] button");
