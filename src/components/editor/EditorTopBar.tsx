@@ -193,7 +193,8 @@ export function EditorTopBar({
   return (
     <header className="z-30 bg-canvas px-3 pt-3 pb-1.5 tall:sticky tall:top-0 sm:px-4">
       <div className="rounded-2xl bg-surface shadow-soft">
-      <div className="flex h-15 items-center gap-2 px-3 sm:gap-3 sm:px-4">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 px-3 sm:gap-x-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <div className="flex h-15 min-w-0 items-center gap-2 sm:gap-3">
         <Link
           href="/"
           aria-label={`${site.name} home`}
@@ -223,10 +224,11 @@ export function EditorTopBar({
             </>
           }
         />
+        </div>
 
-        <Tabs tab={tab} onTabChange={onTabChange} className="mx-auto hidden shrink-0 lg:flex" />
+        <Tabs tab={tab} onTabChange={onTabChange} className="order-last col-span-2 -mx-3 border-t border-line p-1.5 sm:-mx-4 lg:order-none lg:col-span-1 lg:mx-0 lg:border-0 lg:p-0" />
 
-        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 lg:ml-0">
+        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
           <SaveIndicator status={saveStatus} />
           <button
             type="button"
@@ -254,9 +256,6 @@ export function EditorTopBar({
         </div>
       </div>
 
-      <div className="border-t border-line p-1.5 lg:hidden">
-        <Tabs tab={tab} onTabChange={onTabChange} />
-      </div>
       </div>
     </header>
   );
