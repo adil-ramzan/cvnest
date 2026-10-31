@@ -115,7 +115,7 @@ body {
   Forced colors keep the system's own scrollbars.
 */
 .editor-scroll {
-  --scroll-thumb: color-mix(in srgb, var(--color-ink) 25%, transparent);
+  --scroll-thumb: color-mix(in srgb, var(--color-ink) 40%, transparent);
   scrollbar-width: thin;
   scrollbar-gutter: stable;
   scrollbar-color: var(--scroll-thumb) transparent;
