@@ -6,7 +6,7 @@ Production domain: https://getcvnest.com
 
 ## Features
 
-- **65 free resume templates** in seven categories: Simple, Modern, Creative, Photo, Compact, First Job and Executive.
+- **120 free resume templates** in ten categories: Simple, Modern, Creative, Photo, Compact, First Job, Executive, Technical, Academic and Business.
 - **Template gallery** with category filters, search and a full-size preview page for each template.
 - **Resume editor** (`/editor`) with a live preview, zoom, US Letter or A4 pages, and Overview, Content and Customize tabs.
 - **Editable sections:** personal details, summary, experience, education, projects, skills, certifications, languages, awards, volunteering and custom sections. Sections and entries can be reordered, renamed and hidden.
@@ -47,7 +47,7 @@ npm run verify     # typecheck + unit tests + production build
 ## Testing
 
 - **Unit tests** (`npm run test:unit`): schema validation, migrations, storage, the render model and the template registry. They use Node's built-in test runner and the project's own TypeScript compiler, with no extra dependencies.
-- **Browser tests** (`npm run build && npm run test:e2e`): `tests/e2e/run.mjs` starts the production build on a free port and runs every `*.test.mjs` suite against it in Chrome via `puppeteer-core`. The suites cover the editor, migration and recovery, all 65 templates, layout at phone to desktop widths, error screens, and PDF export.
+- **Browser tests** (`npm run build && npm run test:e2e`): `tests/e2e/run.mjs` starts the production build on a free port and runs every `*.test.mjs` suite against it in Chrome via `puppeteer-core`. The suites cover the editor, migration and recovery, all 120 templates, layout at phone to desktop widths, error screens, and PDF export.
   - Run some suites only: `npm run test:e2e -- layout pdf`.
   - Chrome is found automatically. Set `CHROME_PATH` to override.
   - The PDF suites also need poppler-utils (`pdfinfo`, `pdftotext`, `pdfimages`, `pdffonts`) and skip themselves without them.
@@ -90,7 +90,7 @@ When the resume shape changes, add a step to `src/lib/migrations.ts` and bump `R
 | --- | --- |
 | 1. Homepage and template gallery | Complete |
 | 2. Browser-only resume editor | Complete |
-| Template library (65 templates) | Complete |
+| Template library (120 templates) | Complete |
 | 3. Unified data model and safe migration | Complete |
 | Free messaging, SEO and CVNest rebrand | Complete |
 | UI/UX, typography and editor redesign | Complete; font, color and spacing controls deferred |
