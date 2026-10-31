@@ -22,7 +22,7 @@ import {
 
 export type TemplateSlug = string;
 
-export type TemplateCategory = "simple" | "modern" | "creative" | "photo" | "compact" | "graduate" | "executive";
+export type TemplateCategory = "simple" | "modern" | "creative" | "photo" | "compact" | "graduate" | "executive" | "technical" | "academic" | "business";
 
 export const templateCategories: { id: TemplateCategory; label: string; description: string }[] = [
   { id: "simple", label: "Simple", description: "Clean, traditional layouts that work for any industry." },
@@ -32,6 +32,9 @@ export const templateCategories: { id: TemplateCategory; label: string; descript
   { id: "compact", label: "Compact", description: "Dense layouts that fit long careers onto fewer pages." },
   { id: "graduate", label: "First Job", description: "Education-first layouts for students and graduates." },
   { id: "executive", label: "Executive", description: "Refined, understated designs for senior leaders." },
+  { id: "technical", label: "Technical", description: "Structured layouts for engineers, developers and data specialists." },
+  { id: "academic", label: "Academic", description: "Scholarly layouts for research, teaching and long records." },
+  { id: "business", label: "Business", description: "Results-focused layouts for finance, sales and management." },
 ];
 
 export type ResumeTemplate = {
@@ -1821,6 +1824,15 @@ export const templates: ResumeTemplate[] = [
       photo: { shape: "square", mode: "if-present" },
     },
   },
+
+  // -------------------------------------------------------------------------
+  // Technical
+
+  // -------------------------------------------------------------------------
+  // Academic and research
+
+  // -------------------------------------------------------------------------
+  // Business and finance
 ];
 
 const bySlug = new Map(templates.map((template) => [template.slug, template]));

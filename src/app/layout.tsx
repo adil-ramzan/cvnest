@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import {
   EB_Garamond,
+  IBM_Plex_Mono,
   IBM_Plex_Sans,
   Inter,
   Lora,
@@ -26,11 +27,12 @@ const lora = Lora({ subsets: ["latin"], variable: "--font-lora", display: "swap"
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap", preload: false });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-montserrat", display: "swap", preload: false });
 const plexSans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"], variable: "--font-plex-sans", display: "swap", preload: false });
+const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-plex-mono", display: "swap", preload: false });
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-space-grotesk", display: "swap", preload: false });
 const garamond = EB_Garamond({ subsets: ["latin"], variable: "--font-garamond", display: "swap", preload: false });
 const workSans = Work_Sans({ subsets: ["latin"], variable: "--font-work-sans", display: "swap", preload: false });
 
-const fontVariables = [jakarta, inter, sourceSerif, lora, playfair, montserrat, plexSans, spaceGrotesk, garamond, workSans]
+const fontVariables = [jakarta, inter, sourceSerif, lora, playfair, montserrat, plexSans, plexMono, spaceGrotesk, garamond, workSans]
   .map((font) => font.variable)
   .join(" ");
 

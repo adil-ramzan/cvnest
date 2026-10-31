@@ -15,6 +15,7 @@ const families: Record<FontKey, { file: string; name: string; variable: string; 
   playfair: { file: "playfair", name: "Playfair", variable: "--font-playfair", weights: [400, 500, 600, 700, 900], italic: true },
   montserrat: { file: "montserrat", name: "Montserrat", variable: "--font-montserrat", weights: [300, 400, 500, 600, 700, 900], italic: true },
   plexSans: { file: "plex-sans", name: "Plex Sans", variable: "--font-plex-sans", weights: [300, 400, 500, 600, 700], italic: true },
+  plexMono: { file: "plex-mono", name: "Plex Mono", variable: "--font-plex-mono", weights: [400, 500, 600, 700], italic: true },
   spaceGrotesk: { file: "space-grotesk", name: "Space Grotesk", variable: "--font-space-grotesk", weights: [300, 400, 500, 600, 700], italic: false },
   garamond: { file: "garamond", name: "Garamond", variable: "--font-garamond", weights: [400, 500, 600, 700, 800], italic: true },
   workSans: { file: "work-sans", name: "Work Sans", variable: "--font-work-sans", weights: [300, 400, 500, 600, 700, 900], italic: true },

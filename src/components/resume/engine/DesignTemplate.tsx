@@ -26,6 +26,7 @@ const densities = {
     page: "px-16 py-14",
     side: "px-9 py-14",
     sideBleed: "-mx-9 -mt-14 px-9 pt-14 pb-7",
+    band: "[&>section:nth-child(even)]:-mx-16 [&>section:nth-child(even)]:px-16 [&>section:nth-child(even)]:py-4",
     banner: "px-16 py-11",
     sections: "gap-7",
     head: "mb-3.5",
@@ -41,6 +42,7 @@ const densities = {
     page: "px-14 py-12",
     side: "px-8 py-12",
     sideBleed: "-mx-8 -mt-12 px-8 pt-12 pb-7",
+    band: "[&>section:nth-child(even)]:-mx-14 [&>section:nth-child(even)]:px-14 [&>section:nth-child(even)]:py-4",
     banner: "px-14 py-10",
     sections: "gap-6",
     head: "mb-3",
@@ -56,6 +58,7 @@ const densities = {
     page: "px-10 py-9",
     side: "px-6 py-9",
     sideBleed: "-mx-6 -mt-9 px-6 pt-9 pb-5",
+    band: "[&>section:nth-child(even)]:-mx-10 [&>section:nth-child(even)]:px-10 [&>section:nth-child(even)]:py-2.5",
     banner: "px-10 py-7",
     sections: "gap-4",
     head: "mb-2",
@@ -161,6 +164,22 @@ function Heading({ title, style, t }: { title: string; style: HeadingStyle; t: T
       );
     case "display":
       return <h2 className={`${mb} text-xl font-light tracking-tight ${C.accent} ${C.headingFont}`}>{title}</h2>;
+    case "slab":
+      return <h2 className={`${mb} text-base font-black tracking-wide uppercase ${C.ink} ${C.headingFont}`}>{title}</h2>;
+    case "right-rule":
+      return <h2 className={`${mb} border-b ${C.rule} pb-1 text-right ${caps} ${C.accent} ${C.headingFont}`}>{title}</h2>;
+    case "outline-box":
+      return (
+        <h2 className={`${mb} inline-block border ${C.accentRule} px-2.5 py-0.5 ${caps} ${C.accent} ${C.headingFont}`}>{title}</h2>
+      );
+    case "dotted":
+      return <h2 className={`${mb} border-b-2 border-dotted ${C.accentRule} pb-1 text-sm font-bold ${C.ink} ${C.headingFont}`}>{title}</h2>;
+    case "thick-under":
+      return <h2 className={`${mb} border-b-4 ${C.accentRule} pb-1 text-sm font-bold ${C.ink} ${C.headingFont}`}>{title}</h2>;
+    case "corner":
+      return (
+        <h2 className={`${mb} border-b-2 border-l-2 ${C.accentRule} py-0.5 pl-2 ${caps} ${C.ink} ${C.headingFont}`}>{title}</h2>
+      );
   }
 }
 
@@ -174,6 +193,14 @@ function Section({ title, t, area, children }: { title: string; t: Theme; area: 
     );
   }
   const style = area === "side" ? (t.d.sideHeading ?? t.d.heading) : t.d.heading;
+  if (t.d.sectionRules && area === "main") {
+    return (
+      <section className={`min-w-0 border-l-2 ${C.accentRule} pl-5`}>
+        <Heading title={title} style={style} t={t} />
+        {children}
+      </section>
+    );
+  }
   if (t.d.sectionCards && area === "main") {
     return (
       <section className={`min-w-0 rounded-md border ${C.rule} px-5 py-4`} style={{ backgroundColor: t.d.colors.card }}>
@@ -213,6 +240,7 @@ function Bullets({ items, t }: { items: string[]; t: Theme }) {
     dash: <span className={`absolute left-0 ${C.muted}`}>–</span>,
     arrow: <span className={`absolute left-0 font-semibold ${C.accent}`}>›</span>,
     square: <span className={`absolute top-[0.6em] left-0 size-1 ${C.bgAccent}`} />,
+    ring: <span className={`absolute top-[0.5em] left-0 size-1.5 rounded-full border ${C.accentRule}`} />,
     dot: <span className={`absolute top-[0.6em] left-0 size-1 rounded-full ${C.bgAccent}`} />,
     none: null,
   }[bullets];
@@ -239,13 +267,15 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
   }[d.subtitleStyle ?? "muted"];
 
   const inline = d.entryStyle === "inline" && area === "main" && !!e.title;
+  const datesInline = placement === "inline";
+  const subtitleText = datesInline ? [e.subtitle, e.dates].filter(Boolean).join(" · ") : e.subtitle;
   const title = e.title && (
     <h3 className={`${dens.title} font-semibold ${C.ink}`}>
       {e.title}
-      {inline && e.subtitle && <span className={`font-normal ${subtitleClass}`}>, {e.subtitle}</span>}
+      {inline && subtitleText && <span className={`font-normal ${subtitleClass}`}>, {subtitleText}</span>}
     </h3>
   );
-  const subtitle = !inline && e.subtitle && <p className={`${dens.body} ${subtitleClass}`}>{e.subtitle}</p>;
+  const subtitle = !inline && subtitleText && <p className={`${dens.body} ${subtitleClass}`}>{subtitleText}</p>;
   const dates =
     e.dates &&
     (placement === "chip" ? (
@@ -256,7 +286,7 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
   const details = (
     <>
       {e.bullets.length > 0 && <Bullets items={e.bullets} t={t} />}
-      {e.text && <p className={`mt-1 ${dens.body} whitespace-pre-line`}>{e.text}</p>}
+      {e.text && <p className={`mt-1 ${dens.body} whitespace-pre-line${inline ? " entry-detail" : ""}`}>{e.text}</p>}
     </>
   );
 
@@ -282,6 +312,14 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
             {subtitle}
             {details}
           </div>
+        </div>
+      );
+    case "inline":
+      return (
+        <div>
+          {title}
+          {subtitle}
+          {details}
         </div>
       );
     case "timeline":
@@ -332,12 +370,14 @@ function EntryList({ entries, t, area }: { entries: EntryData[]; t: Theme; area:
 // Lists, skills and contact details
 
 function SkillList({ items, t, area }: { items: string[]; t: Theme; area: Area }) {
-  const style = area === "side" && (t.d.skills === "inline" || t.d.skills === "columns" || t.d.skills === "grid") ? "list" : t.d.skills;
+  const style = area === "side" && (t.d.skills === "inline" || t.d.skills === "columns" || t.d.skills === "grid" || t.d.skills === "pipe") ? "list" : t.d.skills;
   const { body, small } = t.dens;
 
   switch (style) {
     case "inline":
       return <p className={body}>{items.join("  ·  ")}</p>;
+    case "pipe":
+      return <p className={body}>{items.join("  |  ")}</p>;
     case "tags":
       return (
         <ul className="flex flex-wrap gap-1.5">
@@ -559,7 +599,7 @@ function NameBlock({ t, align = "start", compactName = false }: { t: Theme; alig
     );
   const heading = (
     <h1
-      className={`${size} ${weight} ${tracking} leading-[1.1] ${n.upper ? "uppercase" : ""} ${n.accent ? C.accent : C.ink} ${C.headingFont} [overflow-wrap:anywhere]`}
+      className={`${size} ${weight} ${tracking} leading-[1.1] ${n.upper ? "uppercase" : ""} ${n.accent ? C.accent : C.ink} ${C.headingFont} [overflow-wrap:anywhere]${n.smallCaps ? " [font-variant-caps:small-caps]" : ""}`}
     >
       {nameText}
     </h1>
@@ -603,6 +643,19 @@ function Header({ t, showContact }: { t: Theme; showContact: boolean }) {
     );
   }
 
+  if (d.header === "plate") {
+    return (
+      <header className={`${dens.header} border-2 ${C.accentRule} rounded-sm px-5 py-3.5`}>
+        <NameBlock t={t} />
+        {showContact && (
+          <div className="mt-2.5">
+            <ContactDetails t={t} mode="inline" />
+          </div>
+        )}
+      </header>
+    );
+  }
+
   if (d.header === "center") {
     return (
       <header className={`${dens.header} ${rule} flex flex-col items-center text-center`}>
@@ -627,8 +680,8 @@ function Header({ t, showContact }: { t: Theme; showContact: boolean }) {
           <NameBlock t={t} />
         </div>
         {showContact && (
-          <div className="max-w-[42%] shrink-0">
-            <ContactDetails t={t} mode="stacked" align="end" />
+          <div className={`max-w-[42%] shrink-0${d.contactBox ? ` rounded-lg ${C.bgTint} px-4 py-3` : ""}`}>
+            <ContactDetails t={t} mode="stacked" align={d.contactBox ? "start" : "end"} />
           </div>
         )}
       </header>
@@ -636,7 +689,7 @@ function Header({ t, showContact }: { t: Theme; showContact: boolean }) {
   }
 
   return (
-    <header className={`${dens.header} ${rule} flex items-center gap-6${d.photoRight ? " flex-row-reverse" : ""}`}>
+    <header className={`${dens.header} ${rule} flex items-center gap-6${d.photoRight ? " flex-row-reverse" : ""}${d.stripe === "corner" ? " pr-24" : ""}`}>
       {d.monogram ? <Monogram t={t} /> : <Photo t={t} size="md" />}
       <div className={d.photoRight || d.monogram ? "min-w-0 flex-1" : "min-w-0"}>
         <NameBlock t={t} />
@@ -743,7 +796,9 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   // The main column follows the user's section order; the sidebar is arranged by the design.
   const inSide = (type: SectionType) => hasSide && sideSections.includes(type);
   const inLower = (type: SectionType) => !inSide(type) && !!design.lower?.includes(type);
-  const mainList = r.sections.filter((section) => !inSide(section.type) && !inLower(section.type));
+  const inTop = (type: SectionType) => !!design.top?.includes(type);
+  const topList = hasSide ? r.sections.filter((section) => inTop(section.type)) : [];
+  const mainList = r.sections.filter((section) => !inSide(section.type) && !inLower(section.type) && !(hasSide && inTop(section.type)));
   const lowerList = r.sections.filter((section) => inLower(section.type));
   const inlineHeader = design.header !== "banner" && design.header !== "sidebar";
 
@@ -759,10 +814,10 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   } as CSSProperties;
 
   const mainSections = (
-    <div className={`flex flex-col ${dens.sections}`}>
+    <div className={`flex flex-col ${dens.sections}${design.sectionBands ? ` [&>section:nth-child(even)]:[background-color:var(--t-tint)] ${dens.band}` : ""}`}>
       {mainList.map((section) => renderSection(section, t, "main"))}
       {lowerList.length > 0 && (
-        <div className={`grid grid-cols-2 ${dens.sections} gap-x-8`}>{lowerList.map((section) => renderSection(section, t, "side"))}</div>
+        <div className={`resume-lower grid grid-cols-2 ${dens.sections} gap-x-8`}>{lowerList.map((section) => renderSection(section, t, "side"))}</div>
       )}
     </div>
   );
@@ -821,6 +876,7 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
     body = (
       <div className={`flex-1 ${dens.page}`}>
         {inlineHeader && <Header t={t} showContact={!contactInSide} />}
+        {topList.length > 0 && <div className={`mb-5 flex flex-col ${dens.sections}`}>{topList.map((section) => renderSection(section, t, "main"))}</div>}
         <div className="resume-split grid gap-7" data-side={sideLeft ? "left" : "right"} style={splitStyle}>
           {sideLeft ? aside : mainSections}
           {sideLeft ? mainSections : aside}
@@ -852,6 +908,18 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
             <span key={i} style={{ backgroundColor: color, flexGrow: 3 - i }} />
           ))}
         </div>
+      )}
+      {design.stripe === "right" && (
+        <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 right-0 w-3 ${C.bgAccent}`} />
+      )}
+      {design.stripe === "bookend" && (
+        <>
+          <div aria-hidden="true" className={`print-fixed-edge absolute inset-x-0 top-0 h-2.5 ${C.bgAccent}`} />
+          <div aria-hidden="true" className={`print-fixed-edge absolute inset-x-0 bottom-0 h-2.5 ${C.bgAccent}`} />
+        </>
+      )}
+      {design.stripe === "corner" && (
+        <div aria-hidden="true" className={`absolute top-0 right-0 size-28 ${C.bgAccent}`} style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%)" }} />
       )}
       {design.stripe === "rail" && (
         <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 left-0 w-6 ${C.bgAccent}`} />

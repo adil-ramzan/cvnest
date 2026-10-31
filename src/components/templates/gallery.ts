@@ -1,4 +1,4 @@
-import { Briefcase, CircleUserRound, FileText, GraduationCap, LayoutPanelLeft, type LucideIcon, Palette, Rows3 } from "lucide-react";
+import { BookOpen, Briefcase, ChartLine, CircleUserRound, Code, FileText, GraduationCap, LayoutPanelLeft, type LucideIcon, Palette, Rows3 } from "lucide-react";
 import type { ResumeTemplate, TemplateCategory } from "@/data/templates";
 
 /** What the gallery needs to know up front; the resume itself loads with its thumbnail. */
@@ -16,6 +16,9 @@ export const categoryDetails: Record<TemplateCategory, { idealFor: string; icon:
   compact: { idealFor: "Ideal for long careers that need to fit on fewer pages.", icon: Rows3 },
   graduate: { idealFor: "Ideal for students and first jobs, with education up front.", icon: GraduationCap },
   executive: { idealFor: "Ideal for senior leaders who want a quiet, confident page.", icon: Briefcase },
+  technical: { idealFor: "Ideal for engineers and developers who want structure over decoration.", icon: Code },
+  academic: { idealFor: "Ideal for researchers and teachers with long records to organize.", icon: BookOpen },
+  business: { idealFor: "Ideal for finance, sales and management roles where results come first.", icon: ChartLine },
 };
 
 export const INITIAL_CARDS = 6;

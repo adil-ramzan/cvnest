@@ -341,6 +341,11 @@ body {
     break-after: avoid;
   }
 
+  /* In one-line entries this is the entry's last line, not a subtitle, so the page may break after it. */
+  .print-root .entry-detail {
+    break-after: auto !important;
+  }
+
   /*
     Break hints on grid cells apply to their whole grid row in Chrome, which
     would make label-column and timeline sections unbreakable. Leave those
@@ -415,6 +420,18 @@ body {
   .print-root--gecko .resume-split[data-side="right"] > aside,
   .print-root--gecko .resume-split[data-side="left"] > :not(aside) {
     float: right;
+  }
+
+  /* Columns, not grid, so a long footer can start on the current page. */
+  .print-root--gecko .resume-lower {
+    display: block;
+    column-count: 2;
+    column-gap: calc(var(--spacing) * 8);
+  }
+
+  .print-root--gecko .resume-lower > section {
+    break-inside: avoid;
+    margin-bottom: calc(var(--spacing) * 5);
   }
 
   .print-root--gecko section.grid {
