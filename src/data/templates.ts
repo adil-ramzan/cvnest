@@ -760,7 +760,7 @@ export const templates: ResumeTemplate[] = [
     tags: ["sidebar", "two tone", "aqua"],
     photo: "optional",
     sample: projectManagerSample,
-    design: { layout: "sidebar", header: "sidebar", fonts: { heading: "montserrat", body: "workSans" }, colors: { accent: "#0a6f7c", ink: "#102528" }, side: { position: "right", width: "32%", bg: "#e3f4f6", tint: "#c9e8ec", rule: "#b6dde2", block: { bg: "#0a6f7c", ink: "#ffffff", muted: "#d2eff3" } }, heading: "right-rule", sideHeading: "caps", bullets: "ring", skills: "tags", dates: "chip", density: "normal", name: { weight: "bold" }, titleStyle: "muted", contactIcons: true, photo: { shape: "rounded", mode: "if-present" } },
+    design: { layout: "sidebar", header: "sidebar", fonts: { heading: "montserrat", body: "workSans" }, colors: { accent: "#0a6f7c", ink: "#102528" }, side: { position: "right", width: "35%", bg: "#e3f4f6", tint: "#c9e8ec", rule: "#b6dde2", block: { bg: "#0a6f7c", ink: "#ffffff", muted: "#d2eff3" } }, heading: "right-rule", sideHeading: "caps", bullets: "ring", skills: "tags", dates: "chip", density: "normal", name: { weight: "bold" }, titleStyle: "muted", contactIcons: true, photo: { shape: "rounded", mode: "if-present" } },
   },
 
   // -------------------------------------------------------------------------
