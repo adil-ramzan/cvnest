@@ -5,7 +5,7 @@ import { isTemplateSlug } from "@/lib/resumes";
 export const metadata: Metadata = {
   title: "Free Resume Editor",
   description: "Write and preview your resume for free. Your resume data is stored locally in your browser.",
-  robots: { index: false },
+  robots: { index: false, follow: false },
 };
 
 type EditorPageProps = {

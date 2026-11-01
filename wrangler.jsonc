@@ -1,11 +1,22 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "cvnest",
+  // A command without --env lands on the preview Worker, never on production.
+  "name": "cvnest-preview",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  // Each name is set because Wrangler would otherwise append the environment to the top-level name.
+  "env": {
+    "preview": {
+      "name": "cvnest-preview"
+    },
+    "production": {
+      "name": "cvnest-production"
+    }
   }
 }

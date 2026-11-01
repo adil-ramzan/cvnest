@@ -3,7 +3,10 @@ export const SITE_NAME = "CVNest";
 
 export const site = {
   name: SITE_NAME,
-  url: "https://getcvnest.com",
+  /** Set at build time by the deploy scripts, so each environment names itself in its links. */
+  url: process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+  /** Search engines are kept out unless a build opts in with exactly "true". */
+  indexable: process.env.NEXT_PUBLIC_INDEXABLE === "true",
   tagline: "Free online resume builder",
 };
 

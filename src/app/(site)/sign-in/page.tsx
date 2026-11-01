@@ -5,7 +5,7 @@ import { ButtonLink } from "@/components/ui/ButtonLink";
 export const metadata: Metadata = {
   title: "Sign In",
   description: "Accounts are not available yet. You can build a resume without signing up.",
-  robots: { index: false },
+  robots: { index: false, follow: false },
 };
 
 export default function SignInPage() {

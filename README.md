@@ -74,7 +74,7 @@ npm run test:e2e   # Run browser tests
 npm run preview    # Build for Cloudflare and run the Worker locally
 ```
 
-Deployment to Cloudflare Workers is covered in [docs/deploy-cloudflare.md](docs/deploy-cloudflare.md).
+Preview and production deployment to Cloudflare Workers is covered in [docs/deploy-cloudflare.md](docs/deploy-cloudflare.md).
 
 ## Testing
 
