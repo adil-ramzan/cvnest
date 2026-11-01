@@ -38,6 +38,7 @@ const fontVariables = [jakarta, inter, sourceSerif, lora, playfair, montserrat, 
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
+  robots: site.indexable ? undefined : { index: false, follow: false },
   title: {
     default: `Free Online Resume Builder | ${site.name}`,
     template: `%s | ${site.name}`,
