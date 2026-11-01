@@ -28,6 +28,9 @@ coverage
 
 # Deployment
 .vercel
+.open-next
+.wrangler
+.dev.vars*
 
 # OS and editor files
 .DS_Store
@@ -38,3 +41,4 @@ Thumbs.db
 # Compiled unit tests
 .test-build
 .e2e-output
+fields-problems.txt

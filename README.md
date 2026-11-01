@@ -71,7 +71,10 @@ npm run typecheck  # TypeScript check without emitting files
 npm run verify     # Typecheck, unit tests and production build
 npm run test:unit  # Run unit tests
 npm run test:e2e   # Run browser tests
+npm run preview    # Build for Cloudflare and run the Worker locally
 ```
+
+Deployment to Cloudflare Workers is covered in [docs/deploy-cloudflare.md](docs/deploy-cloudflare.md).
 
 ## Testing
 

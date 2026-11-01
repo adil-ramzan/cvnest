@@ -52,7 +52,7 @@ export function TemplateGallery({ categories, items, eager, total }: TemplateGal
       </Container>
 
       {searching ? (
-        <Container className="pt-8 pb-16 md:pb-24">
+        <Container className="pt-8 pb-(--section-y)">
           <p role="status" className="text-small text-muted">
             {matches.length} of {total} templates
           </p>
@@ -76,7 +76,7 @@ export function TemplateGallery({ categories, items, eager, total }: TemplateGal
           )}
         </Container>
       ) : (
-        <div className="mt-8 pb-8">
+        <div className="mt-8 pb-(--section-y)">
           <CategoryChips categories={categories} />
           <Container>
             {categories.map((category) => (

@@ -28,7 +28,11 @@ const roles = async () => (await entries()).map((e) => e.role);
 const preview = () => page.$eval("[aria-label='Resume preview']", (el) => el.textContent);
 const clickButton = (text) => page.evaluate((t) => [...document.querySelectorAll("li button, button")].find((b) => b.textContent.trim() === t && b.offsetParent).click(), text);
 const openExperience = async () => {
-  await page.evaluate(() => [...document.querySelectorAll("h2 button")].find((b) => /Experience/.test(b.textContent)).click());
+  // The last open section comes back after a reload, so only click when it's closed.
+  await page.evaluate(() => {
+    const button = [...document.querySelectorAll("h2 button")].find((b) => /Experience/.test(b.textContent));
+    if (button.getAttribute("aria-expanded") !== "true") button.click();
+  });
   await sleep(200);
 };
 const openRow = async (role) => {

@@ -177,6 +177,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
       />
 
       <main id="main" className="flex flex-1 items-start">
+        <h1 className="sr-only">Resume editor</h1>
         <div
           className={`w-full flex-col self-stretch lg:flex lg:w-[40%] lg:max-w-[560px] lg:min-w-[420px] lg:shrink-0 lg:border-r lg:border-line lg:pr-2 ${mobileView === "edit" ? "flex" : "hidden"}`}
         >
@@ -333,10 +334,19 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             onLoadSample={loadSample}
           />
         </div>
+        <input
+          ref={restoreInput}
+          type="file"
+          accept=".json,application/json"
+          aria-label="Choose a backup file"
+          onChange={(event) => onRestoreFile(event.target.files?.[0])}
+          className="sr-only"
+          tabIndex={-1}
+        />
       </main>
 
       {/* Mobile: switch between the form and the preview. */}
-      <div className="z-20 flex justify-center border-t border-line bg-surface px-4 py-2.5 tall:sticky tall:bottom-0 lg:hidden">
+      <section aria-label="Editor view" className="z-20 flex justify-center border-t border-line bg-surface px-4 py-2.5 tall:sticky tall:bottom-0 lg:hidden">
         <div role="group" aria-label="View" className="flex w-full max-w-xs rounded-full border border-line bg-canvas p-1">
           {(
             [
@@ -356,7 +366,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
       {pdf.status !== "idle" && (
         <div
@@ -420,16 +430,6 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         />
       )}
       {pdf.printView}
-
-      <input
-        ref={restoreInput}
-        type="file"
-        accept=".json,application/json"
-        aria-label="Choose a backup file"
-        onChange={(event) => onRestoreFile(event.target.files?.[0])}
-        className="sr-only"
-        tabIndex={-1}
-      />
 
       <Dialog
         open={dialog?.type === "empty"}

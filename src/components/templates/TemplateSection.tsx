@@ -20,7 +20,7 @@ export function TemplateSection({ category, items, eager, onPreview }: TemplateS
   const headingId = `${category.id}-heading`;
 
   return (
-    <section id={category.id} aria-labelledby={headingId} className="scroll-mt-40 py-12 md:py-16">
+    <section id={category.id} aria-labelledby={headingId} className="scroll-mt-40 pt-(--section-y)">
       <h2 id={headingId} className="text-h2 text-balance text-ink">
         {category.label} templates
       </h2>

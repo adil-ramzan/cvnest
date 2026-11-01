@@ -105,6 +105,7 @@ function RowBody({ section, links }: { section: RenderSection; links?: boolean }
 }
 
 export function MinimalTemplate({ resume }: { resume: PreparedResume }) {
+  const Name = resume.nameTag ?? "div";
   const { contact } = resume;
   const contactItems = [contact.email, contact.phone, contact.location, contact.linkedin, contact.github, contact.website].filter(
     Boolean,
@@ -113,7 +114,7 @@ export function MinimalTemplate({ resume }: { resume: PreparedResume }) {
   return (
     <article className="px-16 py-14 font-resume-sans text-[#1a1a1a]">
       <header className="mb-10">
-        <h1 className="text-4xl font-light tracking-tight">{resume.name}</h1>
+        <Name className="text-4xl font-light tracking-tight">{resume.name}</Name>
         {resume.title && <p className="mt-1.5 text-base text-[#555555]">{resume.title}</p>}
         {contactItems.length > 0 && (
           <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-2xs text-[#555555]">

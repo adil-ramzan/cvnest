@@ -4,6 +4,8 @@ Date: 2026-10-31. Audited: the working tree as it stands, using the production b
 
 **Verdict: not ready for public launch.** The product core is solid, and all 480 PDF exports passed in Chrome, Edge and Firefox. It is blocked by missing security headers, holding-page legal and contact content, an undecided brand and domain, no hosting, no real-device testing, and no off-machine backup of the source.
 
+**Update:** section 9 records Phase 1 and replaces any earlier status it conflicts with. Sections 1 to 8 describe the project as audited, before Phase 1.
+
 Labels: **V** = VERIFIED (ran it or read the code that proves it). **S** = SUSPECTED (inferred; the note says what would confirm it).
 
 Scope notes:
@@ -507,3 +509,85 @@ None of these needs a server or changes the privacy promise, unless noted.
 | Renaming `folio` keys | No user value; migration risk | S | Data loss |
 | Dependency major upgrades now | No shipped vulnerability | M | Regressions |
 | Splitting `ResumeEditor.tsx` before launch | Safe later | M | Regressions |
+
+## 9. Phase 1 results
+
+Status: code work finished. **Final-build verification is incomplete**, because the last test run was stopped on request. See 9.3.
+
+### 9.1 Fixes completed
+
+| Finding | Result | Files |
+|---|---|---|
+| `entries` test failure | V: outdated test assumption, test updated | `tests/e2e/entries.test.mjs` |
+| New lint warning | V: removed; only the 3 accepted `<img>` warnings remain | `src/lib/resume-storage.ts` |
+| Multiple H1s | V: one H1 on all 12 routes checked; the print copy keeps the name as its H1 | `src/components/resume/*`, `usePdfExport.tsx`, `ResumeEditor.tsx` |
+| Sample previews | V: template page preview is now a labelled image, like the gallery | `src/app/(site)/templates/[slug]/page.tsx` |
+| Editor axe findings | V: name mismatch, missing H1 and landmark issues cleared on the editor page and mobile view | `ResumeEditor.tsx`, `EditorTopBar.tsx` |
+| Placeholder contrast | V: 4.37:1 to 4.64:1 | `src/app/globals.css` |
+| Touch targets | V in phone emulation: logo, footer and template-page links reach 40px; desktop unchanged | `Logo.tsx`, `SiteFooter.tsx`, `EditorTopBar.tsx`, template page |
+| Long emails | V: a 36-character email breaks at the `@` or a dot, not mid-word (24 templates wrap it) | `src/components/resume/LinkText.tsx` |
+| Long URLs | V: the test URL wraps in 49 templates; mid-word breaks went from 28 to 0, none pass the page edge | `src/components/resume/LinkText.tsx` |
+| Professional contact line | V: no defect found, layout not changed | None |
+| Reduced-motion scrolling, duplicate IDs | V: already correct, no code change; IDs now tested | `tests/e2e/a11y.test.mjs` |
+
+Thresholds: emails of 28+ characters and URLs of 33+ characters get break points. Shorter values stay unchanged because splitting text shifts letters slightly.
+
+### 9.2 Template dropdown
+
+V in Chrome and Edge, before the URL change:
+
+- New `src/components/editor/TemplatePicker.tsx`, used by `PreviewPanel.tsx`.
+- Computers get a grouped list with layout labels, a check mark and tint on the selected template, and keyboard control: arrows, Page Up/Down, Home/End, typing a name, Enter, Escape and Tab.
+- Touch screens keep the native `<select>`, styled to match. Selection logic is unchanged.
+- New test: `tests/e2e/template-picker.test.mjs`.
+
+### 9.3 Test results
+
+**Final build (includes the URL change):**
+
+| Check | Result |
+|---|---|
+| TypeScript | Pass |
+| ESLint | 0 errors, 3 accepted warnings |
+| Unit | 73 of 73 |
+| Chrome suites | 12 passed: `a11y`, `count`, `data-model`, `editor`, `entries`, `error-boundaries`, `fields`, `guard`, `keyboard`, `layout`, `links`, `open-section` |
+| Firefox `pdf-firefox` | Pass, 480 PDFs |
+| Normal-URL pixel comparison | 0 differences across 120 templates (Chrome) |
+| Long-URL break measurement | 49 wrapped, 0 mid-word, 0 past the page edge (Chrome preview) |
+
+**Not finished on the final build (stopped on request):**
+
+- Chrome `pdf` (stopped part-way, so no result)
+- Chrome `safety`, `template-picker`, `templates`, `zoom`
+- Firefox `zoom-firefox`
+- All Edge suites
+
+**Earlier build (before the URL change):**
+
+| Check | Result |
+|---|---|
+| Chrome | 17 of 17 suites, including 480 PDFs. `template-picker` passed after its 3 test bugs were fixed. |
+| Edge | 17 of 17 suites, including 480 PDFs, same `template-picker` note |
+| Firefox `zoom-firefox` | Pass |
+| PDF word positions | 480 Chrome and 480 Edge identical to the audit baseline |
+| Pixel comparison | 0 differences across 120 templates, with the old 36px picker height forced |
+| Re-run after the panel focus-ring fix | `template-picker`, `a11y`, `editor`, `keyboard`, `zoom` in Chrome; `template-picker`, `a11y` in Edge: all passed |
+
+Only `LinkText.tsx` and the `a11y` test changed after those runs.
+
+### 9.4 Template integrity
+
+- V: `src/data/templates.ts` and the template count (120) were not changed.
+- V: normal-length contact details render pixel-identically on the final build.
+- V: `pdf-firefox` passed on the final build.
+- S: Chrome and Edge PDFs on the final build are expected to match the earlier results for normal-length URLs. The Chrome PDF suite did not finish, so this needs one run to confirm.
+- Intended difference: long emails and URLs may shift slightly in templates, and wrap at separators.
+
+### 9.5 Remaining issues and unverified areas
+
+- **Resume-template contrast:** axe reports issues on the home page (15), the Kinetic page (7) and the Customize thumbnails (12). Deferred, because fixing them changes designs.
+- **Not tested:** Safari, physical devices, VoiceOver, NVDA and real print dialogs. Touch checks used emulation, and the native picker's open state was never tested.
+- **Firefox custom dropdown:** not verified.
+- **Long URLs:** an unbroken string with no separators still breaks mid-word. Long URLs in Edge previews and in exported PDFs were not measured on the final build.
+- **Touch targets:** carousel dots stay 24px, and links inside sentences are exempt.
+- **Open from the audit:** security headers, legal pages, brand and domain, and site basics are later phases.

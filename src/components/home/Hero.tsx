@@ -11,7 +11,7 @@ export function Hero() {
 
   return (
     <section aria-labelledby="hero-heading">
-      <Container className="grid items-center gap-12 py-16 md:py-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:py-24">
+      <Container className="grid items-center gap-12 pt-16 md:pt-20 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-24">
         <div>
           <p className="text-small font-bold tracking-wide text-muted uppercase">{hero.eyebrow}</p>
           <h1 id="hero-heading" className="mt-4 text-display text-balance text-ink">

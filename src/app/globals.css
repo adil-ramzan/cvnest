@@ -12,7 +12,7 @@
   --color-ink: #14213d;
   --color-ink-soft: #2f3a52;
   --color-muted: #5b6472;
-  --color-placeholder: #6b7280;
+  --color-placeholder: #676e7a;
   --color-line: #d9d4de;
   --color-line-strong: #bdb7c4;
   /* Icons and focus rings only; text uses accent-ink. */
@@ -88,6 +88,11 @@
   /* Resume documents only; they keep their own fonts when the site's change. */
   --font-resume-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-source-serif), ui-serif, Georgia, serif;
+}
+
+/* Space between marketing sections. Each section owns only its top padding, so adjacent ones never stack. */
+:root {
+  --section-y: clamp(3.5rem, 10vw, 6.5rem);
 }
 
 html {

@@ -110,6 +110,7 @@ function MainBody({ section, links }: { section: RenderSection; links?: boolean 
 }
 
 export function ModernTemplate({ resume }: { resume: PreparedResume }) {
+  const Name = resume.nameTag ?? "div";
   const { contact } = resume;
   const contactItems = [contact.email, contact.phone, contact.location, contact.linkedin, contact.github, contact.website].filter(
     Boolean,
@@ -145,7 +146,7 @@ export function ModernTemplate({ resume }: { resume: PreparedResume }) {
 
       <div className="min-w-0 px-10 py-12">
         <header className="mb-8">
-          <h1 className="text-4xl leading-tight font-bold tracking-tight">{resume.name}</h1>
+          <Name className="text-4xl leading-tight font-bold tracking-tight">{resume.name}</Name>
           {resume.title && <p className="mt-1 text-base font-medium text-[#2c6e66]">{resume.title}</p>}
         </header>
 

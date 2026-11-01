@@ -15,11 +15,11 @@ const customComponents: Record<string, ComponentType<{ resume: PreparedResume }>
   minimal: MinimalTemplate,
 };
 
-type TemplateRendererProps = { template: ResumeTemplate; resume: Resume; photoUrl?: string; links?: boolean };
+type TemplateRendererProps = { template: ResumeTemplate; resume: Resume; photoUrl?: string; links?: boolean; printCopy?: boolean };
 
 /** Renders resume content with a template. Templates only ever read content; they never change it. */
-export function TemplateRenderer({ template, resume, photoUrl, links }: TemplateRendererProps) {
-  const prepared = { ...prepareResume(resume, photoUrl), links };
+export function TemplateRenderer({ template, resume, photoUrl, links, printCopy }: TemplateRendererProps) {
+  const prepared = { ...prepareResume(resume, photoUrl), links, nameTag: printCopy ? ("h1" as const) : ("div" as const) };
   if (template.design) return <DesignTemplate resume={prepared} design={template.design} />;
   const Component = customComponents[template.slug] ?? ProfessionalTemplate;
   return <Component resume={prepared} />;
@@ -35,12 +35,14 @@ type ResumePreviewProps = {
   thumbnail?: boolean;
   /** Let content flow past the first page instead of cropping it. */
   flow?: boolean;
+  /** This copy becomes the PDF, so the name is a real heading in its structure. */
+  printCopy?: boolean;
   size?: PageSize;
   pageRef?: Ref<HTMLDivElement>;
   className?: string;
 };
 
-export function ResumePreview({ template, resume, photoUrl, thumbnail = false, flow, size, pageRef, className }: ResumePreviewProps) {
+export function ResumePreview({ template, resume, photoUrl, thumbnail = false, flow, printCopy, size, pageRef, className }: ResumePreviewProps) {
   return (
     <ResumePaper
       label={
@@ -60,6 +62,7 @@ export function ResumePreview({ template, resume, photoUrl, thumbnail = false, f
         resume={resume ?? template.sample}
         photoUrl={resume ? photoUrl : template.samplePhoto}
         links={flow && !!resume}
+        printCopy={printCopy}
       />
     </ResumePaper>
   );

@@ -111,10 +111,11 @@ function SectionBody({ section, links }: { section: RenderSection; links?: boole
 }
 
 export function ProfessionalTemplate({ resume }: { resume: PreparedResume }) {
+  const Name = resume.nameTag ?? "div";
   return (
     <article className="px-14 py-12 font-serif text-[#222326]">
       <header className="text-center">
-        <h1 className="text-4xl font-semibold tracking-tight text-[#1f2a44]">{resume.name}</h1>
+        <Name className="text-4xl font-semibold tracking-tight text-[#1f2a44]">{resume.name}</Name>
         {resume.title && (
           <p className="mt-1 font-resume-sans text-xs font-medium tracking-[0.22em] text-[#4b5563] uppercase">
             {resume.title}
@@ -122,14 +123,12 @@ export function ProfessionalTemplate({ resume }: { resume: PreparedResume }) {
         )}
         {resume.contactItems.length > 0 && (
           <p className="mt-3 font-resume-sans text-2xs text-[#4b5563]">
-            {resume.links
-              ? resume.contactItems.map((item, i) => (
-                  <Fragment key={i}>
-                    {i > 0 && "  ·  "}
-                    <LinkText value={item} links />
-                  </Fragment>
-                ))
-              : resume.contactItems.join("  ·  ")}
+            {resume.contactItems.map((item, i) => (
+              <Fragment key={i}>
+                {i > 0 && "  ·  "}
+                <LinkText value={item} links={resume.links} />
+              </Fragment>
+            ))}
           </p>
         )}
       </header>

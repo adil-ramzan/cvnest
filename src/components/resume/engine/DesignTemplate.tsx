@@ -611,12 +611,13 @@ function NameBlock({ t, align = "start", compactName = false }: { t: Theme; alig
     ) : (
       r.name
     );
+  const Name = r.nameTag ?? "div";
   const heading = (
-    <h1
+    <Name
       className={`${size} ${weight} ${tracking} leading-[1.1] ${n.upper ? "uppercase" : ""} ${n.accent ? C.accent : C.ink} ${C.headingFont} [overflow-wrap:anywhere]${n.smallCaps ? " [font-variant-caps:small-caps]" : ""}`}
     >
       {nameText}
-    </h1>
+    </Name>
   );
 
   if (n.inlineTitle) {

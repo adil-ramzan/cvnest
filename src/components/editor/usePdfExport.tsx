@@ -179,6 +179,7 @@ export function usePdfExport() {
         photoUrl={job.photoUrl}
         size={job.resume.design.pageSize}
         flow
+        printCopy
       />
     );
     printView = createPortal(

@@ -9,7 +9,7 @@ export function ValueProps() {
   const { values } = homeCopy;
 
   return (
-    <section aria-label={values.label}>
+    <section aria-label={values.label} className="pt-(--section-y)">
       <Container>
         <ul className="grid gap-5 md:grid-cols-3">
           {values.items.map((value, index) => (

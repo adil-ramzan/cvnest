@@ -197,8 +197,7 @@ export function EditorTopBar({
         <div className="flex h-15 min-w-0 items-center gap-2 sm:gap-3">
         <Link
           href="/"
-          aria-label={`${site.name} home`}
-          className="inline-flex shrink-0 items-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
         >
           <span
             aria-hidden="true"
@@ -206,7 +205,8 @@ export function EditorTopBar({
           >
             {site.name[0]}
           </span>
-          <span className="hidden text-xl font-bold tracking-tight text-ink sm:inline">{site.name}</span>
+          <span className="sr-only text-xl font-bold tracking-tight text-ink sm:not-sr-only">{site.name}</span>
+          <span className="sr-only"> home</span>
         </Link>
 
         <span aria-hidden="true" className="mx-1 hidden h-6 w-px bg-line sm:block" />

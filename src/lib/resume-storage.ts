@@ -273,8 +273,10 @@ export function loadOpenSection(resumeId: string): string | null {
 
 export function saveOpenSection(resumeId: string, sectionId: string | null): void {
   try {
-    const { [resumeId]: _previous, ...others } = readOpenSections();
-    window.localStorage.setItem(OPEN_SECTIONS_KEY, JSON.stringify(sectionId ? { ...others, [resumeId]: sectionId } : others));
+    const sections = readOpenSections();
+    if (sectionId) sections[resumeId] = sectionId;
+    else delete sections[resumeId];
+    window.localStorage.setItem(OPEN_SECTIONS_KEY, JSON.stringify(sections));
   } catch {
     // Only affects which section opens next time.
   }

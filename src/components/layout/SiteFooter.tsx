@@ -21,10 +21,10 @@ export function SiteFooter() {
             {footerNav.map((group) => (
               <div key={group.title}>
                 <h2 className="text-small font-bold text-ink">{group.title}</h2>
-                <ul className="mt-3 space-y-2.5">
+                <ul className="mt-3 space-y-2.5 pointer-coarse:space-y-0">
                   {group.links.map((item) => (
                     <li key={item.href}>
-                      <Link href={item.href} className="text-base text-muted transition-colors hover:text-ink">
+                      <Link href={item.href} className="text-base text-muted transition-colors hover:text-ink pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center">
                         {item.label}
                       </Link>
                     </li>

@@ -35,6 +35,8 @@ export type PreparedResume = {
   sections: RenderSection[];
   /** Render URLs and emails as real links. */
   links?: boolean;
+  /** The name is only the page's main heading in the PDF. On screen it sits inside a page with its own. */
+  nameTag?: "h1" | "div";
 };
 
 const text = (value: string | undefined) => value?.trim() ?? "";

@@ -7,7 +7,7 @@ export function FinalCta() {
   const { cta } = homeCopy;
 
   return (
-    <section aria-labelledby="cta-heading" className="pb-16 md:pb-24 lg:pb-32">
+    <section aria-labelledby="cta-heading" className="py-(--section-y)">
       <Container>
         <div className="rounded-[28px] bg-surface px-6 py-14 text-center shadow-soft md:py-20">
           <h2 id="cta-heading" className="mx-auto max-w-3xl text-h2 text-balance text-ink">

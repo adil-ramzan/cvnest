@@ -1,14 +1,15 @@
 "use client";
 
-import { ChevronDown, Maximize, Minus, Plus } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { Maximize, Minus, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { pageSizes } from "@/components/resume/ResumePaper";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { buttonClass } from "@/components/ui/styles";
-import { getTemplate, type TemplateSlug, templateCategories, templates } from "@/data/templates";
+import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
 import { isResumeEmpty } from "@/lib/resumes";
 import type { Zoom } from "@/lib/resume-storage";
 import type { Resume } from "@/data/resume";
+import { TemplatePicker } from "./TemplatePicker";
 
 const ZOOM_STEPS = [0.5, 0.6, 0.75, 0.9, 1, 1.1, 1.25, 1.5];
 const MIN_FIT = 0.3;
@@ -27,7 +28,6 @@ const toolbarButton =
   "inline-flex h-9 items-center justify-center rounded-lg text-muted hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-35";
 
 export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateChange, onLoadSample }: PreviewPanelProps) {
-  const selectId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [pageElement, setPageElement] = useState<HTMLDivElement | null>(null);
   const [availableWidth, setAvailableWidth] = useState<number | null>(null);
@@ -67,32 +67,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-1.5 sm:px-5">
-        <div className="flex items-center gap-2">
-          <label htmlFor={selectId} className="text-[0.875rem] text-muted">
-            Template
-          </label>
-          <div className="relative">
-            <select
-              id={selectId}
-              value={template.slug}
-              onChange={(event) => onTemplateChange(event.target.value)}
-              className="h-9 appearance-none rounded-lg border border-line bg-transparent pr-8 pl-2.5 text-[0.875rem] text-ink-soft hover:border-ink/35 focus:border-accent focus:outline-2 focus:outline-offset-0 focus:outline-accent"
-            >
-              {templateCategories.map((category) => (
-                <optgroup key={category.id} label={category.label}>
-                  {templates
-                    .filter((item) => item.category === category.id)
-                    .map((item) => (
-                      <option key={item.slug} value={item.slug}>
-                        {item.name}
-                      </option>
-                    ))}
-                </optgroup>
-              ))}
-            </select>
-            <ChevronDown aria-hidden="true" className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted" />
-          </div>
-        </div>
+        <TemplatePicker template={template} onChange={onTemplateChange} />
 
         <div className="flex items-center gap-1">
           <span className="mr-2 hidden text-[0.875rem] text-muted sm:inline">

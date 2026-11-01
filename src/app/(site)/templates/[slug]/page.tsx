@@ -44,7 +44,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
 
   return (
     <Container className="py-10 sm:py-14">
-      <Link href="/templates" className="inline-flex items-center gap-1.5 text-base text-muted hover:text-ink">
+      <Link href="/templates" className="inline-flex items-center gap-1.5 text-base text-muted hover:text-ink pointer-coarse:min-h-10">
         <ArrowLeft aria-hidden="true" className="size-4" />
         All templates
       </Link>
@@ -53,6 +53,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
         <div className="rounded-lg border border-line bg-panel p-4 sm:p-8 lg:p-10">
           <ResumePreview
             template={template}
+            thumbnail
             className="mx-auto max-w-[816px] rounded-sm shadow-[0_2px_4px_rgba(0,0,0,0.04),0_24px_48px_-24px_rgba(0,0,0,0.25)]"
           />
         </div>
@@ -93,7 +94,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
             <ul className="mt-3 space-y-2.5">
               {related.map((item) => (
                 <li key={item.slug}>
-                  <Link href={`/templates/${item.slug}`} className="text-base text-muted underline-offset-4 hover:text-ink hover:underline">
+                  <Link href={`/templates/${item.slug}`} className="text-base text-muted underline-offset-4 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center hover:text-ink hover:underline">
                     {item.name} — {item.layout}
                   </Link>
                 </li>
@@ -101,7 +102,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
             </ul>
             <Link
               href={`/templates?category=${template.category}`}
-              className="mt-4 inline-block text-base font-medium text-ink underline-offset-4 hover:underline"
+              className="mt-4 inline-block text-base font-medium text-ink underline-offset-4 hover:underline pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
             >
               View all {category.label.toLowerCase()} templates
             </Link>
