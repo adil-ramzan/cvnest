@@ -2,7 +2,7 @@ import { Globe, Link2, type LucideIcon, Mail, MapPin, Phone } from "lucide-react
 import { type CSSProperties, Fragment, type ReactNode } from "react";
 import type { SectionType } from "@/data/resume";
 import { LinkText } from "../LinkText";
-import { joinParts, type PreparedResume, type RenderSection } from "../prepareResume";
+import { joinParts, longTextClass, type PreparedResume, type RenderSection } from "../prepareResume";
 import { fontStacks, type HeadingStyle, type SidebarSection, type TemplateDesign } from "./design";
 
 // Colors and fonts come from CSS variables set on the article (and overridden on
@@ -295,7 +295,7 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
   const details = (
     <>
       {e.bullets.length > 0 && <Bullets items={e.bullets} t={t} />}
-      {e.text && <p className={`mt-1 ${dens.body} whitespace-pre-line${inline ? " entry-detail" : ""}`}>{e.text}</p>}
+      {e.text && <p className={`mt-1 ${dens.body} whitespace-pre-line${inline ? " entry-detail" : ""}${longTextClass(e.text)}`}>{e.text}</p>}
     </>
   );
 
@@ -314,7 +314,7 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
       );
     case "left":
       return (
-        <div className="grid grid-cols-[20%_minmax(0,1fr)] gap-4">
+        <div className="entry-grid grid grid-cols-[20%_minmax(0,1fr)] gap-4 [--date-column:20%]">
           <div className="pt-0.5">{dates}</div>
           <div className="min-w-0">
             {title}
@@ -333,7 +333,7 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
       );
     case "timeline":
       return (
-        <div className="grid grid-cols-[17%_minmax(0,1fr)] gap-4">
+        <div className="entry-grid grid grid-cols-[17%_minmax(0,1fr)] gap-4 [--date-column:17%]">
           <div className="pt-0.5 text-right">{dates}</div>
           <div className={`relative min-w-0 border-l ${C.rule} pl-5 ${dens.timeline}`}>
             <span aria-hidden="true" className={`absolute top-1.5 -left-1 size-2 rounded-full ${C.bgAccent}`} />
@@ -514,7 +514,7 @@ function renderSection(section: RenderSection, t: Theme, area: Area): ReactNode 
   let body: ReactNode;
 
   if (section.kind === "text") {
-    body = <p className={`${dens.body} whitespace-pre-line`}>{section.text}</p>;
+    body = <p className={`${dens.body} whitespace-pre-line${longTextClass(section.text)}`}>{section.text}</p>;
   } else if (section.kind === "list") {
     if (section.type === "skills") {
       body = <SkillList items={section.items} t={t} area={area} />;
@@ -794,6 +794,52 @@ function sideStyle(side: TemplateDesign["side"]): CSSProperties {
   return style as CSSProperties;
 }
 
+/** The design's colors and fonts as the CSS variables everything below reads. */
+export function designVars({ colors, fonts }: TemplateDesign) {
+  return {
+    "--t-accent": colors.accent,
+    "--t-ink": colors.ink ?? "#1f2328",
+    "--t-muted": colors.muted ?? "#5f6368",
+    "--t-rule": colors.rule ?? "#d9d9d9",
+    "--t-tint": colors.tint ?? `color-mix(in srgb, ${colors.accent} 12%, white)`,
+    "--t-on-accent": colors.onAccent ?? "#ffffff",
+    "--t-heading-font": fontStacks[fonts.heading],
+    "--t-body-font": fontStacks[fonts.body],
+  } as CSSProperties;
+}
+
+/** Stripes and frames tied to the page's edges. In a PDF these sit outside the page content, so they repeat on every page (see PrintLayers). */
+export function DesignEdges({ design }: { design: TemplateDesign }) {
+  return (
+    <>
+      {design.stripe === "right" && (
+        <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 right-0 w-3 ${C.bgAccent}`} />
+      )}
+      {design.stripe === "bookend" && (
+        <>
+          <div aria-hidden="true" className={`print-fixed-edge absolute inset-x-0 top-0 h-2.5 ${C.bgAccent}`} />
+          <div aria-hidden="true" className={`print-fixed-edge absolute inset-x-0 bottom-0 h-2.5 ${C.bgAccent}`} />
+        </>
+      )}
+      {design.stripe === "corner" && (
+        <div aria-hidden="true" className={`print-fixed-edge absolute top-0 right-0 size-28 ${C.bgAccent}`} style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%)" }} />
+      )}
+      {design.stripe === "rail" && (
+        <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 left-0 w-6 ${C.bgAccent}`} />
+      )}
+      {design.frame && (
+        <div
+          aria-hidden="true"
+          className={`print-fixed-edge resume-frame pointer-events-none absolute inset-4 ${C.accentRule} ${design.frame === "double" ? "border-4 [border-style:double]" : "border"}`}
+        />
+      )}
+      {design.stripe === "left" && (
+        <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 left-0 w-2 ${C.bgAccent}`} />
+      )}
+    </>
+  );
+}
+
 export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; design: TemplateDesign }) {
   const dens = densities[design.density];
   const t: Theme = { d: design, r, dens };
@@ -817,16 +863,7 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   const lowerList = r.sections.filter((section) => inLower(section.type));
   const inlineHeader = design.header !== "banner" && design.header !== "sidebar";
 
-  const vars = {
-    "--t-accent": colors.accent,
-    "--t-ink": colors.ink ?? "#1f2328",
-    "--t-muted": colors.muted ?? "#5f6368",
-    "--t-rule": colors.rule ?? "#d9d9d9",
-    "--t-tint": colors.tint ?? `color-mix(in srgb, ${colors.accent} 12%, white)`,
-    "--t-on-accent": colors.onAccent ?? "#ffffff",
-    "--t-heading-font": fontStacks[design.fonts.heading],
-    "--t-body-font": fontStacks[design.fonts.body],
-  } as CSSProperties;
+  const vars = designVars(design);
 
   const mainSections = (
     <div className={`flex flex-col ${dens.sections}${design.sectionBands ? ` [&>section:nth-child(even)]:[background-color:var(--t-tint)] ${dens.band}` : ""}`}>
@@ -861,21 +898,21 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   let body: ReactNode;
   if (design.layout === "sidebar") {
     const aside = (
-      <aside className={`min-w-0 ${dens.side} ${C.ink}`} style={sideStyle(design.side)}>
+      <aside className={`resume-inset min-w-0 ${dens.side} ${C.ink}`} style={sideStyle(design.side)}>
         {design.header === "sidebar" && <SidebarHeader t={t} />}
         {sideContent}
       </aside>
     );
     const main = (
-      <div className={`min-w-0 ${dens.page}`}>
+      <div className={`resume-inset min-w-0 ${dens.page}`}>
         {inlineHeader && <Header t={t} showContact={!contactInSide} />}
         {mainSections}
       </div>
     );
     body = (
       <div className="resume-split grid flex-1" data-side={sideLeft ? "left" : "right"} style={splitStyle}>
-        {sideLeft ? aside : main}
-        {sideLeft ? main : aside}
+        {sideLeft || r.asideFirst ? aside : main}
+        {sideLeft || r.asideFirst ? main : aside}
       </div>
     );
   } else if (design.layout === "columns") {
@@ -889,18 +926,18 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
       </aside>
     );
     body = (
-      <div className={`flex-1 ${dens.page}`}>
+      <div className={`resume-inset flex-1 ${dens.page}`}>
         {inlineHeader && <Header t={t} showContact={!contactInSide} />}
         {topList.length > 0 && <div className={`mb-5 flex flex-col ${dens.sections}`}>{topList.map((section) => renderSection(section, t, "main"))}</div>}
         <div className="resume-split grid gap-7" data-side={sideLeft ? "left" : "right"} style={splitStyle}>
-          {sideLeft ? aside : mainSections}
-          {sideLeft ? mainSections : aside}
+          {sideLeft || r.asideFirst ? aside : mainSections}
+          {sideLeft || r.asideFirst ? mainSections : aside}
         </div>
       </div>
     );
   } else {
     body = (
-      <div className={`flex-1 ${dens.page}`}>
+      <div className={`resume-inset flex-1 ${dens.page}`}>
         {inlineHeader && <Header t={t} showContact />}
         {mainSections}
       </div>
@@ -924,30 +961,7 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
           ))}
         </div>
       )}
-      {design.stripe === "right" && (
-        <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 right-0 w-3 ${C.bgAccent}`} />
-      )}
-      {design.stripe === "bookend" && (
-        <>
-          <div aria-hidden="true" className={`print-fixed-edge absolute inset-x-0 top-0 h-2.5 ${C.bgAccent}`} />
-          <div aria-hidden="true" className={`print-fixed-edge absolute inset-x-0 bottom-0 h-2.5 ${C.bgAccent}`} />
-        </>
-      )}
-      {design.stripe === "corner" && (
-        <div aria-hidden="true" className={`absolute top-0 right-0 size-28 ${C.bgAccent}`} style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%)" }} />
-      )}
-      {design.stripe === "rail" && (
-        <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 left-0 w-6 ${C.bgAccent}`} />
-      )}
-      {design.frame && (
-        <div
-          aria-hidden="true"
-          className={`print-fixed-edge resume-frame pointer-events-none absolute inset-4 ${C.accentRule} ${design.frame === "double" ? "border-4 [border-style:double]" : "border"}`}
-        />
-      )}
-      {design.stripe === "left" && (
-        <div aria-hidden="true" className={`print-fixed-edge absolute inset-y-0 left-0 w-2 ${C.bgAccent}`} />
-      )}
+      <DesignEdges design={design} />
       {design.layout === "sidebar" && design.side?.bg && (
         // Print only: repeats the sidebar color down every PDF page.
         <div

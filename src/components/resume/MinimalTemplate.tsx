@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import { LinkText } from "./LinkText";
-import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
+import { joinParts, longTextClass, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <section className="grid grid-cols-[22%_1fr] gap-6 border-t border-[#e5e5e5] pt-5">
-      <h2 className="text-2xs font-medium tracking-[0.14em] text-[#8a8a8a] uppercase">{label}</h2>
+      <h2 className="text-2xs font-medium tracking-[0.14em] text-[color:var(--r-accent,#8a8a8a)] uppercase">{label}</h2>
       <div className="min-w-0">{children}</div>
     </section>
   );
@@ -42,14 +42,14 @@ function SimpleEntry({ entry, meta, textClass, link, links }: { entry: RenderEnt
           {link && <LinkText value={link} links={links} />}
         </p>
       )}
-      {entry.text && <p className={`${textClass} text-xs leading-relaxed whitespace-pre-line text-[#333333]`}>{entry.text}</p>}
+      {entry.text && <p className={`${textClass} text-xs leading-relaxed whitespace-pre-line text-[#333333]${longTextClass(entry.text)}`}>{entry.text}</p>}
     </div>
   );
 }
 
 function RowBody({ section, links }: { section: RenderSection; links?: boolean }) {
   if (section.kind === "text") {
-    return <p className="text-xs leading-relaxed whitespace-pre-line text-[#333333]">{section.text}</p>;
+    return <p className={`text-xs leading-relaxed whitespace-pre-line text-[#333333]${longTextClass(section.text)}`}>{section.text}</p>;
   }
   if (section.kind === "list") {
     return section.type === "certifications" ? (
@@ -112,7 +112,7 @@ export function MinimalTemplate({ resume }: { resume: PreparedResume }) {
   );
 
   return (
-    <article className="px-16 py-14 font-resume-sans text-[#1a1a1a]">
+    <article className="resume-inset px-16 py-14 font-resume-sans text-[#1a1a1a]">
       <header className="mb-10">
         <Name className="text-4xl font-light tracking-tight">{resume.name}</Name>
         {resume.title && <p className="mt-1.5 text-base text-[#555555]">{resume.title}</p>}

@@ -7,6 +7,7 @@ CVNest is a free, browser-based resume builder. Choose a template, enter your in
 - **110+ free resume templates** across ten categories: Simple, Modern, Creative, Photo, Compact, First Job, Executive, Technical, Academic and Business. The library contains 120 templates.
 - **Template gallery** with category filters, search and a full-size preview page for each template.
 - **Resume editor** (`/editor`) with live preview, zoom, US Letter or A4 pages, and Overview, Content and Customize tabs.
+- **Resume styling:** preset or custom colors, six fonts and adjustable text size, saved per resume and carried through to the PDF.
 - **Editable sections:** personal details, summary, experience, education, projects, skills, certifications, languages, awards, volunteering and custom sections. Sections and entries can be reordered, renamed and hidden.
 - **Multiple resumes:** create, rename, duplicate and delete resumes.
 - **Optional profile photo**, resized in the browser.

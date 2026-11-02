@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { SectionType } from "@/data/resume";
 import { LinkText } from "./LinkText";
-import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
+import { joinParts, longTextClass, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
 
 /** Section types shown in the sidebar, in this template's own order. Everything else follows the user's order in the main column. */
 const SIDEBAR: SectionType[] = ["skills", "education", "certifications", "languages"];
@@ -9,7 +9,7 @@ const SIDEBAR: SectionType[] = ["skills", "education", "certifications", "langua
 function SidebarSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-7">
-      <h2 className="text-2xs font-semibold tracking-[0.16em] text-[#2c6e66] uppercase">{title}</h2>
+      <h2 className="text-2xs font-semibold tracking-[0.16em] text-[color:var(--r-accent,#2c6e66)] uppercase">{title}</h2>
       <div className="mt-2.5">{children}</div>
     </section>
   );
@@ -18,9 +18,9 @@ function SidebarSection({ title, children }: { title: string; children: ReactNod
 function MainSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-7 first:mt-0">
-      <h2 className="flex items-center gap-3 text-2xs font-semibold tracking-[0.16em] text-[#2c6e66] uppercase">
+      <h2 className="flex items-center gap-3 text-2xs font-semibold tracking-[0.16em] text-[color:var(--r-accent,#2c6e66)] uppercase">
         {title}
-        <span className="h-px flex-1 bg-[#d5e2df]" />
+        <span className="h-px flex-1 bg-[var(--r-accent-rule,#d5e2df)]" />
       </h2>
       <div className="mt-3">{children}</div>
     </section>
@@ -73,7 +73,7 @@ function MainEntry({ entry, type, links }: { entry: RenderEntry; type: SectionTy
     <div>
       <EntryHeader title={entry.title} dates={entry.dates} />
       {(hasBullets || subtitle || link) && (
-        <p className="text-xs font-medium text-[#2c6e66]">
+        <p className="text-xs font-medium text-[color:var(--r-accent,#2c6e66)]">
           {subtitle}
           {subtitle && link && " · "}
           {link && <LinkText value={link} links={links} />}
@@ -83,20 +83,20 @@ function MainEntry({ entry, type, links }: { entry: RenderEntry; type: SectionTy
         <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[#3f474e]">
           {entry.bullets.map((item, i) => (
             <li key={i} className="relative pl-3.5">
-              <span className="absolute top-[0.6em] left-0 size-1 rounded-full bg-[#2c6e66]" />
+              <span className="absolute top-[0.6em] left-0 size-1 rounded-full bg-[var(--r-accent,#2c6e66)]" />
               {item}
             </li>
           ))}
         </ul>
       )}
-      {entry.text && <p className="mt-1 text-xs leading-relaxed whitespace-pre-line text-[#3f474e]">{entry.text}</p>}
+      {entry.text && <p className={`mt-1 text-xs leading-relaxed whitespace-pre-line text-[#3f474e]${longTextClass(entry.text)}`}>{entry.text}</p>}
     </div>
   );
 }
 
 function MainBody({ section, links }: { section: RenderSection; links?: boolean }) {
   if (section.kind === "text") {
-    return <p className="text-xs leading-relaxed whitespace-pre-line text-[#3f474e]">{section.text}</p>;
+    return <p className={`text-xs leading-relaxed whitespace-pre-line text-[#3f474e]${longTextClass(section.text)}`}>{section.text}</p>;
   }
   if (section.kind === "list") return <p className="text-xs leading-relaxed text-[#3f474e]">{section.items.join("  ·  ")}</p>;
   const spacing = section.type === "experience" || section.type === "volunteering" ? "space-y-5" : "space-y-4";
@@ -125,9 +125,9 @@ export function ModernTemplate({ resume }: { resume: PreparedResume }) {
       style={{ "--side-width": "34%" } as CSSProperties}
     >
       {/* Print only: repeats the sidebar color down every PDF page. */}
-      <div aria-hidden="true" className="print-sidebar-bg left-0 w-[34%] bg-[#eef4f2]" />
-      <aside className="bg-[#eef4f2] px-8 py-12">
-        <div className="flex size-20 items-center justify-center rounded-full bg-[#2c6e66] text-2xl font-semibold text-white">
+      <div aria-hidden="true" className="print-sidebar-bg left-0 w-[34%] bg-[var(--r-accent-soft,#eef4f2)]" />
+      <aside className="resume-inset bg-[var(--r-accent-soft,#eef4f2)] px-8 py-12">
+        <div className="flex size-20 items-center justify-center rounded-full bg-[var(--r-accent,#2c6e66)] text-2xl font-semibold text-white">
           {resume.initials}
         </div>
 
@@ -144,10 +144,10 @@ export function ModernTemplate({ resume }: { resume: PreparedResume }) {
         ))}
       </aside>
 
-      <div className="min-w-0 px-10 py-12">
+      <div className="resume-inset min-w-0 px-10 py-12">
         <header className="mb-8">
           <Name className="text-4xl leading-tight font-bold tracking-tight">{resume.name}</Name>
-          {resume.title && <p className="mt-1 text-base font-medium text-[#2c6e66]">{resume.title}</p>}
+          {resume.title && <p className="mt-1 text-base font-medium text-[color:var(--r-accent,#2c6e66)]">{resume.title}</p>}
         </header>
 
         {main.map((section) => (

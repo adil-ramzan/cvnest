@@ -218,16 +218,16 @@ body {
   font-family: var(--font-resume-sans);
   --u: calc(100cqw / 51);
   --spacing: calc(var(--u) * 0.25);
-  --text-2xs: calc(var(--u) * 0.625);
-  --text-xs: calc(var(--u) * 0.75);
-  --text-sm: calc(var(--u) * 0.875);
-  --text-base: var(--u);
-  --text-lg: calc(var(--u) * 1.125);
-  --text-xl: calc(var(--u) * 1.25);
-  --text-2xl: calc(var(--u) * 1.5);
-  --text-3xl: calc(var(--u) * 1.875);
-  --text-4xl: calc(var(--u) * 2.25);
-  --text-5xl: calc(var(--u) * 3);
+  --text-2xs: calc(var(--u) * 0.625 * var(--resume-font-scale, 1));
+  --text-xs: calc(var(--u) * 0.75 * var(--resume-font-scale, 1));
+  --text-sm: calc(var(--u) * 0.875 * var(--resume-font-scale, 1));
+  --text-base: calc(var(--u) * var(--resume-font-scale, 1));
+  --text-lg: calc(var(--u) * 1.125 * var(--resume-font-scale, 1));
+  --text-xl: calc(var(--u) * 1.25 * var(--resume-font-scale, 1));
+  --text-2xl: calc(var(--u) * 1.5 * var(--resume-font-scale, 1));
+  --text-3xl: calc(var(--u) * 1.875 * var(--resume-font-scale, 1));
+  --text-4xl: calc(var(--u) * 2.25 * var(--resume-font-scale, 1));
+  --text-5xl: calc(var(--u) * 3 * var(--resume-font-scale, 1));
   /* Fixed document line heights, independent of the UI scale above. */
   --text-2xs--line-height: 1.4;
   --text-xs--line-height: calc(1 / 0.75);
@@ -241,6 +241,11 @@ body {
   --text-5xl--line-height: 1;
   font-size: 16px;
   line-height: 1.5;
+}
+
+/* The user's font choice replaces every template font, including the hand-written templates' utilities. */
+.resume-paper--font * {
+  font-family: var(--resume-font) !important;
 }
 
 /* A4 is narrower and taller than US Letter; 1u still equals 1rem at full page width (794px). */
@@ -291,6 +296,227 @@ body {
     rgb(0 0 0 / 0.14) calc(var(--page-height) - 1px),
     rgb(0 0 0 / 0.14) var(--page-height)
   );
+}
+
+/*
+  Page-break rules, shared by the PDF's print copy and the hidden copy that measures
+  the preview's pages, so both break in the same places.
+*/
+/*
+  Chrome repeats the padding of a box on every page it spans, so the box holding each
+  page's padding gives every page the same top and bottom space. Only that box: on
+  every element, a section's padding would add to it. Firefox doesn't repeat padding,
+  so it uses the print frame instead, whose footer row replaces the bottom padding.
+*/
+.paged:not(.paged--gecko) .resume-inset {
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.paged--gecko .resume-inset {
+  padding-bottom: 0;
+}
+
+/* Keep a card's rounded border closed on both sides of a page break. */
+.paged section.rounded-md {
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* At least two lines stay on each side of a break, wherever a block splits. */
+.paged {
+  orphans: 2;
+  widows: 2;
+}
+
+/* Keep lines whole and headings with the content that follows them. */
+.paged :is(li, h1, h2, h3, img) {
+  break-inside: avoid;
+}
+
+.paged :is(h1, h2, h3) {
+  break-after: avoid;
+}
+
+/* Keep an entry's title row, subtitle and first bullet together; longer entries may continue on the next page. */
+.paged :is(.flex:has(> h3), h3 + p) {
+  break-after: avoid;
+}
+
+/* In one-line entries this is the entry's last line, not a subtitle, so the page may break after it. */
+.paged .entry-detail {
+  break-after: auto !important;
+}
+
+.paged ul {
+  break-before: avoid;
+}
+
+/* An entry's last bullet never continues on a page alone. */
+.paged li:last-child {
+  break-before: avoid;
+}
+
+/*
+  Label sections sit a heading beside their content. As a grid, a break inside the
+  row leaves the section's rule on one page and everything else on the next, so
+  the heading floats instead.
+*/
+.paged section.grid {
+  display: block;
+}
+
+.paged section.grid::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+.paged section.grid > h2 {
+  float: left;
+  width: 22%;
+}
+
+.paged section.grid > div {
+  margin-left: calc(22% + var(--spacing) * 5);
+}
+
+/* Likewise for dates beside an entry: a tall entry can't break inside a grid row. */
+.paged .entry-grid {
+  display: block;
+}
+
+.paged .entry-grid::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+
+.paged .entry-grid > :first-child {
+  float: left;
+  width: var(--date-column);
+}
+
+.paged .entry-grid > :last-child {
+  margin-left: calc(var(--date-column) + var(--spacing) * 4);
+}
+
+.paged--gecko .resume-page,
+.paged--gecko article {
+  display: block;
+  min-height: 0;
+}
+
+/*
+  Firefox moves a whole grid to the next page rather than breaking it, so the sidebar
+  floats beside a main column in normal flow. The main column must not float: inside
+  the print frame Firefox drops the rest of a tall float. The print copy puts the
+  sidebar first so it can float from the top (see `asideFirst`).
+*/
+.paged--gecko .resume-split {
+  display: flow-root;
+}
+
+.paged--gecko .resume-split.gap-7 {
+  --split-gap: calc(var(--spacing) * 7);
+}
+
+.paged--gecko .resume-split > aside {
+  width: var(--side-width);
+}
+
+.paged--gecko .resume-split[data-side="left"] > aside {
+  float: left;
+}
+
+.paged--gecko .resume-split[data-side="right"] > aside {
+  float: right;
+}
+
+.paged--gecko .resume-split[data-side="left"] > :not(aside) {
+  margin-left: calc(var(--side-width) + var(--split-gap, 0px));
+}
+
+.paged--gecko .resume-split[data-side="right"] > :not(aside) {
+  margin-right: calc(var(--side-width) + var(--split-gap, 0px));
+}
+
+/* The preview's copy keeps the page's order, and no print frame, so its main column can float. */
+.pagination-host.paged--gecko .resume-split[data-side="right"] > :not(aside) {
+  float: left;
+  width: calc(100% - var(--side-width) - var(--split-gap, 0px));
+  margin-right: 0;
+}
+
+/* Columns, not grid, so a long footer can start on the current page. */
+.paged--gecko .resume-lower {
+  display: block;
+  column-count: 2;
+  column-gap: calc(var(--spacing) * 8);
+}
+
+.paged--gecko .resume-lower > section {
+  break-inside: avoid;
+  margin-bottom: calc(var(--spacing) * 5);
+}
+
+
+/*
+  Firefox ignores break-after: avoid, so a title can end a page without its content.
+  Short entries and sections stay whole instead; long ones may break, or they would
+  jump to a new page and leave most of the last one empty.
+*/
+.paged--gecko :is(div:has(> h3), div:has(> .flex > h3), section:not(:has(:nth-child(3) h3))):not(:has(li:nth-child(7), .long-text)) {
+  break-inside: avoid;
+}
+
+/* A short section in a two-column footer stays whole, or its heading can end a page. */
+.paged .resume-lower > section:not(:has(li:nth-child(7), .long-text)) {
+  break-inside: avoid;
+}
+
+/* The hidden copy: one column per page, laid out at true size. See paginate.ts. */
+.pagination-host {
+  position: absolute;
+  top: 0;
+  left: -200000px;
+  visibility: hidden;
+  column-gap: 0;
+  column-fill: auto;
+}
+
+.pagination-host .resume-paper {
+  --u: 16px;
+  container-type: normal;
+  background: transparent;
+}
+
+.pagination-host.paged--gecko .resume-paper {
+  margin-top: calc(var(--page-inset) * -1);
+}
+
+.pagination-host .resume-page {
+  min-height: 0;
+  background-image: none;
+}
+
+/* The preview's pages: bands cover the sheet where one page ends and the next begins. */
+.resume-paper--spaced .resume-page {
+  background-image: none;
+}
+
+.page-gap {
+  position: absolute;
+  z-index: 2;
+  left: -12px;
+  right: -12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-canvas);
+  box-shadow: inset 0 7px 7px -7px rgb(0 0 0 / 0.16), inset 0 -7px 7px -7px rgb(0 0 0 / 0.16);
+  color: var(--color-muted);
+  font-size: 0.875rem;
 }
 
 /*
@@ -352,52 +578,54 @@ body {
     --page-height: 1122.5px;
   }
 
-  /* Repeat each element's padding on every page it spans, so continuation pages get top and bottom margins. */
-  .print-root * {
-    box-decoration-break: clone;
-    -webkit-box-decoration-break: clone;
+  /*
+    Firefox's print frame: its repeating header and footer rows are every page's top
+    and bottom space (see PrintFrame). The table starts one row above the page, so
+    page 1 keeps its own padding, and the last page's bottom padding would only add
+    to the footer row.
+  */
+  .print-frame {
+    position: relative;
+    width: 100%;
+    margin-top: calc(var(--page-inset) * -1);
+    border-collapse: collapse;
+    table-layout: fixed;
   }
 
-  /* Keep lines whole and headings with the content that follows them. */
-  .print-root :is(li, p, h1, h2, h3, img) {
-    break-inside: avoid;
+  .print-frame td {
+    padding: 0;
   }
 
-  .print-root :is(h1, h2, h3) {
-    break-after: avoid;
+  .print-spacer {
+    height: var(--page-inset);
   }
 
-  /* Keep an entry's title row, subtitle and first bullet together; longer entries may continue on the next page. */
-  .print-root :is(.flex:has(> h3), h3 + p) {
-    break-after: avoid;
+  /* At full height Firefox can add a blank last page, as the offset above leaves the table's end short of room. */
+  .print-frame tfoot .print-spacer {
+    height: calc(var(--page-inset) - 16px);
   }
 
-  /* In one-line entries this is the entry's last line, not a subtitle, so the page may break after it. */
-  .print-root .entry-detail {
-    break-after: auto !important;
+  /* Over the page layers before it. */
+  .print-page-content {
+    position: relative;
+  }
+
+  .print-root .resume-page {
+    min-height: 0;
   }
 
   /*
-    Break hints on grid cells apply to their whole grid row in Chrome, which
-    would make label-column and timeline sections unbreakable. Leave those
-    cells to the browser's defaults.
+    The copies of these inside the template stay hidden: PrintLayers draws them
+    outside the print frame, full height on every page.
   */
-  .print-root .grid > h2 {
-    break-inside: auto;
-    break-after: auto;
+  .print-page-content :is(.print-sidebar-bg, .print-fixed-edge) {
+    display: none;
   }
 
-  .print-root ul {
-    break-before: avoid;
-  }
-
-  /* Sidebar backgrounds and edge stripes fill the full height of every page. */
-  .print-root .print-sidebar-bg {
-    display: block;
+  .print-root .print-page-layer {
     position: fixed;
     top: 0;
     bottom: 0;
-    z-index: -1;
   }
 
   .print-root .print-fixed-edge {
@@ -413,93 +641,6 @@ body {
   .print-root--gecko * {
     font-variant-numeric: normal !important;
     font-variant-ligatures: none !important;
-  }
-
-  .print-root--gecko .resume-page,
-  .print-root--gecko article {
-    display: block;
-    min-height: 0;
-  }
-
-  .print-root--gecko .resume-split {
-    display: block;
-  }
-
-  .print-root--gecko .resume-split::after {
-    content: "";
-    display: block;
-    clear: both;
-  }
-
-  .print-root--gecko .resume-split > * {
-    width: calc(100% - var(--side-width) - var(--split-gap, 0px));
-  }
-
-  .print-root--gecko .resume-split.gap-7 {
-    --split-gap: calc(var(--spacing) * 7);
-  }
-
-  .print-root--gecko .resume-split > aside {
-    width: var(--side-width);
-  }
-
-  .print-root--gecko .resume-split[data-side="left"] > aside,
-  .print-root--gecko .resume-split[data-side="right"] > :not(aside) {
-    float: left;
-  }
-
-  .print-root--gecko .resume-split[data-side="right"] > aside,
-  .print-root--gecko .resume-split[data-side="left"] > :not(aside) {
-    float: right;
-  }
-
-  /* Columns, not grid, so a long footer can start on the current page. */
-  .print-root--gecko .resume-lower {
-    display: block;
-    column-count: 2;
-    column-gap: calc(var(--spacing) * 8);
-  }
-
-  .print-root--gecko .resume-lower > section {
-    break-inside: avoid;
-    margin-bottom: calc(var(--spacing) * 5);
-  }
-
-  .print-root--gecko section.grid {
-    display: block;
-  }
-
-  .print-root--gecko section.grid > h2 {
-    float: left;
-    width: 22%;
-  }
-
-  .print-root--gecko section.grid > div {
-    margin-left: calc(22% + var(--spacing) * 5);
-  }
-
-  /*
-    Firefox ignores break-after: avoid, so a title can end a page without its
-    content. Entries and short sections stay whole instead (anything taller
-    than a page still breaks).
-  */
-  .print-root--gecko :is(div:has(> h3), div:has(> .flex > h3), section:not(:has(:nth-child(3) h3))) {
-    break-inside: avoid;
-  }
-
-  /* See GeckoPages. */
-  .print-root--gecko .print-sidebar-bg {
-    display: none;
-  }
-
-  .print-root--gecko .print-page-layer {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-  }
-
-  .print-root--gecko .print-pages {
-    position: relative;
   }
 
   /* The body's min-h-screen would otherwise add a blank page to a short resume. */

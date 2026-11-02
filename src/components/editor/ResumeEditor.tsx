@@ -318,6 +318,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 pageSize={active.design.pageSize}
                 onTemplateChange={store.setTemplate}
                 onPageSizeChange={store.setPageSize}
+                onCustomizationChange={store.setCustomization}
               />
               </div>
             )}

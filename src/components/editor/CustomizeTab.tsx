@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useDeferredValue, useMemo, useState } from "react";
 import { type PageSize, pageSizes } from "@/components/resume/ResumePaper";
 import { ResumePreview } from "@/components/resume/ResumePreview";
-import type { Resume } from "@/data/resume";
+import type { Resume, ResumeCustomization } from "@/data/resume";
 import { ORDER_NOTE, templateStructure } from "@/data/template-tags";
-import { getCategory, getTemplate, type TemplateCategory, type TemplateSlug, templateCategories, templates } from "@/data/templates";
+import { getCategory, getTemplate, type ResumeTemplate, type TemplateCategory, type TemplateSlug, templateCategories, templates } from "@/data/templates";
+import { chipClass, StyleControls } from "./StyleControls";
 
 type CustomizeTabProps = {
   resume: Resume;
@@ -14,19 +15,67 @@ type CustomizeTabProps = {
   pageSize: PageSize;
   onTemplateChange: (template: TemplateSlug) => void;
   onPageSizeChange: (pageSize: PageSize) => void;
+  onCustomizationChange: (customization: ResumeCustomization) => void;
 };
 
 const groupClass = "border-b border-line px-4 py-6 sm:px-6";
-const chipClass =
-  "inline-flex h-10 items-center rounded-full border border-line px-3.5 text-sm text-ink-soft transition-colors hover:border-line-strong hover:text-ink aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white";
 
-export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateChange, onPageSizeChange }: CustomizeTabProps) {
+type TemplateGridProps = {
+  shown: ResumeTemplate[];
+  resume: Resume;
+  photoUrl: string;
+  template: TemplateSlug;
+  onTemplateChange: (template: TemplateSlug) => void;
+};
+
+/** Memoized over a deferred resume, so dragging the color picker never waits for 120 thumbnails. */
+const TemplateGrid = memo(function TemplateGrid({ shown, resume, photoUrl, template, onTemplateChange }: TemplateGridProps) {
+  return (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+      {shown.map((item) => {
+        const selected = item.slug === template;
+        return (
+          <label key={item.slug} className="group cursor-pointer [contain-intrinsic-block-size:auto_280px] [content-visibility:auto]">
+            <input
+              type="radio"
+              name="template"
+              value={item.slug}
+              checked={selected}
+              onChange={() => onTemplateChange(item.slug)}
+              className="peer sr-only"
+            />
+            <span
+              className={`block rounded-xl bg-sheet p-2.5 ring-1 transition peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent ${selected ? "ring-2 ring-accent" : "ring-line group-hover:ring-line-strong"}`}
+            >
+              <ResumePreview template={item} resume={resume} photoUrl={photoUrl} thumbnail className="rounded-[2px] shadow-sm" />
+            </span>
+            <span className="mt-2.5 block text-base font-medium text-ink">{item.name}</span>
+            <span className="block text-sm text-muted">
+              {[templateStructure(item), item.photo !== "none" && "Photo"].filter(Boolean).join(" · ")}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  );
+});
+
+export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateChange, onPageSizeChange, onCustomizationChange }: CustomizeTabProps) {
   const current = getTemplate(template);
   const [category, setCategory] = useState<TemplateCategory | "all">(() => current?.category ?? "all");
-  const shown = category === "all" ? templates : templates.filter((item) => item.category === category);
+  const shown = useMemo(() => (category === "all" ? templates : templates.filter((item) => item.category === category)), [category]);
+  const deferredResume = useDeferredValue(resume);
 
   return (
     <div>
+      <section className={groupClass} aria-labelledby="customize-style">
+        <h2 id="customize-style" className="text-lg font-bold text-ink">
+          Style
+        </h2>
+        <p className="mt-1 text-base text-muted">Saved with this resume and used in your PDF. These stay when you switch templates.</p>
+        <StyleControls customization={resume.design} onChange={onCustomizationChange} />
+      </section>
+
       <section className={groupClass} aria-labelledby="customize-template">
         <h2 id="customize-template" className="text-lg font-bold text-ink">
           Template
@@ -37,7 +86,7 @@ export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateC
           </p>
         )}
         <p className="mt-2 text-sm text-muted">
-          Fonts, colors and spacing are part of each template. Switch any time; your content stays the same.
+          Each template has its own layout, fonts and colors. Switch any time; your content stays the same.
           {current?.photo === "always" && !resume.profile.photo && " This template shows your initials until you add a photo."}
           {current && templateStructure(current) !== "Single column" && ` ${ORDER_NOTE}`}
         </p>
@@ -52,32 +101,7 @@ export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateC
 
         <fieldset className="mt-6">
           <legend className="sr-only">Choose a template</legend>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
-            {shown.map((item) => {
-              const selected = item.slug === template;
-              return (
-                <label key={item.slug} className="group cursor-pointer [contain-intrinsic-block-size:auto_280px] [content-visibility:auto]">
-                  <input
-                    type="radio"
-                    name="template"
-                    value={item.slug}
-                    checked={selected}
-                    onChange={() => onTemplateChange(item.slug)}
-                    className="peer sr-only"
-                  />
-                  <span
-                    className={`block rounded-xl bg-sheet p-2.5 ring-1 transition peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent ${selected ? "ring-2 ring-accent" : "ring-line group-hover:ring-line-strong"}`}
-                  >
-                    <ResumePreview template={item} resume={resume} photoUrl={photoUrl} thumbnail className="rounded-[2px] shadow-sm" />
-                  </span>
-                  <span className="mt-2.5 block text-base font-medium text-ink">{item.name}</span>
-                  <span className="block text-sm text-muted">
-                    {[templateStructure(item), item.photo !== "none" && "Photo"].filter(Boolean).join(" · ")}
-                  </span>
-                </label>
-              );
-            })}
-          </div>
+          <TemplateGrid shown={shown} resume={deferredResume} photoUrl={photoUrl} template={template} onTemplateChange={onTemplateChange} />
         </fieldset>
       </section>
 

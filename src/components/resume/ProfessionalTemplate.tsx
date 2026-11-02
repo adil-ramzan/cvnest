@@ -1,11 +1,11 @@
 import { Fragment, type ReactNode } from "react";
 import { LinkText } from "./LinkText";
-import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
+import { joinParts, longTextClass, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-6">
-      <h2 className="border-b border-[#1f2a44] pb-1 font-resume-sans text-2xs font-semibold tracking-[0.18em] text-[#1f2a44] uppercase">
+      <h2 className="border-b border-[color:var(--r-accent,#1f2a44)] pb-1 font-resume-sans text-2xs font-semibold tracking-[0.18em] text-[color:var(--r-accent,#1f2a44)] uppercase">
         {title}
       </h2>
       <div className="mt-3">{children}</div>
@@ -65,13 +65,13 @@ function DetailEntry({ entry, links }: { entry: RenderEntry; links?: boolean }) 
           {entry.link && <LinkText value={entry.link} links={links} />}
         </p>
       )}
-      {entry.text && <p className="mt-1 text-xs leading-relaxed whitespace-pre-line">{entry.text}</p>}
+      {entry.text && <p className={`mt-1 text-xs leading-relaxed whitespace-pre-line${longTextClass(entry.text)}`}>{entry.text}</p>}
     </div>
   );
 }
 
 function SectionBody({ section, links }: { section: RenderSection; links?: boolean }) {
-  if (section.kind === "text") return <p className="text-xs leading-relaxed whitespace-pre-line">{section.text}</p>;
+  if (section.kind === "text") return <p className={`text-xs leading-relaxed whitespace-pre-line${longTextClass(section.text)}`}>{section.text}</p>;
   if (section.kind === "list") {
     return section.type === "certifications" ? (
       <ul className="space-y-0.5 text-xs">
@@ -113,9 +113,9 @@ function SectionBody({ section, links }: { section: RenderSection; links?: boole
 export function ProfessionalTemplate({ resume }: { resume: PreparedResume }) {
   const Name = resume.nameTag ?? "div";
   return (
-    <article className="px-14 py-12 font-serif text-[#222326]">
+    <article className="resume-inset px-14 py-12 font-serif text-[#222326]">
       <header className="text-center">
-        <Name className="text-4xl font-semibold tracking-tight text-[#1f2a44]">{resume.name}</Name>
+        <Name className="text-4xl font-semibold tracking-tight text-[color:var(--r-accent,#1f2a44)]">{resume.name}</Name>
         {resume.title && (
           <p className="mt-1 font-resume-sans text-xs font-medium tracking-[0.22em] text-[#4b5563] uppercase">
             {resume.title}

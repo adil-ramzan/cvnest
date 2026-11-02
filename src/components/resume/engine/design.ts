@@ -32,6 +32,16 @@ export const fontStacks: Record<FontKey, string> = {
   plexMono: "var(--font-plex-mono), ui-monospace, monospace",
 };
 
+/**
+ * Top and bottom padding of a printed page, in spacing units. Continuation pages get
+ * the same space as page 1 from these, so they must match the padding each template
+ * puts on its page (`densities` in DesignTemplate, and the hand-written templates).
+ */
+const designInsets: Record<TemplateDesign["density"], number> = { relaxed: 14, normal: 12, compact: 9 };
+const handWrittenInsets: Record<string, number> = { minimal: 14 };
+
+export const pageInset = (slug: string, design?: TemplateDesign) => (design ? designInsets[design.density] : (handWrittenInsets[slug] ?? 12));
+
 /** What a sidebar or secondary column holds, in display order. */
 export type SidebarSection = SectionType | "contact";
 

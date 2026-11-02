@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PageSize, ProfilePhoto, Resume } from "@/data/resume";
+import type { PageSize, ProfilePhoto, Resume, ResumeCustomization } from "@/data/resume";
 import type { TemplateSlug } from "@/data/templates";
 import { dataUrlToBlob, deletePhoto, deleteUnusedPhotos, savePhoto } from "@/lib/photo-store";
 import {
@@ -191,6 +191,11 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     [updateActive],
   );
 
+  const setCustomization = useCallback(
+    (customization: ResumeCustomization) => updateActive((r) => ({ ...r, design: { ...r.design, ...customization } })),
+    [updateActive],
+  );
+
   const setPhoto = useCallback(
     (photo: ProfilePhoto | undefined) => {
       if (!resumes || !activeId) return;
@@ -279,6 +284,7 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     updateActive,
     setTemplate,
     setPageSize,
+    setCustomization,
     setPhoto,
     renameResume,
     createNewResume,

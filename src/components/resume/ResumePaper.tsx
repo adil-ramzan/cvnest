@@ -1,4 +1,4 @@
-import type { ReactNode, Ref } from "react";
+import type { CSSProperties, ReactNode, Ref } from "react";
 import type { PageSize } from "@/data/resume";
 
 export type { PageSize };
@@ -19,16 +19,17 @@ type ResumePaperProps = {
   /** Ref to the page content element, e.g. to measure how many pages the content fills. */
   pageRef?: Ref<HTMLDivElement>;
   className?: string;
+  style?: CSSProperties;
 };
 
-export function ResumePaper({ children, label, flow = false, size = "letter", pageRef, className = "" }: ResumePaperProps) {
+export function ResumePaper({ children, label, flow = false, size = "letter", pageRef, className = "", style }: ResumePaperProps) {
   const imageProps = label ? { role: "img", "aria-label": label } : {};
   const classes = ["resume-paper", flow && "resume-paper--flow", size === "a4" && "resume-paper--a4", "w-full", className]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div className={classes} {...imageProps}>
+    <div className={classes} style={style} {...imageProps}>
       <div ref={pageRef} className="resume-page">
         {children}
       </div>

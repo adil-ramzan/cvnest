@@ -1,9 +1,12 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { customizeDesign, modernSidebar } from "@/components/resume/engine/customize";
+import { pageInset } from "@/components/resume/engine/design";
+import { DesignEdges, designVars } from "@/components/resume/engine/DesignTemplate";
 import { ResumePreview } from "@/components/resume/ResumePreview";
-import type { PageSize, Resume } from "@/data/resume";
+import type { PageSize, Resume, ResumeCustomization } from "@/data/resume";
 import { SITE_NAME } from "@/data/site";
 import { getTemplate, type ResumeTemplate, templates } from "@/data/templates";
 import { loadStaticFonts, needsStaticFonts, staticFontCss } from "./printFonts";
@@ -36,36 +39,54 @@ export function pdfFileName(fullName: string): string {
   return base ? `${base}-Resume` : `${SITE_NAME}-Resume`;
 }
 
-const pageRule = (size: PageSize) => `
-@page { size: ${size === "a4" ? "A4" : "letter"}; margin: 0; }
-/* Without block-level padding cloning (Safari), use page margins so continuation pages don't start at the very edge. */
-@supports not (box-decoration-break: clone) {
-  @page { margin: 12mm 0; }
-  @page :first { margin-top: 0; }
-}`;
+// No page margins: they would leave white bands across sidebars and page colors.
+const pageRule = (size: PageSize) => `@page { size: ${size === "a4" ? "A4" : "letter"}; margin: 0; }`;
 
 /**
- * Firefox doesn't repeat padding on continuation pages, so they get their space
- * from the page margin. A repeating table header avoids the white margin bands
- * across sidebars, but Firefox drops content from tables that span pages.
+ * Firefox only, because it doesn't repeat padding across pages as Chrome does (see
+ * `.paged` in globals.css). It repeats a table's header and footer on every page, so
+ * these empty rows give each page the same space, and colors behind them run to the
+ * paper's edge. Chrome can't use this: it sizes the row before page breaks, so
+ * content they push down falls outside the table and loses its margins.
  */
-const geckoPageRule = `
-@page { margin: 12mm 0; }
-@page :first { margin-top: 0; }`;
+function PrintFrame({ children }: { children: ReactNode }) {
+  const spacer = (
+    <tr>
+      <td>
+        <div className="print-spacer" />
+      </td>
+    </tr>
+  );
+  return (
+    <table role="presentation" className="print-frame">
+      <thead>{spacer}</thead>
+      <tfoot>{spacer}</tfoot>
+      <tbody>
+        <tr>
+          <td>{children}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
 
-/** Page colors as fixed layers, which Firefox repeats on every page; inside the resume they don't show. */
-function GeckoPages({ template, children }: { template: ResumeTemplate; children: ReactNode }) {
-  const { slug, design } = template;
+/**
+ * Page colors, sidebars and edge stripes, repeated on every page. They stay outside
+ * the page content, so one fixed layer covers each whole page.
+ */
+function PrintLayers({ template, customization }: { template: ResumeTemplate; customization: ResumeCustomization }) {
+  const { slug } = template;
+  const design = template.design && customizeDesign(template.design, customization);
   // Modern is hand-written, so its sidebar isn't described by a design.
-  const side = slug === "modern" ? { bg: "#eef4f2", width: "34%", position: "left" } : design?.layout === "sidebar" ? design.side : undefined;
+  const side = slug === "modern" ? { bg: modernSidebar(customization.accentColor), width: "34%", position: "left" } : design?.layout === "sidebar" ? design.side : undefined;
   const sideEdge = (side?.position ?? "left") === "left" ? "left" : "right";
 
   return (
-    <>
+    <div style={design && designVars(design)}>
       {design?.colors.paper && <div className="print-page-layer" style={{ backgroundColor: design.colors.paper, left: 0, width: "100%" }} />}
       {side?.bg && <div className="print-page-layer" style={{ backgroundColor: side.bg, [sideEdge]: 0, width: side.width ?? "33%" }} />}
-      <div className="print-pages">{children}</div>
-    </>
+      {design && <DesignEdges design={design} />}
+    </div>
   );
 }
 
@@ -138,7 +159,8 @@ export function usePdfExport() {
         await nextFrame();
         if (needsStaticFonts()) {
           const template = getTemplate(job.resume.design.templateId);
-          await loadStaticFonts(template?.design ? [template.design.fonts.heading, template.design.fonts.body] : ["inter", "sourceSerif"]);
+          const { fontFamily } = job.resume.design;
+          await loadStaticFonts(fontFamily ? [fontFamily] : template?.design ? [template.design.fonts.heading, template.design.fonts.body] : ["inter", "sourceSerif"]);
         }
         await document.fonts.ready;
         const root = rootRef.current;
@@ -180,12 +202,19 @@ export function usePdfExport() {
         size={job.resume.design.pageSize}
         flow
         printCopy
+        asideFirst={gecko}
       />
     );
     printView = createPortal(
-      <div ref={rootRef} className={gecko ? "print-root print-root--gecko" : "print-root"} aria-hidden="true">
-        <style>{pageRule(job.resume.design.pageSize) + (gecko ? geckoPageRule + staticFontCss : "")}</style>
-        {gecko ? <GeckoPages template={template}>{preview}</GeckoPages> : preview}
+      <div
+        ref={rootRef}
+        className={gecko ? "print-root print-root--gecko paged paged--gecko" : "print-root paged"}
+        aria-hidden="true"
+        style={{ "--page-inset": `${pageInset(template.slug, template.design) * 4}px` } as CSSProperties}
+      >
+        <style>{pageRule(job.resume.design.pageSize) + (gecko ? staticFontCss : "")}</style>
+        <PrintLayers template={template} customization={job.resume.design} />
+        <div className="print-page-content">{gecko ? <PrintFrame>{preview}</PrintFrame> : preview}</div>
       </div>,
       document.body,
     );

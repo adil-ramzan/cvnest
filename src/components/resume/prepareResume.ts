@@ -35,6 +35,8 @@ export type PreparedResume = {
   sections: RenderSection[];
   /** Render URLs and emails as real links. */
   links?: boolean;
+  /** Firefox's PDF floats the sidebar, which has to come first. */
+  asideFirst?: boolean;
   /** The name is only the page's main heading in the PDF. On screen it sits inside a page with its own. */
   nameTag?: "h1" | "div";
 };
@@ -50,6 +52,9 @@ export function dateRange(start?: string, end?: string) {
   if (from && to && from !== to) return `${from} – ${to}`;
   return from || to;
 }
+
+/** Marks text long enough that it must be free to split across pages. See `.paged--gecko` in globals.css. */
+export const longTextClass = (value: string) => (value.length > 1200 ? " long-text" : "");
 
 /** Joins the parts that are present. */
 export const joinParts = (parts: string[], separator: string) => parts.filter(Boolean).join(separator);

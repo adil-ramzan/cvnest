@@ -2,6 +2,7 @@
 
 import { Maximize, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { pageInset } from "@/components/resume/engine/design";
 import { pageSizes } from "@/components/resume/ResumePaper";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { buttonClass } from "@/components/ui/styles";
@@ -9,11 +10,18 @@ import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
 import { isResumeEmpty } from "@/lib/resumes";
 import type { Zoom } from "@/lib/resume-storage";
 import type { Resume } from "@/data/resume";
+import { Notice } from "./Notice";
+import { needsStaticFonts } from "./printFonts";
 import { TemplatePicker } from "./TemplatePicker";
+import { usePagination } from "./usePagination";
 
 const ZOOM_STEPS = [0.5, 0.6, 0.75, 0.9, 1, 1.1, 1.25, 1.5];
 const MIN_FIT = 0.3;
 const MAX_FIT = 1.25;
+/** Space between pages in the preview. */
+const PAGE_GAP = 32;
+/** A last page this full holds only a few lines. */
+const FEW_LINES_FILL = 0.12;
 
 type PreviewPanelProps = {
   resume: Resume;
@@ -31,7 +39,8 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
   const scrollRef = useRef<HTMLDivElement>(null);
   const [pageElement, setPageElement] = useState<HTMLDivElement | null>(null);
   const [availableWidth, setAvailableWidth] = useState<number | null>(null);
-  const [pageCount, setPageCount] = useState(1);
+  const [estimatedPages, setEstimatedPages] = useState(1);
+  const [dismissed, setDismissed] = useState<string[]>([]);
   const page = pageSizes[resume.design.pageSize];
 
   // Track the space available for the page so "Fit" can size it.
@@ -51,7 +60,7 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
     if (!pageElement) return;
     const observer = new ResizeObserver(() => {
       const { width, height } = pageElement.getBoundingClientRect();
-      if (width > 0) setPageCount(Math.max(1, Math.ceil(height / (width * page.ratio) - 0.01)));
+      if (width > 0) setEstimatedPages(Math.max(1, Math.ceil(height / (width * page.ratio) - 0.01)));
     });
     observer.observe(pageElement);
     return () => observer.disconnect();
@@ -63,6 +72,26 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
   const zoomIn = ZOOM_STEPS.find((step) => step > scale + 0.001);
   const template = getTemplate(resume.design.templateId) ?? templates[0];
   const empty = isResumeEmpty(resume);
+  const layout = usePagination(
+    pageElement,
+    {
+      width: page.width,
+      height: page.width * page.ratio,
+      inset: pageInset(template.slug, template.design) * 4,
+      gap: PAGE_GAP,
+      gecko: typeof navigator !== "undefined" && needsStaticFonts(),
+    },
+    scale,
+    resume,
+  );
+  const pageCount = layout?.pages ?? estimatedPages;
+  const pageGaps = layout?.spaced ? Array.from({ length: pageCount - 1 }, (_, i) => i + 1) : [];
+  const pageHeight = page.width * page.ratio * scale;
+
+  const hint = (id: string) => (empty || dismissed.includes(`${resume.id}:${id}`) ? false : true);
+  const dismiss = (id: string) => setDismissed((list) => [...list, `${resume.id}:${id}`]);
+  const fewLines = pageCount > 1 && !!layout && layout.lastPageFill <= FEW_LINES_FILL && hint("few-lines");
+  const manyPages = pageCount >= 3 && hint("many-pages");
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -106,6 +135,9 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
         </div>
       </div>
 
+      {fewLines && <Notice title="The last page has only a few lines." onDismiss={() => dismiss("few-lines")}>Shortening something may fit it onto the previous page.</Notice>}
+      {manyPages && <Notice title={`This resume runs to ${pageCount} pages.`} onDismiss={() => dismiss("many-pages")}>Many applications ask for one or two.</Notice>}
+
       <div ref={scrollRef} className="editor-scroll min-h-0 flex-1 overflow-auto px-4 pt-2 pb-6 sm:px-12 sm:pb-12" role="region" aria-label="Resume preview">
         {fitScale !== null && (
           <div className="mx-auto" style={{ width: page.width * scale }}>
@@ -118,16 +150,25 @@ export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateC
               </div>
             )}
             {/* The sample stands in here only; PDF export always renders the real resume. */}
-            <div aria-hidden={empty || undefined} inert={empty || undefined}>
+            <div aria-hidden={empty || undefined} inert={empty || undefined} className="relative">
+              {pageGaps.length > 0 && <p className="pb-1.5 text-center text-sm text-muted">Page 1</p>}
+              <div className="relative">
+              {pageGaps.map((gap) => (
+                <div key={gap} className="page-gap" style={{ top: gap * pageHeight + (gap - 1) * PAGE_GAP, height: PAGE_GAP }}>
+                  Page {gap + 1}
+                </div>
+              ))}
               <ResumePreview
                 template={template}
                 resume={empty ? undefined : resume}
                 photoUrl={empty ? undefined : photoUrl}
+                customization={resume.design}
                 size={resume.design.pageSize}
                 flow
                 pageRef={setPageElement}
-                className={`shadow-sheet ${empty ? "[&_.resume-page]:opacity-35" : ""}`}
+                className={`shadow-sheet ${layout?.spaced ? "resume-paper--spaced" : ""} ${empty ? "[&_.resume-page]:opacity-35" : ""}`}
               />
+              </div>
             </div>
             <p className="mt-4 text-center text-sm text-muted">
               {pageCount > 1 ? `Your content runs to about ${pageCount} pages. ` : ""}The PDF is the final check, because page breaks can differ slightly.

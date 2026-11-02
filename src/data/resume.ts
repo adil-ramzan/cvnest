@@ -39,8 +39,22 @@ export type ResumeProfile = {
   photo?: ProfilePhoto;
 };
 
+/** Font choices offered to the user, as keys of the template font stacks. */
+export const RESUME_FONTS = ["inter", "plexSans", "montserrat", "sourceSerif", "lora", "garamond"] as const;
+export type ResumeFont = (typeof RESUME_FONTS)[number];
+
+/** Multiplier applied to every text size. 1 is the template's own sizing. */
+export const FONT_SCALE = { min: 0.8, max: 1.2, step: 0.05, small: 0.9, large: 1.1 };
+
+/** Optional. Missing means the template's own choice, so resumes saved before these existed look the same. */
+export type ResumeCustomization = {
+  accentColor?: string;
+  fontFamily?: ResumeFont;
+  fontScale?: number;
+};
+
 /** Presentation settings. Changing these never touches resume content. */
-export type ResumeDesign = {
+export type ResumeDesign = ResumeCustomization & {
   templateId: string;
   pageSize: PageSize;
 };

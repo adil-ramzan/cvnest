@@ -4,9 +4,12 @@
  */
 import {
   DEFAULT_SECTION_TITLES,
+  FONT_SCALE,
   type ProfilePhoto,
   type Resume,
+  RESUME_FONTS,
   RESUME_SCHEMA_VERSION,
+  type ResumeCustomization,
   type ResumeProfile,
   type ResumeSection,
   SECTION_TYPES,
@@ -178,6 +181,19 @@ function sanitizeSection(raw: UnknownRecord, ctx: IdContext): ResumeSection | nu
   }
 }
 
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+/** Only written when set, so an untouched resume stays exactly as it was saved. */
+function sanitizeCustomization(design: UnknownRecord): ResumeCustomization {
+  const { accentColor, fontFamily, fontScale } = design;
+  const inRange = typeof fontScale === "number" && fontScale >= FONT_SCALE.min && fontScale <= FONT_SCALE.max && fontScale !== 1;
+  return {
+    ...(typeof accentColor === "string" && HEX_COLOR.test(accentColor) ? { accentColor: accentColor.toLowerCase() } : {}),
+    ...(RESUME_FONTS.find((font) => font === fontFamily) ? { fontFamily: fontFamily as ResumeCustomization["fontFamily"] } : {}),
+    ...(inRange ? { fontScale } : {}),
+  };
+}
+
 /** Validates a resume already in the current schema version. Returns null only if it isn't an object. */
 export function sanitizeResume(value: unknown, ctx: IdContext): Resume | null {
   if (!isRecord(value)) return null;
@@ -199,6 +215,7 @@ export function sanitizeResume(value: unknown, ctx: IdContext): Resume | null {
       // Checked against the template registry by the storage loader.
       templateId: typeof design.templateId === "string" && design.templateId ? design.templateId.slice(0, MAX_ID) : DEFAULT_TEMPLATE,
       pageSize: design.pageSize === "a4" ? "a4" : "letter",
+      ...sanitizeCustomization(design),
     },
   };
 }
