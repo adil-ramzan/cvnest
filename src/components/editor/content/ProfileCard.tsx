@@ -4,6 +4,7 @@ import { Mail, MapPin, Pencil, Phone, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { buttonClass } from "@/components/ui/styles";
 import type { ResumeProfile } from "@/data/resume";
+import { SampleTag } from "./fields";
 
 type ProfileCardProps = {
   profile: ResumeProfile;
@@ -39,7 +40,10 @@ export function ProfileCard({ profile, photoUrl, editing, onToggle, children }: 
           {photoUrl ? <img src={photoUrl} alt="" className="size-full object-cover" /> : initials(name) || "?"}
         </div>
         <div className="min-w-0 flex-1">
-          <p className={`truncate text-lg font-bold ${name ? "text-ink" : "text-muted"}`}>{name || "Add your name"}</p>
+          <p className="flex items-center gap-2">
+            <span className={`truncate text-lg font-bold ${name ? "text-ink" : "text-muted"}`}>{name || "Add your name"}</span>
+            {!!profile.sampleFields?.length && <SampleTag />}
+          </p>
           <p className="truncate text-[0.875rem] text-muted">{profile.jobTitle.trim() || "Job title and contact details"}</p>
         </div>
         <button

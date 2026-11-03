@@ -37,7 +37,12 @@ export type ResumeProfile = {
   github?: string;
   website?: string;
   photo?: ProfilePhoto;
+  /** Fields still holding sample text. Optional; missing means none. See `src/lib/sample-content.ts`. */
+  sampleFields?: SampleProfileField[];
 };
+
+export const SAMPLE_PROFILE_FIELDS = ["fullName", "jobTitle", "email", "phone", "location", "linkedin", "github", "website"] as const;
+export type SampleProfileField = (typeof SAMPLE_PROFILE_FIELDS)[number];
 
 /** Font choices offered to the user, as keys of the template font stacks. */
 export const RESUME_FONTS = ["inter", "plexSans", "montserrat", "sourceSerif", "lora", "garamond"] as const;
@@ -59,8 +64,8 @@ export type ResumeDesign = ResumeCustomization & {
   pageSize: PageSize;
 };
 
-/** Optional on every entry. Missing means visible, so resumes saved before it existed load unchanged. */
-type EntryOptions = { hidden?: boolean };
+/** Optional on every entry. Missing means visible and the user's own, so resumes saved before these existed load unchanged. */
+type EntryOptions = { hidden?: boolean; sample?: true };
 
 export type Experience = EntryOptions & {
   id: string;
@@ -122,7 +127,7 @@ type SectionBase<Type extends string> = {
 
 type ListSection<Type extends string, Entry> = SectionBase<Type> & { entries: Entry[] };
 
-export type SummarySection = SectionBase<"summary"> & { content: string };
+export type SummarySection = SectionBase<"summary"> & { content: string; sample?: true };
 export type ExperienceSection = ListSection<"experience", Experience>;
 export type EducationSection = ListSection<"education", Education>;
 export type ProjectsSection = ListSection<"projects", Project>;

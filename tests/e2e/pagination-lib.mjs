@@ -45,7 +45,7 @@ export async function chromeExporter(browser, base) {
   await page.setViewport({ width: 1280, height: 800 });
   await page.evaluateOnNewDocument(() => { window.print = () => { window.__printed = (window.__printed || 0) + 1; }; });
   await page.goto(`${base}/about`, { waitUntil: "domcontentloaded" });
-  return async (resume, file) => {
+  return async (resume, file, { printCss } = {}) => {
     // From a page without the editor, whose save on leaving would overwrite this.
     await page.goto(`${base}/about`, { waitUntil: "domcontentloaded" });
     await page.evaluate((storage) => { localStorage.clear(); for (const [k, v] of Object.entries(storage)) localStorage.setItem(k, v); }, storageFor(resume));
@@ -59,6 +59,7 @@ export async function chromeExporter(browser, base) {
       [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Download anyway")?.click();
     });
     await page.waitForFunction(() => (window.__printed || 0) > 0, { timeout: 60000 });
+    if (printCss) await page.addStyleTag({ content: printCss });
     await page.pdf({ path: file, preferCSSPageSize: true, timeout: 120000 });
     return previewPages;
   };

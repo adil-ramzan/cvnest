@@ -1,7 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { SectionType } from "@/data/resume";
 import { LinkText } from "./LinkText";
-import { joinParts, longTextClass, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
+import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
+import { TextBlocks } from "./TextBlocks";
 
 /** Section types shown in the sidebar, in this template's own order. Everything else follows the user's order in the main column. */
 const SIDEBAR: SectionType[] = ["skills", "education", "certifications", "languages"];
@@ -65,6 +66,19 @@ function SidebarBody({ section }: { section: RenderSection }) {
   );
 }
 
+function MainBullets({ items }: { items: string[] }) {
+  return (
+    <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[#3f474e]">
+      {items.map((item, i) => (
+        <li key={i} className="relative pl-3.5">
+          <span className="absolute top-[0.6em] left-0 size-1 rounded-full bg-[var(--r-accent,#2c6e66)]" />
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function MainEntry({ entry, type, links }: { entry: RenderEntry; type: SectionType; links?: boolean }) {
   const hasBullets = type === "experience" || type === "volunteering";
   const subtitle = hasBullets ? joinParts([entry.subtitle, entry.location], " · ") : entry.subtitle;
@@ -79,24 +93,15 @@ function MainEntry({ entry, type, links }: { entry: RenderEntry; type: SectionTy
           {link && <LinkText value={link} links={links} />}
         </p>
       )}
-      {entry.bullets.length > 0 && (
-        <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-[#3f474e]">
-          {entry.bullets.map((item, i) => (
-            <li key={i} className="relative pl-3.5">
-              <span className="absolute top-[0.6em] left-0 size-1 rounded-full bg-[var(--r-accent,#2c6e66)]" />
-              {item}
-            </li>
-          ))}
-        </ul>
-      )}
-      {entry.text && <p className={`mt-1 text-xs leading-relaxed whitespace-pre-line text-[#3f474e]${longTextClass(entry.text)}`}>{entry.text}</p>}
+      {entry.bullets.length > 0 && <MainBullets items={entry.bullets} />}
+      <TextBlocks blocks={entry.details} className="mt-1 text-xs leading-relaxed text-[#3f474e]" bullets={(items) => <MainBullets items={items} />} />
     </div>
   );
 }
 
 function MainBody({ section, links }: { section: RenderSection; links?: boolean }) {
   if (section.kind === "text") {
-    return <p className={`text-xs leading-relaxed whitespace-pre-line text-[#3f474e]${longTextClass(section.text)}`}>{section.text}</p>;
+    return <TextBlocks blocks={section.details} className="text-xs leading-relaxed text-[#3f474e]" bullets={(items) => <MainBullets items={items} />} />;
   }
   if (section.kind === "list") return <p className="text-xs leading-relaxed text-[#3f474e]">{section.items.join("  ·  ")}</p>;
   const spacing = section.type === "experience" || section.type === "volunteering" ? "space-y-5" : "space-y-4";

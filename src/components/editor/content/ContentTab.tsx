@@ -30,6 +30,7 @@ import {
   type Resume,
   type ResumeProfile,
   type ResumeSection,
+  type SampleProfileField,
   type SectionType,
 } from "@/data/resume";
 import {
@@ -158,7 +159,12 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const { profile, sections } = resume;
 
-  const updateProfile = (patch: Partial<ResumeProfile>) => onChange((r) => ({ ...r, profile: { ...r.profile, ...patch } }));
+  const updateProfile = (patch: Partial<ResumeProfile>) =>
+    onChange((r) => {
+      const sampleFields = r.profile.sampleFields?.filter((field) => !(field in patch));
+      return { ...r, profile: { ...r.profile, ...patch, sampleFields: sampleFields?.length ? sampleFields : undefined } };
+    });
+  const stillSample = (field: SampleProfileField) => !!profile.sampleFields?.includes(field);
   const updateSection = (id: string, update: (section: ResumeSection) => ResumeSection) =>
     onChange((r) => ({ ...r, sections: r.sections.map((s) => (s.id === id ? update(s) : s)) }));
   const setEntries = <S extends EntrySection>(section: S, entries: S["entries"]) =>
@@ -221,7 +227,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <TextArea
             label="Summary"
             value={section.content}
-            onChange={(content) => updateSection(section.id, (s) => ({ ...s, content }) as ResumeSection)}
+            onChange={(content) => updateSection(section.id, (s) => ({ ...s, content, sample: undefined }) as ResumeSection)}
             rows={5}
             placeholder="Two to four sentences about your experience, strengths and what you are looking for."
             hint="Keep it short; recruiters usually skim this first."
@@ -239,7 +245,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             getSubtitle={(job) => join(job.company, range(job.startDate, job.endDate))}
             renderFields={(job, set, isNew) => (
               <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
-                <TextField label="Job title" value={job.role} onChange={(role) => set({ role })} placeholder="e.g. Product Designer" autoFocus={isNew} />
+                <TextField prose label="Job title" value={job.role} onChange={(role) => set({ role })} placeholder="e.g. Product Designer" autoFocus={isNew} />
                 <TextField label="Company" value={job.company} onChange={(company) => set({ company })} placeholder="e.g. Acme Inc." />
                 <TextField label="Location" value={job.location ?? ""} onChange={(location) => set({ location })} placeholder="City, State or Remote" className="sm:col-span-2" />
                 <TextField label="Start date" value={job.startDate ?? ""} onChange={(startDate) => set({ startDate })} placeholder="e.g. Mar 2021" />
@@ -270,7 +276,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             getSubtitle={(item) => join(item.organization, range(item.startDate, item.endDate))}
             renderFields={(item, set, isNew) => (
               <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
-                <TextField label="Role" value={item.role} onChange={(role) => set({ role })} placeholder="e.g. Volunteer Tutor" autoFocus={isNew} />
+                <TextField prose label="Role" value={item.role} onChange={(role) => set({ role })} placeholder="e.g. Volunteer Tutor" autoFocus={isNew} />
                 <TextField label="Organization" value={item.organization} onChange={(organization) => set({ organization })} placeholder="e.g. City Library" />
                 <TextField label="Location" value={item.location ?? ""} onChange={(location) => set({ location })} className="sm:col-span-2" />
                 <TextField label="Start date" value={item.startDate ?? ""} onChange={(startDate) => set({ startDate })} placeholder="e.g. 2022" />
@@ -300,11 +306,11 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             getSubtitle={(edu) => join(edu.school, range(edu.startDate, edu.endDate))}
             renderFields={(edu, set, isNew) => (
               <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
-                <TextField label="Degree or qualification" value={edu.degree} onChange={(degree) => set({ degree })} placeholder="e.g. B.S. Computer Science" autoFocus={isNew} className="sm:col-span-2" />
+                <TextField prose label="Degree or qualification" value={edu.degree} onChange={(degree) => set({ degree })} placeholder="e.g. B.S. Computer Science" autoFocus={isNew} className="sm:col-span-2" />
                 <TextField label="School" value={edu.school} onChange={(school) => set({ school })} placeholder="e.g. University of Michigan" className="sm:col-span-2" />
                 <TextField label="Start date" value={edu.startDate ?? ""} onChange={(startDate) => set({ startDate })} placeholder="e.g. 2016" />
                 <TextField label="End date" value={edu.endDate ?? ""} onChange={(endDate) => set({ endDate })} placeholder="e.g. 2020" />
-                <TextField label="Details" value={edu.details ?? ""} onChange={(details) => set({ details })} placeholder="e.g. Graduated with honors, GPA 3.8" className="sm:col-span-2" />
+                <TextField prose label="Details" value={edu.details ?? ""} onChange={(details) => set({ details })} placeholder="e.g. Graduated with honors, GPA 3.8" className="sm:col-span-2" />
               </div>
             )}
           />
@@ -321,8 +327,8 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             getSubtitle={(project) => project.role ?? ""}
             renderFields={(project, set, isNew) => (
               <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
-                <TextField label="Project name" value={project.name} onChange={(name) => set({ name })} placeholder="e.g. Budget tracker app" autoFocus={isNew} />
-                <TextField label="Role or technologies" value={project.role ?? ""} onChange={(role) => set({ role })} placeholder="e.g. React, Node.js" />
+                <TextField prose label="Project name" value={project.name} onChange={(name) => set({ name })} placeholder="e.g. Budget tracker app" autoFocus={isNew} />
+                <TextField prose label="Role or technologies" value={project.role ?? ""} onChange={(role) => set({ role })} placeholder="e.g. React, Node.js" />
                 <TextField label="Link" value={project.link ?? ""} onChange={(link) => set({ link })} placeholder="e.g. github.com/you/project" className="sm:col-span-2" />
                 <TextField label="Start date" value={project.startDate ?? ""} onChange={(startDate) => set({ startDate })} placeholder="e.g. 2023" />
                 <TextField label="End date" value={project.endDate ?? ""} onChange={(endDate) => set({ endDate })} placeholder="e.g. 2024" />
@@ -354,7 +360,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             getSubtitle={(cert) => join(cert.issuer, cert.date)}
             renderFields={(cert, set, isNew) => (
               <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
-                <TextField label="Certification" value={cert.name} onChange={(name) => set({ name })} placeholder="e.g. Google Analytics Certification" autoFocus={isNew} className="sm:col-span-2" />
+                <TextField prose label="Certification" value={cert.name} onChange={(name) => set({ name })} placeholder="e.g. Google Analytics Certification" autoFocus={isNew} className="sm:col-span-2" />
                 <TextField label="Issuer" value={cert.issuer ?? ""} onChange={(issuer) => set({ issuer })} placeholder="e.g. Google" />
                 <TextField label="Date" value={cert.date ?? ""} onChange={(date) => set({ date })} placeholder="e.g. 2024" />
               </div>
@@ -391,7 +397,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             getSubtitle={(award) => join(award.issuer, award.date)}
             renderFields={(award, set, isNew) => (
               <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
-                <TextField label="Award" value={award.title} onChange={(title) => set({ title })} placeholder="e.g. Employee of the Year" autoFocus={isNew} className="sm:col-span-2" />
+                <TextField prose label="Award" value={award.title} onChange={(title) => set({ title })} placeholder="e.g. Employee of the Year" autoFocus={isNew} className="sm:col-span-2" />
                 <TextField label="Issuer" value={award.issuer ?? ""} onChange={(issuer) => set({ issuer })} placeholder="e.g. Acme Inc." />
                 <TextField label="Date" value={award.date ?? ""} onChange={(date) => set({ date })} placeholder="e.g. 2023" />
                 <TextArea label="Description" value={award.description ?? ""} onChange={(description) => set({ description })} rows={2} className="sm:col-span-2" />
@@ -411,8 +417,8 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             getSubtitle={(item) => join(item.subtitle, item.date)}
             renderFields={(item, set, isNew) => (
               <div className="grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-2">
-                <TextField label="Title" value={item.title} onChange={(title) => set({ title })} placeholder="e.g. Volunteer Tutor" autoFocus={isNew} />
-                <TextField label="Subtitle" value={item.subtitle ?? ""} onChange={(subtitle) => set({ subtitle })} placeholder="e.g. City Library" />
+                <TextField prose label="Title" value={item.title} onChange={(title) => set({ title })} placeholder="e.g. Volunteer Tutor" autoFocus={isNew} />
+                <TextField prose label="Subtitle" value={item.subtitle ?? ""} onChange={(subtitle) => set({ subtitle })} placeholder="e.g. City Library" />
                 <TextField label="Date" value={item.date ?? ""} onChange={(date) => set({ date })} placeholder="e.g. 2022 – Present" className="sm:col-span-2" />
                 <TextArea label="Description" value={item.description ?? ""} onChange={(description) => set({ description })} rows={3} className="sm:col-span-2" />
               </div>
@@ -429,14 +435,14 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
           <div className="min-w-0 sm:col-span-2">
             <PhotoField value={photoUrl} hasPhoto={!!profile.photo} onChange={onPhotoChange} />
           </div>
-          <TextField label="Full name" value={profile.fullName} onChange={(fullName) => updateProfile({ fullName })} placeholder="e.g. Alex Morgan" autoComplete="name" />
-          <TextField label="Job title" value={profile.jobTitle} onChange={(jobTitle) => updateProfile({ jobTitle })} placeholder="e.g. Marketing Manager" autoComplete="organization-title" />
-          <TextField label="Email" type="email" value={profile.email} onChange={(email) => updateProfile({ email })} placeholder="alex@email.com" autoComplete="email" />
-          <TextField label="Phone" type="tel" value={profile.phone} onChange={(phone) => updateProfile({ phone })} placeholder="(555) 123-4567" autoComplete="tel" />
-          <TextField label="Location" value={profile.location} onChange={(location) => updateProfile({ location })} placeholder="City, State" className="sm:col-span-2" />
-          <TextField label="LinkedIn" value={profile.linkedin ?? ""} onChange={(linkedin) => updateProfile({ linkedin })} placeholder="linkedin.com/in/alexmorgan" />
-          <TextField label="GitHub" value={profile.github ?? ""} onChange={(github) => updateProfile({ github })} placeholder="github.com/alexmorgan" />
-          <TextField label="Website" value={profile.website ?? ""} onChange={(website) => updateProfile({ website })} placeholder="alexmorgan.com" className="sm:col-span-2" />
+          <TextField label="Full name" value={profile.fullName} sample={stillSample("fullName")} onChange={(fullName) => updateProfile({ fullName })} placeholder="e.g. Alex Morgan" autoComplete="name" />
+          <TextField prose label="Job title" value={profile.jobTitle} sample={stillSample("jobTitle")} onChange={(jobTitle) => updateProfile({ jobTitle })} placeholder="e.g. Marketing Manager" autoComplete="organization-title" />
+          <TextField label="Email" type="email" value={profile.email} sample={stillSample("email")} onChange={(email) => updateProfile({ email })} placeholder="alex@email.com" autoComplete="email" />
+          <TextField label="Phone" type="tel" value={profile.phone} sample={stillSample("phone")} onChange={(phone) => updateProfile({ phone })} placeholder="(555) 123-4567" autoComplete="tel" />
+          <TextField label="Location" value={profile.location} sample={stillSample("location")} onChange={(location) => updateProfile({ location })} placeholder="City, State" className="sm:col-span-2" />
+          <TextField label="LinkedIn" value={profile.linkedin ?? ""} sample={stillSample("linkedin")} onChange={(linkedin) => updateProfile({ linkedin })} placeholder="linkedin.com/in/alexmorgan" />
+          <TextField label="GitHub" value={profile.github ?? ""} sample={stillSample("github")} onChange={(github) => updateProfile({ github })} placeholder="github.com/alexmorgan" />
+          <TextField label="Website" value={profile.website ?? ""} sample={stillSample("website")} onChange={(website) => updateProfile({ website })} placeholder="alexmorgan.com" className="sm:col-span-2" />
         </div>
       </ProfileCard>
 
@@ -466,6 +472,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
             icon={sectionIcons[section.type]}
             summary={sectionSummary(section)}
             badge={section.visible ? undefined : "Hidden"}
+            sample={section.type === "summary" && section.sample}
             open={openSections.has(section.id)}
             onToggle={() => onToggleSection(section.id)}
             headerOverride={

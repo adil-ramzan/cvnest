@@ -6,6 +6,7 @@ import { customizeDesign, modernSidebar } from "@/components/resume/engine/custo
 import { pageInset } from "@/components/resume/engine/design";
 import { DesignEdges, designVars } from "@/components/resume/engine/DesignTemplate";
 import { ResumePreview } from "@/components/resume/ResumePreview";
+import { geckoFooterTrim } from "@/components/resume/paginate";
 import type { PageSize, Resume, ResumeCustomization } from "@/data/resume";
 import { SITE_NAME } from "@/data/site";
 import { getTemplate, type ResumeTemplate, templates } from "@/data/templates";
@@ -194,6 +195,7 @@ export function usePdfExport() {
   if (job && typeof document !== "undefined") {
     const template = getTemplate(job.resume.design.templateId) ?? templates[0];
     const gecko = needsStaticFonts();
+    const inset = pageInset(template.slug, template.design) * 4;
     const preview = (
       <ResumePreview
         template={template}
@@ -210,7 +212,7 @@ export function usePdfExport() {
         ref={rootRef}
         className={gecko ? "print-root print-root--gecko paged paged--gecko" : "print-root paged"}
         aria-hidden="true"
-        style={{ "--page-inset": `${pageInset(template.slug, template.design) * 4}px` } as CSSProperties}
+        style={{ "--page-inset": `${inset}px`, "--footer-trim": `${geckoFooterTrim(inset)}px` } as CSSProperties}
       >
         <style>{pageRule(job.resume.design.pageSize) + (gecko ? staticFontCss : "")}</style>
         <PrintLayers template={template} customization={job.resume.design} />

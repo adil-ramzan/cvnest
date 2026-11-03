@@ -1,13 +1,24 @@
 import type { ReactNode } from "react";
 import { LinkText } from "./LinkText";
-import { joinParts, longTextClass, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
+import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
+import { TextBlocks } from "./TextBlocks";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <section className="grid grid-cols-[22%_1fr] gap-6 border-t border-[#e5e5e5] pt-5">
+    <section className="grid grid-cols-[22%_1fr] gap-6 border-t border-[#e5e5e5] pt-5 [--section-top:calc(var(--spacing)*5)]">
       <h2 className="text-2xs font-medium tracking-[0.14em] text-[color:var(--r-accent,#8a8a8a)] uppercase">{label}</h2>
       <div className="min-w-0">{children}</div>
     </section>
+  );
+}
+
+function Bullets({ items }: { items: string[] }) {
+  return (
+    <ul className="mt-2 space-y-1 text-xs leading-relaxed text-[#333333]">
+      {items.map((item, i) => (
+        <li key={i}>{item}</li>
+      ))}
+    </ul>
   );
 }
 
@@ -20,13 +31,7 @@ function ExperienceEntry({ entry }: { entry: RenderEntry }) {
         {entry.subtitle}
       </h3>
       <p className="mt-0.5 text-2xs text-[#8a8a8a]">{joinParts([entry.dates, entry.location], " · ")}</p>
-      {entry.bullets.length > 0 && (
-        <ul className="mt-2 space-y-1 text-xs leading-relaxed text-[#333333]">
-          {entry.bullets.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
-      )}
+      {entry.bullets.length > 0 && <Bullets items={entry.bullets} />}
     </div>
   );
 }
@@ -42,14 +47,14 @@ function SimpleEntry({ entry, meta, textClass, link, links }: { entry: RenderEnt
           {link && <LinkText value={link} links={links} />}
         </p>
       )}
-      {entry.text && <p className={`${textClass} text-xs leading-relaxed whitespace-pre-line text-[#333333]${longTextClass(entry.text)}`}>{entry.text}</p>}
+      <TextBlocks blocks={entry.details} className={`${textClass} text-xs leading-relaxed text-[#333333]`} bullets={(items) => <Bullets items={items} />} />
     </div>
   );
 }
 
 function RowBody({ section, links }: { section: RenderSection; links?: boolean }) {
   if (section.kind === "text") {
-    return <p className={`text-xs leading-relaxed whitespace-pre-line text-[#333333]${longTextClass(section.text)}`}>{section.text}</p>;
+    return <TextBlocks blocks={section.details} className="text-xs leading-relaxed text-[#333333]" bullets={(items) => <Bullets items={items} />} />;
   }
   if (section.kind === "list") {
     return section.type === "certifications" ? (

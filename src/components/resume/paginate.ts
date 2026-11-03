@@ -14,8 +14,8 @@ export const MAX_SPACED_PAGES = 40;
 
 const SPACER = "data-page-spacer";
 
-/** How much shorter Firefox's footer row is than its header row. See `.print-frame` in globals.css. */
-const GECKO_FOOTER_TRIM = 16;
+/** How much shorter Firefox's footer row is than its header row. See `.print-frame` in globals.css. Compact insets keep it full. */
+export const geckoFooterTrim = (inset: number) => (inset < 40 ? 0 : 16);
 
 export type PageSpec = {
   /** Printed page size and top and bottom space, in CSS pixels. */
@@ -34,7 +34,7 @@ type Placement = { element: HTMLElement; column: number; top: number; bottom: nu
 /** Where each block lands in the hidden columns. `sheet` is cloned, so it is never touched here. */
 function measure(sheet: HTMLElement, spec: PageSpec) {
   // Chrome's columns hold each page's padding themselves. Firefox's hold what its print frame leaves.
-  const columnHeight = spec.gecko ? spec.height - spec.inset * 2 + GECKO_FOOTER_TRIM : spec.height;
+  const columnHeight = spec.gecko ? spec.height - spec.inset * 2 + geckoFooterTrim(spec.inset) : spec.height;
   const host = document.createElement("div");
   host.className = spec.gecko ? "pagination-host paged paged--gecko" : "pagination-host paged";
   host.setAttribute("aria-hidden", "true");

@@ -6,7 +6,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { BASE, OUT, createChecks, launch, sleep } from "./helpers.mjs";
-import { analyze, buildResume, chromeExporter, expectedTokens, firefoxExporter, pageStarts, storageFor } from "./pagination-lib.mjs";
+import { analyze, buildResume, chromeExporter, expectedTokens, firefoxExporter, pageStarts, readLines, storageFor } from "./pagination-lib.mjs";
 
 if (spawnSync("pdftotext", ["-v"]).error || spawnSync("pdftoppm", ["-v"]).error) {
   console.log("\nPagination\nSKIP  poppler-utils not installed");
@@ -115,10 +115,28 @@ check("Chrome: Preview page count matches the PDF in at least 97% of cases", mis
   check("Page 5's top margin equals page 2's", Math.abs(perPage[1].contentTop - perPage[4].contentTop) <= 2, `${perPage[1].contentTop} and ${perPage[4].contentTop}`);
 }
 
+// ---- Page 1 matches the rest. The name takes the exact type of a bullet or an entry title
+// while printing, so it starts at the same height as one that opens a page only if the
+// margins are equal. Which of the two opens a page depends on the page size.
+const nameAs = (size, weight, lineHeight) => `.print-root h1 { font-size: ${size}px !important; line-height: ${lineHeight} !important; font-weight: ${weight} !important; letter-spacing: 0 !important; }`;
+const LEADS = [{ css: nameAs(12, 400, 1.625), line: /^E\d+B\d+Z/ }, { css: nameAs(14, 600, "20px"), line: /^Role R\d+R/ }];
+for (const slug of ["professional", "minimal"]) for (const size of ["letter", "a4"]) {
+  let tops = [];
+  for (const { css, line } of LEADS) {
+    if (tops.length >= 2) break;
+    await run(buildResume({ slug, size, bullets: 56 }), file, { printCss: css });
+    const firsts = readLines(file).map((p) => [...p.lines].sort((a, b) => a.y0 - b.y0)[0]);
+    tops = firsts.filter((first, i) => (i === 0 ? /Jordan/ : line).test(first.text)).map((first) => first.y0);
+  }
+  check(`${slug} ${size}: page 1's top margin equals later pages'`, tops.length >= 2 && Math.max(...tops) - Math.min(...tops) <= 1, tops.map((t) => t.toFixed(2)).join(", "));
+}
+
 // ---- Preview
 const page = await browser.newPage();
 await page.setViewport({ width: 1440, height: 1000 });
 const open = async (resume) => {
+  // The exporter's tab may have been used last, and a tab in the background stops painting.
+  await page.bringToFront();
   await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded" });
   await page.evaluate((storage) => { localStorage.clear(); for (const [k, v] of Object.entries(storage)) localStorage.setItem(k, v); }, storageFor(resume));
   await page.goto(`${BASE}/editor`, { waitUntil: "load" });
@@ -127,9 +145,14 @@ const open = async (resume) => {
 };
 const dismissals = () => page.$$eval("button[aria-label^='Dismiss']", (els) => els.map((el) => el.getAttribute("aria-label")));
 const at = await startsFor("minimal", "letter");
-await open(buildResume({ slug: "minimal", size: "letter", bullets: at[1] + 1 }));
+// A one-line closing section spilling onto page 2. A page start from a longer resume can fit on
+// page 1 of a shorter one, so the bullets grow until it spills.
+for (let bullets = Math.max(1, at[1] - 4); bullets < at[2]; bullets++) {
+  await open(buildResume({ slug: "minimal", size: "letter", bullets, finalSection: true }));
+  if ((await page.evaluate(() => document.body.innerText.match(/about (\d+) pages?/)?.[1])) === "2") break;
+}
 check("Few-lines hint shows on a nearly empty last page", (await dismissals()).some((d) => d.includes("only a few lines")));
-await page.evaluate(() => document.querySelector("button[aria-label*='only a few lines']").click());
+await page.evaluate(() => document.querySelector("button[aria-label*='only a few lines']")?.click());
 await sleep(100);
 check("Hints can be dismissed", !(await dismissals()).some((d) => d.includes("only a few lines")));
 
@@ -163,6 +186,14 @@ if (spawnSync("firefox", ["--version"]).error || spawnSync("geckodriver", ["--ve
     await exportCase(firefox, slug, size, { bullets: 60 }, `Firefox ${slug}`);
     await exportCase(firefox, slug, size, { bullets: 6, longParagraph: true }, `Firefox ${slug} para`);
   }
+  // A short section starts on the page it reaches, rather than moving whole, once its heading and first entry fit.
+  const split = buildResume({ slug: "minimal", size: "letter", bullets: 20 });
+  split.sections.push({ id: "two", type: "experience", title: "Later Work", visible: true, entries: ["SPLITA", "SPLITB"].map((name, i) => ({ id: `two${i}`, role: name, company: "Other Co", location: "Remote", startDate: "2015", endDate: "2019", highlights: ["Delivered measurable outcomes for clients across a broad range of projects and markets", "Mentored staff", "Improved tooling"] })) });
+  await firefox(split, file);
+  const pages = readLines(file);
+  const onPage = (text) => pages.findIndex((p) => p.lines.some((line) => line.text.includes(text)));
+  // Before, it moved whole to a new page and left a third of the last one empty.
+  check("Firefox: a section starts on the page the one before it ends", onPage("SPLITA") >= 0 && onPage("SPLITA") === onPage("E4B19Z"), `last bullet on page ${onPage("E4B19Z") + 1}, SPLITA on page ${onPage("SPLITA") + 1}`);
   await firefox.close();
   check("Firefox: no pagination problems on any layout", failures.size === 0, [...failures].map(([k, v]) => `${k}: ${v.slice(0, 3).join(", ")}`).join(" | ").slice(0, 300));
 }

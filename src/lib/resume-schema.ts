@@ -12,6 +12,7 @@ import {
   type ResumeCustomization,
   type ResumeProfile,
   type ResumeSection,
+  SAMPLE_PROFILE_FIELDS,
   SECTION_TYPES,
   type SectionType,
 } from "@/data/resume";
@@ -89,6 +90,7 @@ function sanitizePhoto(value: unknown, ctx: IdContext): ProfilePhoto | undefined
 function sanitizeProfile(value: unknown, ctx: IdContext): ResumeProfile {
   const raw = isRecord(value) ? value : {};
   const photo = sanitizePhoto(raw.photo, ctx);
+  const sampleFields = SAMPLE_PROFILE_FIELDS.filter((field) => Array.isArray(raw.sampleFields) && raw.sampleFields.includes(field));
   return {
     fullName: str(raw.fullName),
     jobTitle: str(raw.jobTitle),
@@ -99,6 +101,7 @@ function sanitizeProfile(value: unknown, ctx: IdContext): ResumeProfile {
     github: str(raw.github),
     website: str(raw.website),
     ...(photo ? { photo } : {}),
+    ...(sampleFields.length ? { sampleFields } : {}),
   };
 }
 
@@ -111,11 +114,15 @@ function sanitizeSection(raw: UnknownRecord, ctx: IdContext): ResumeSection | nu
     visible: raw.visible !== false,
   };
   // Only written when true, so visible entries stay exactly as they were saved.
-  const entry = (item: UnknownRecord) => ({ id: takeId(item.id, ctx), ...(item.hidden === true ? { hidden: true } : {}) });
+  const entry = (item: UnknownRecord) => ({
+    id: takeId(item.id, ctx),
+    ...(item.hidden === true ? { hidden: true } : {}),
+    ...(item.sample === true ? { sample: true as const } : {}),
+  });
 
   switch (type) {
     case "summary":
-      return { ...base, type, content: str(raw.content) };
+      return { ...base, type, content: str(raw.content), ...(raw.sample === true ? { sample: true as const } : {}) };
     case "experience":
       return {
         ...base,

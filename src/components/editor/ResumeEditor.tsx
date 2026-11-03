@@ -9,6 +9,7 @@ import { backupFileName, createBackup, downloadTextFile, MAX_BACKUP_BYTES, readB
 import { findOverLimits } from "@/lib/resume-limits";
 import { type BackupState, loadBackupState, loadOpenSection, readRawResumes, saveBackupState, saveOpenSection } from "@/lib/resume-storage";
 import { duplicateResume, isResumeEmpty } from "@/lib/resumes";
+import { clearSampleContent, findSampleContent, hasSampleContent, markAsSample } from "@/lib/sample-content";
 import { isAtRisk } from "@/lib/unsaved";
 import { ContentTab } from "./content/ContentTab";
 import { buttonClass } from "@/components/ui/styles";
@@ -32,6 +33,7 @@ const tabCard = "m-4 overflow-hidden rounded-[22px] bg-surface shadow-soft sm:m-
 type DialogState =
   | { type: "rename" | "delete"; id: string }
   | { type: "empty" }
+  | { type: "sample" }
   | { type: "restore"; resumes: Resume[]; skipped: number }
   | { type: "restore-error"; message: string }
   | null;
@@ -41,7 +43,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const [tab, setTab] = useState<EditorTab>("content");
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [openSections, setOpenSections] = useState<Set<string>>(() => new Set());
-  const scrollTarget = useRef<string | null>(null);
+  const scrollTarget = useRef<{ elementId: string; focus?: boolean } | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [nameDraft, setNameDraft] = useState("");
   const [backupState, setBackupState] = useState<BackupState>(loadBackupState);
@@ -63,7 +65,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   useEffect(() => {
     if (!activeId) return;
     const section = loadOpenSection(activeId);
-    scrollTarget.current = section;
+    scrollTarget.current = section ? { elementId: `section-${section}` } : null;
     // Browser storage doesn't exist during server rendering, so this can only run after mounting.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpenSections(new Set(section ? [section] : []));
@@ -72,7 +74,10 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   useEffect(() => {
     if (!scrollTarget.current) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    document.getElementById(`section-${scrollTarget.current}`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    const { elementId, focus } = scrollTarget.current;
+    const element = document.getElementById(elementId);
+    element?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: focus ? "center" : "start" });
+    if (focus) (element?.querySelector<HTMLElement>("[aria-expanded]") ?? element?.querySelector("button"))?.focus({ preventScroll: true });
     scrollTarget.current = null;
   }, [openSections]);
 
@@ -92,14 +97,14 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const toggleSection = (id: string) => {
     const next = openSections.has(id) ? null : id;
     // Closing the section above moves this one, so bring it back into view.
-    scrollTarget.current = next;
+    scrollTarget.current = next ? { elementId: `section-${next}` } : null;
     setOpenSections(new Set(next ? [next] : []));
     saveOpenSection(active.id, next);
   };
 
   const openSection = (id: string) => {
     setOpenSections(new Set([id]));
-    scrollTarget.current = id;
+    scrollTarget.current = { elementId: `section-${id}` };
     saveOpenSection(active.id, id);
   };
 
@@ -110,8 +115,28 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
   const loadSample = () => {
     const { sample } = getTemplate(active.design.templateId) ?? templates[0];
-    const { profile, sections } = duplicateResume(sample, active.name);
+    const { profile, sections } = markAsSample(duplicateResume(sample, active.name));
     store.updateActive((resume) => ({ ...resume, profile, sections }));
+  };
+
+  /** Goes to the first sample content the PDF would show. */
+  const reviewSample = () => {
+    const found = findSampleContent(active);
+    if (!found) return;
+    editSection(found.sectionId);
+    scrollTarget.current = { elementId: found.elementId, focus: true };
+  };
+
+  const clearSample = () => {
+    const { profile, sections } = active;
+    store.updateActive(clearSampleContent);
+    setUndo({
+      id: Date.now(),
+      resumeId: active.id,
+      message: "Sample content cleared",
+      restore: () => store.updateActive((resume) => ({ ...resume, profile, sections })),
+    });
+    setAnnouncement("Sample content cleared");
   };
 
   const overLimits = findOverLimits(active);
@@ -131,6 +156,13 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   };
 
   const startPdf = () => pdf.start(active, photoUrl, () => store.markCopied("lastExportAt", active.id));
+
+  /** Starts the PDF, first checking for a resume that isn't ready to send. */
+  const requestPdf = () => {
+    if (isResumeEmpty(active)) setDialog({ type: "empty" });
+    else if (findSampleContent(active)) setDialog({ type: "sample" });
+    else startPdf();
+  };
 
   const onRestoreFile = async (file: File | undefined) => {
     if (restoreInput.current) restoreInput.current.value = "";
@@ -172,7 +204,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         onDelete={() => setDialog({ type: "delete", id: active.id })}
         onDownloadBackup={downloadBackup}
         onRestoreBackup={() => restoreInput.current?.click()}
-        onDownload={() => (isResumeEmpty(active) ? setDialog({ type: "empty" }) : startPdf())}
+        onDownload={requestPdf}
+        onClearSample={hasSampleContent(active) ? clearSample : undefined}
         downloading={pdf.status === "preparing"}
       />
 
@@ -412,7 +445,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         onDownloadBackup={downloadBackup}
         onSavePdf={() => {
           guard.stay();
-          startPdf();
+          requestPdf();
         }}
         onStay={guard.stay}
         onLeave={guard.leave}
@@ -459,6 +492,47 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             className={dialogButtonClass.primary}
           >
             Load sample data
+          </button>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={dialog?.type === "sample"}
+        onClose={() => setDialog(null)}
+        title="This resume still contains sample content."
+        description="Review it before downloading."
+      >
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setDialog(null);
+              startPdf();
+            }}
+            className={dialogButtonClass.secondary}
+          >
+            Download anyway
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDialog(null);
+              clearSample();
+            }}
+            className={dialogButtonClass.secondary}
+          >
+            Clear sample content
+          </button>
+          <button
+            type="button"
+            autoFocus
+            onClick={() => {
+              setDialog(null);
+              reviewSample();
+            }}
+            className={dialogButtonClass.primary}
+          >
+            Review
           </button>
         </div>
       </Dialog>

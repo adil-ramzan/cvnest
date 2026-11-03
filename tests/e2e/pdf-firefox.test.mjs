@@ -7,6 +7,7 @@
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 import { BASE, FIXTURES, OUT, createChecks, sleep } from "./helpers.mjs";
 import { longResume } from "./long-resume.mjs";
 
@@ -93,8 +94,204 @@ await wd("DELETE", s);
 driver.kill();
 check("Exported a PDF for every template and dataset", files.length === 480, String(files.length));
 
+// ---- Image detection
+// Counts the images a PDF's pages draw. `pdfimages` only sees images drawn directly,
+// and since Firefox 159 (Skia's PDF output) photos are painted through a tiling
+// pattern, so this follows each page's resources into patterns, form XObjects, soft
+// masks and Type 3 fonts, reading compressed object streams, and counts inline images
+// in the content streams. Anything it can't read (encryption, unknown filters,
+// missing objects) throws, so the PDF fails instead of passing as image-free.
+const PDF_SPACE = "\0\t\n\f\r ";
+const PDF_DELIMS = PDF_SPACE + "()<>[]{}/%";
+function pdfSkip(s, i) {
+  for (;;) {
+    while (i < s.length && PDF_SPACE.includes(s[i])) i++;
+    if (s[i] !== "%") return i;
+    while (i < s.length && s[i] !== "\n" && s[i] !== "\r") i++;
+  }
+}
+const pdfWordEnd = (s, i) => {
+  while (i < s.length && !PDF_DELIMS.includes(s[i])) i++;
+  return i;
+};
+/** Parses one PDF object at `i`: [value, end]. Dicts are { dict }, refs { ref }, names { name }, operators { op }. */
+function pdfValue(s, i) {
+  i = pdfSkip(s, i);
+  if (i >= s.length) throw new Error("unexpected end of data");
+  if (s.startsWith("<<", i)) {
+    const dict = {};
+    for (i += 2; ; ) {
+      i = pdfSkip(s, i);
+      if (s.startsWith(">>", i)) return [{ dict }, i + 2];
+      const [key, j] = pdfValue(s, i);
+      if (!key?.name) throw new Error(`bad dictionary key at ${i}`);
+      [dict[key.name], i] = pdfValue(s, j);
+    }
+  }
+  if (s[i] === "[") {
+    const array = [];
+    for (i++; ; ) {
+      i = pdfSkip(s, i);
+      if (s[i] === "]") return [array, i + 1];
+      let item;
+      [item, i] = pdfValue(s, i);
+      array.push(item);
+    }
+  }
+  if (s[i] === "(") {
+    for (let depth = 0; i < s.length; i++) {
+      if (s[i] === "\\") i++;
+      else if (s[i] === "(") depth++;
+      else if (s[i] === ")" && --depth === 0) return [{ string: true }, i + 1];
+    }
+    throw new Error("unterminated string");
+  }
+  if (s[i] === "<") {
+    const end = s.indexOf(">", i);
+    if (end < 0) throw new Error("unterminated hex string");
+    return [{ string: true }, end + 1];
+  }
+  if (s[i] === "/") {
+    const end = pdfWordEnd(s, i + 1);
+    return [{ name: s.slice(i + 1, end).replace(/#([0-9a-fA-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))) }, end];
+  }
+  const end = pdfWordEnd(s, i);
+  if (end === i) throw new Error(`unexpected "${s[i]}" at ${i}`);
+  const word = s.slice(i, end);
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(word)) return [{ op: word }, end];
+  const ref = /^\d+$/.test(word) && /[\0\t\n\f\r ]+(\d+)[\0\t\n\f\r ]+R(?![^\0\t\n\f\r ()<>[\]{}/%])/y;
+  if (ref) {
+    ref.lastIndex = end;
+    if (ref.exec(s)) return [{ ref: Number(word) }, ref.lastIndex];
+  }
+  return [Number(word), end];
+}
+
+function pdfImageCount(file, pageCount) {
+  const buf = fs.readFileSync(file);
+  const s = buf.toString("latin1");
+  if (/\/Encrypt[\0\t\n\f\r /<[\d]/.test(s)) throw new Error("encrypted PDF");
+  const objects = new Map();
+  const get = (v) => {
+    if (!v?.ref) return v;
+    if (!objects.has(v.ref)) throw new Error(`missing object ${v.ref}`);
+    return objects.get(v.ref).value;
+  };
+  const decode = ({ value: { dict }, data }) => {
+    const filters = [dict.Filter ?? []].flat();
+    if (filters.some((f) => f.name !== "FlateDecode")) throw new Error(`unsupported filter ${filters.map((f) => f.name).join(", ")}`);
+    if ([dict.DecodeParms ?? []].flat().some((p) => p?.dict?.Predictor > 1)) throw new Error("unsupported predictor");
+    return (filters.length ? zlib.inflateSync(data) : data).toString("latin1");
+  };
+
+  // Top-level objects, stepping over stream data by its /Length.
+  const header = /(\d+)[\0\t\n\f\r ]+\d+[\0\t\n\f\r ]+obj(?![^\0\t\n\f\r ()<>[\]{}/%])/g;
+  const endsStream = (end) => /^[\0\t\n\f\r ]*endstream/.test(s.slice(end, end + 32));
+  const deferred = [];
+  for (let m; (m = header.exec(s)); ) {
+    let [value, i] = pdfValue(s, m.index + m[0].length);
+    i = pdfSkip(s, i);
+    const object = { value };
+    if (s.startsWith("stream", i)) {
+      let start = i + 6;
+      if (s[start] === "\r") start++;
+      if (s[start] === "\n") start++;
+      let length = value.dict?.Length;
+      if (length?.ref) length = Number(new RegExp(`(?:^|[^\\d])${length.ref}[\\0\\t\\n\\f\\r ]+\\d+[\\0\\t\\n\\f\\r ]+obj[\\0\\t\\n\\f\\r ]*(\\d+)[\\0\\t\\n\\f\\r ]*endobj`).exec(s)?.[1]);
+      if (Number.isInteger(length) && endsStream(start + length)) {
+        object.data = buf.subarray(start, start + length);
+        i = start + length;
+      } else if (value.dict?.Length?.ref) {
+        // The length is inside an object stream: step to "endstream" now, check the length once it's readable.
+        i = s.indexOf("endstream", start);
+        if (i < 0) throw new Error(`can't find the end of stream ${m[1]}`);
+        deferred.push({ object, start, end: i, id: m[1] });
+      } else throw new Error(`can't find the end of stream ${m[1]}`);
+    }
+    objects.set(Number(m[1]), object);
+    header.lastIndex = i;
+  }
+  // Objects packed in compressed object streams.
+  for (const stream of [...objects.values()].filter((o) => o.value.dict?.Type?.name === "ObjStm")) {
+    if (!stream.data) throw new Error("object stream with an unreadable length");
+    const text = decode(stream);
+    const { N, First } = stream.value.dict;
+    const index = text.slice(0, First).trim().split(/[\0\t\n\f\r ]+/).map(Number);
+    if (!Number.isInteger(N) || index.length !== 2 * N || index.some(Number.isNaN)) throw new Error("malformed object stream");
+    for (let k = 0; k < N; k++) {
+      if (objects.has(index[2 * k])) throw new Error(`object ${index[2 * k]} is defined twice`);
+      objects.set(index[2 * k], { value: pdfValue(text, First + index[2 * k + 1])[0] });
+    }
+  }
+  for (const { object, start, end, id } of deferred) {
+    const length = get(object.value.dict.Length);
+    if (!Number.isInteger(length) || start + length > end || !endsStream(start + length)) throw new Error(`stream ${id} doesn't match its length`);
+    object.data = buf.subarray(start, start + length);
+  }
+
+  const pages = [...objects.values()].filter((o) => o.value.dict?.Type?.name === "Page").map((o) => o.value.dict);
+  if (pages.length !== pageCount) throw new Error(`found ${pages.length} of ${pageCount} pages`);
+  const images = new Set();
+  const visited = new Set();
+  let inline = 0;
+  const countInline = (stream) => {
+    if (!stream?.data) throw new Error("expected a content stream");
+    const text = decode(stream);
+    for (let i = pdfSkip(text, 0); i < text.length; i = pdfSkip(text, i)) {
+      let token;
+      [token, i] = pdfValue(text, i);
+      if (token?.op !== "BI") continue;
+      inline++;
+      const id = /[\0\t\n\f\r ]ID[\0\t\n\f\r ]/g;
+      id.lastIndex = i;
+      if (!id.exec(text)) throw new Error("inline image without data");
+      const ei = /[\0\t\n\f\r ]EI(?![^\0\t\n\f\r ])/g;
+      ei.lastIndex = id.lastIndex;
+      if (!ei.exec(text)) throw new Error("unterminated inline image");
+      i = ei.lastIndex;
+    }
+  };
+  const draw = (ref) => {
+    const value = get(ref)?.dict;
+    // Shading patterns can be direct dictionaries and draw no images.
+    if (value?.PatternType === 2) return;
+    if (!ref?.ref || !value) throw new Error("expected an indirect XObject or pattern");
+    if (value.Subtype?.name === "Image") return images.add(ref.ref);
+    if (visited.has(ref.ref)) return;
+    visited.add(ref.ref);
+    if (value.Subtype?.name !== "Form" && value.PatternType !== 1) return;
+    walk(value.Resources);
+    countInline(objects.get(ref.ref));
+  };
+  const walk = (resources) => {
+    const res = get(resources)?.dict;
+    if (!res) return;
+    for (const x of Object.values(get(res.XObject)?.dict ?? {})) draw(x);
+    for (const p of Object.values(get(res.Pattern)?.dict ?? {})) draw(p);
+    for (const gs of Object.values(get(res.ExtGState)?.dict ?? {})) {
+      const mask = get(get(gs)?.dict?.SMask);
+      if (mask?.dict) draw(mask.dict.G);
+    }
+    for (const ref of Object.values(get(res.Font)?.dict ?? {})) {
+      const font = get(ref)?.dict;
+      if (font?.Subtype?.name !== "Type3") continue;
+      walk(font.Resources);
+      for (const proc of Object.values(get(font.CharProcs)?.dict ?? {})) countInline(objects.get(proc.ref));
+    }
+  };
+  for (const page of pages) {
+    // Resources can be inherited from the page tree.
+    let node = page;
+    while (node && !node.Resources && node.Parent) node = get(node.Parent)?.dict;
+    walk(node?.Resources);
+    const contents = objects.get(page.Contents?.ref)?.data ? [page.Contents] : [get(page.Contents) ?? []].flat();
+    for (const ref of contents) countInline(objects.get(ref.ref));
+  }
+  return images.size + inline;
+}
+
 // ---- Verify
-const run = (cmd, args) => execFileSync(cmd, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] });
+const run =(cmd, args) => execFileSync(cmd, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] });
 const problems = [];
 let leastFilled = 1;
 for (const { file, name, size, slug } of files) {
@@ -127,7 +324,16 @@ for (const { file, name, size, slug } of files) {
     if (name === "long" && index < pages - 1) leastFilled = Math.min(leastFilled, Math.max(...words.map((x) => x[3])) / ph);
   });
 
-  const images = run("pdfimages", ["-list", file]).split("\n").slice(2).filter((l) => l.trim()).length;
+  let images;
+  try {
+    images = pdfImageCount(file, pages);
+  } catch (error) {
+    problems.push(`${label}: couldn't inspect images (${error.message})`);
+    continue;
+  }
+  // Cross-check against pdfimages, which lists every use and soft mask, so only its absence of images is comparable.
+  const listed = run("pdfimages", ["-list", file]).split("\n").slice(2).filter((l) => l.trim()).length;
+  if (listed > 0 && images === 0) problems.push(`${label}: image detection found none, pdfimages lists ${listed}`);
   const showsPhoto = name !== "empty" && photoMode[slug] !== "none" && !handWritten.has(slug);
   if (showsPhoto && images < 1) problems.push(`${label}: expected the photo, found no images`);
   if (!showsPhoto && images !== 0) problems.push(`${label}: unexpected images (${images})`);

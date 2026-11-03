@@ -114,7 +114,7 @@ export function isResumeEmpty(resume: Resume): boolean {
       : Array.isArray(value)
         ? value.some(hasText)
         : typeof value === "object" && value !== null
-          ? Object.entries(value).some(([key, v]) => !["id", "type", "title", "visible"].includes(key) && hasText(v))
+          ? Object.entries(value).some(([key, v]) => !["id", "type", "title", "visible", "sampleFields"].includes(key) && hasText(v))
           : false;
   return !resume.profile.photo && !hasText(resume.profile) && !hasText(resume.sections);
 }

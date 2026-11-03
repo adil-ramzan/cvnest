@@ -109,14 +109,6 @@ export const homeCopy = {
         question: "Can I keep more than one resume?",
         answer: "Yes. Create as many as you need, duplicate one to tailor it, and switch between them from the menu at the top of the editor.",
       },
-      {
-        question: "Which browser should I use?",
-        answer: "We’ve tested PDF export in Chrome, Edge and Firefox on a computer. Chrome and Edge match the preview most closely, and Firefox can show thin white strips on colored sidebars. We haven’t tested Safari or phones yet.",
-      },
-      {
-        question: "Will my resume work with applicant tracking systems?",
-        answer: "We can’t promise that yet. PDFs use real, selectable text and standard headings, but we haven’t tested them with real tracking systems, and some layouts extract less cleanly than others: two-column designs can mix the reading order, and widely spaced capitals can split a name. If you’re unsure, a single-column template is the safest choice.",
-      },
     ],
   },
   cta: {

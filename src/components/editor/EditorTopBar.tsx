@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ChevronDown, Copy, Download, HardDrive, Info, LayoutDashboard, Loader2, type LucideIcon, MoreHorizontal, Pencil, PencilLine, Plus, SlidersHorizontal, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, ChevronDown, Copy, Download, Eraser, HardDrive, Info, LayoutDashboard, Loader2, type LucideIcon, MoreHorizontal, Pencil, PencilLine, Plus, SlidersHorizontal, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { type KeyboardEvent, useRef } from "react";
 import { getTemplate } from "@/data/templates";
@@ -37,6 +37,8 @@ type EditorTopBarProps = {
   onDownloadBackup: () => void;
   onRestoreBackup: () => void;
   onDownload: () => void;
+  /** Present only while the resume holds sample content. */
+  onClearSample?: () => void;
   /** True while the PDF is being prepared or the print dialog is open. */
   downloading: boolean;
 };
@@ -165,6 +167,7 @@ export function EditorTopBar({
   onDownloadBackup,
   onRestoreBackup,
   onDownload,
+  onClearSample,
   downloading,
 }: EditorTopBarProps) {
   const resumeItems: MenuItem[] = [
@@ -183,6 +186,7 @@ export function EditorTopBar({
   const moreItems: MenuItem[] = [
     { label: "Rename", icon: Pencil, onSelect: onRename },
     { label: "Duplicate", icon: Copy, onSelect: onDuplicate },
+    ...(onClearSample ? [{ label: "Clear sample content", icon: Eraser, onSelect: onClearSample }] : []),
     "separator",
     { label: "Download backup", icon: Download, onSelect: onDownloadBackup },
     { label: "Restore from backup", icon: Upload, onSelect: onRestoreBackup },

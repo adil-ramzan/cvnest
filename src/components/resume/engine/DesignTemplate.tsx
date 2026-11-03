@@ -2,7 +2,8 @@ import { Globe, Link2, type LucideIcon, Mail, MapPin, Phone } from "lucide-react
 import { type CSSProperties, Fragment, type ReactNode } from "react";
 import type { SectionType } from "@/data/resume";
 import { LinkText } from "../LinkText";
-import { joinParts, longTextClass, type PreparedResume, type RenderSection } from "../prepareResume";
+import { joinParts, type PreparedResume, type RenderSection, type TextBlock } from "../prepareResume";
+import { TextBlocks } from "../TextBlocks";
 import { fontStacks, type HeadingStyle, type SidebarSection, type TemplateDesign } from "./design";
 
 // Colors and fonts come from CSS variables set on the article (and overridden on
@@ -187,7 +188,7 @@ function Heading({ title, style, t }: { title: string; style: HeadingStyle; t: T
 function Section({ title, t, area, children }: { title: string; t: Theme; area: Area; children: ReactNode }) {
   if (t.d.layout === "labels" && area === "main") {
     return (
-      <section className={`grid grid-cols-[22%_minmax(0,1fr)] gap-5 border-t ${C.rule} pt-4`}>
+      <section className={`grid grid-cols-[22%_minmax(0,1fr)] gap-5 border-t ${C.rule} pt-4 [--section-top:calc(var(--spacing)*4)]`}>
         <h2 className={`text-2xs font-semibold tracking-[0.14em] uppercase ${C.accent} ${C.headingFont}`}>{title}</h2>
         <div className="min-w-0">{children}</div>
       </section>
@@ -221,7 +222,7 @@ function Section({ title, t, area, children }: { title: string; t: Theme; area: 
 // ---------------------------------------------------------------------------
 // Entries
 
-type EntryData = { key: string; title: string; subtitle: string; link?: string; dates: string; bullets: string[]; text: string };
+type EntryData = { key: string; title: string; subtitle: string; link?: string; dates: string; bullets: string[]; details: TextBlock[] };
 
 function Bullets({ items, t }: { items: string[]; t: Theme }) {
   const { bullets } = t.d;
@@ -295,7 +296,7 @@ function Entry({ e, t, area }: { e: EntryData; t: Theme; area: Area }) {
   const details = (
     <>
       {e.bullets.length > 0 && <Bullets items={e.bullets} t={t} />}
-      {e.text && <p className={`mt-1 ${dens.body} whitespace-pre-line${inline ? " entry-detail" : ""}${longTextClass(e.text)}`}>{e.text}</p>}
+      <TextBlocks blocks={e.details} className={`mt-1 ${dens.body}${inline ? " entry-detail" : ""}`} bullets={(items) => <Bullets items={items} t={t} />} />
     </>
   );
 
@@ -514,7 +515,7 @@ function renderSection(section: RenderSection, t: Theme, area: Area): ReactNode 
   let body: ReactNode;
 
   if (section.kind === "text") {
-    body = <p className={`${dens.body} whitespace-pre-line${longTextClass(section.text)}`}>{section.text}</p>;
+    body = <TextBlocks blocks={section.details} className={dens.body} bullets={(items) => <Bullets items={items} t={t} />} />;
   } else if (section.kind === "list") {
     if (section.type === "skills") {
       body = <SkillList items={section.items} t={t} area={area} />;
@@ -542,7 +543,7 @@ function renderSection(section: RenderSection, t: Theme, area: Area): ReactNode 
           link: withLocation ? undefined : entry.link,
           dates: entry.dates,
           bullets: entry.bullets,
-          text: entry.text,
+          details: entry.details,
         }))}
       />
     );
@@ -866,7 +867,7 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   const vars = designVars(design);
 
   const mainSections = (
-    <div className={`flex flex-col ${dens.sections}${design.sectionBands ? ` [&>section:nth-child(even)]:[background-color:var(--t-tint)] ${dens.band}` : ""}`}>
+    <div className={`flex flex-col ${dens.sections}${design.sectionBands ? ` section-bands [&>section:nth-child(even)]:[background-color:var(--t-tint)] ${dens.band}` : ""}`}>
       {mainList.map((section) => renderSection(section, t, "main"))}
       {lowerList.length > 0 && (
         <div className={`resume-lower grid grid-cols-2 ${dens.sections} gap-x-8`}>{lowerList.map((section) => renderSection(section, t, "side"))}</div>

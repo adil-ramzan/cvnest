@@ -3,9 +3,11 @@
 import { Eye, EyeOff, GripVertical, Plus, Trash2 } from "lucide-react";
 import { type KeyboardEvent, type PointerEvent, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { buttonClass, focusRing, iconButtonClass } from "@/components/ui/styles";
+import { sampleEntryElementId } from "@/lib/sample-content";
 import { LIMITS } from "@/lib/resume-limits";
+import { SampleTag } from "./fields";
 
-type Entry = { id?: string; hidden?: boolean };
+type Entry = { id?: string; hidden?: boolean; sample?: true };
 
 type EntryListProps<T extends Entry> = {
   items: T[];
@@ -152,7 +154,7 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
             const bodyId = `entry-${key}`;
 
             return (
-              <li key={key} className={`rounded-2xl border border-line ${draggingKey === key ? "bg-panel shadow-soft" : ""}`}>
+              <li key={key} id={item.sample ? sampleEntryElementId(key) : undefined} className={`scroll-mt-36 rounded-2xl border border-line ${draggingKey === key ? "bg-panel shadow-soft" : ""}`}>
                 <div className="flex items-center gap-1 px-1.5">
                   <button
                     type="button"
@@ -178,7 +180,10 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
                     aria-controls={bodyId}
                     className={`min-w-0 flex-1 rounded-lg py-2.5 text-left ${focusRing} ${item.hidden ? "opacity-55" : ""}`}
                   >
-                    <span className={`block truncate text-[0.9375rem] font-bold ${getTitle(item).trim() ? "text-ink" : "text-muted"}`}>{title}</span>
+                    <span className="flex items-center gap-2">
+                      <span className={`truncate text-[0.9375rem] font-bold ${getTitle(item).trim() ? "text-ink" : "text-muted"}`}>{title}</span>
+                      {item.sample && <SampleTag />}
+                    </span>
                     {subtitle && <span className="block truncate text-[0.875rem] text-muted">{subtitle}</span>}
                   </button>
                   <button
@@ -206,7 +211,7 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
                 >
                   {open && (
                     <>
-                      {renderFields(item, (patch) => onChange(items.map((current, i) => (i === index ? { ...current, ...patch } : current))), key === newKey)}
+                      {renderFields(item, (patch) => onChange(items.map((current, i) => (i === index ? { ...current, ...patch, sample: undefined } : current))), key === newKey)}
                       <div className="mt-5 flex items-center gap-2">
                         <button
                           type="button"

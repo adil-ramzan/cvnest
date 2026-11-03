@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import { LinkText } from "./LinkText";
-import { joinParts, longTextClass, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
+import { joinParts, type PreparedResume, type RenderEntry, type RenderSection } from "./prepareResume";
+import { TextBlocks } from "./TextBlocks";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -22,18 +23,22 @@ function EntryHeader({ title, dates }: { title: string; dates: string }) {
   );
 }
 
+function Bullets({ items }: { items: string[] }) {
+  return (
+    <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs leading-relaxed marker:text-[#9ca3af]">
+      {items.map((item, i) => (
+        <li key={i}>{item}</li>
+      ))}
+    </ul>
+  );
+}
+
 function ExperienceEntry({ entry }: { entry: RenderEntry }) {
   return (
     <div>
       <EntryHeader title={entry.title} dates={entry.dates} />
       <p className="text-xs text-[#4b5563] italic">{joinParts([entry.subtitle, entry.location], ", ")}</p>
-      {entry.bullets.length > 0 && (
-        <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs leading-relaxed marker:text-[#9ca3af]">
-          {entry.bullets.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
-      )}
+      {entry.bullets.length > 0 && <Bullets items={entry.bullets} />}
     </div>
   );
 }
@@ -65,13 +70,13 @@ function DetailEntry({ entry, links }: { entry: RenderEntry; links?: boolean }) 
           {entry.link && <LinkText value={entry.link} links={links} />}
         </p>
       )}
-      {entry.text && <p className={`mt-1 text-xs leading-relaxed whitespace-pre-line${longTextClass(entry.text)}`}>{entry.text}</p>}
+      <TextBlocks blocks={entry.details} className="mt-1 text-xs leading-relaxed" bullets={(items) => <Bullets items={items} />} />
     </div>
   );
 }
 
 function SectionBody({ section, links }: { section: RenderSection; links?: boolean }) {
-  if (section.kind === "text") return <p className={`text-xs leading-relaxed whitespace-pre-line${longTextClass(section.text)}`}>{section.text}</p>;
+  if (section.kind === "text") return <TextBlocks blocks={section.details} className="text-xs leading-relaxed" bullets={(items) => <Bullets items={items} />} />;
   if (section.kind === "list") {
     return section.type === "certifications" ? (
       <ul className="space-y-0.5 text-xs">

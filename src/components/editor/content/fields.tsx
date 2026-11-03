@@ -5,9 +5,15 @@ import { type HTMLInputTypeAttribute, useId, useState } from "react";
 import type { Skill } from "@/data/resume";
 import { COUNTER_THRESHOLD, LIMITS } from "@/lib/resume-limits";
 import { newSkill } from "@/lib/resumes";
+import { sampleEntryElementId } from "@/lib/sample-content";
 import { buttonClass, hintClass, inputClass, labelClass } from "@/components/ui/styles";
 
 export { inputClass };
+
+/** Marks content that came from "Load sample data". Only ever shown in the editor. */
+export function SampleTag() {
+  return <span className="shrink-0 rounded-full bg-[#fffaeb] px-2 py-0.5 text-xs font-medium text-[#93370d] ring-1 ring-[#fedf89]">Sample</span>;
+}
 
 /** Shown as a field nears its limit; the message at the limit is announced to screen readers. */
 function LimitNote({ length, limit }: { length: number; limit: number }) {
@@ -31,14 +37,23 @@ type TextFieldProps = {
   hint?: string;
   className?: string;
   maxLength?: number;
+  /** Still holds sample text. */
+  sample?: boolean;
+  /** Natural-language text, so the browser's spell check is useful here. */
+  prose?: boolean;
 };
 
-export function TextField({ label, value, onChange, placeholder, type = "text", autoComplete, autoFocus, hint, className = "", maxLength = LIMITS.text }: TextFieldProps) {
+export function TextField({ label, value, onChange, placeholder, type = "text", autoComplete, autoFocus, hint, className = "", maxLength = LIMITS.text, sample, prose }: TextFieldProps) {
   const id = useId();
   return (
     <div className={className}>
       <label htmlFor={id} className={labelClass}>
         {label}
+        {sample && (
+          <span className="ml-2 align-middle">
+            <SampleTag />
+          </span>
+        )}
       </label>
       <input
         id={id}
@@ -49,6 +64,7 @@ export function TextField({ label, value, onChange, placeholder, type = "text", 
         autoComplete={autoComplete ?? "off"}
         autoFocus={autoFocus}
         maxLength={maxLength}
+        {...(prose ? { spellCheck: true, lang: "en" } : {})}
         aria-describedby={hint ? `${id}-hint` : undefined}
         className={`${inputClass} mt-2 h-11`}
       />
@@ -92,6 +108,8 @@ export function TextArea({ label, value, onChange, placeholder, rows = 4, hint, 
         placeholder={placeholder}
         rows={rows}
         maxLength={LIMITS.text}
+        spellCheck
+        lang="en"
         aria-describedby={hint ? `${id}-hint` : undefined}
         className={`${inputClass} mt-2 resize-y py-2.5 leading-relaxed`}
       />
@@ -185,9 +203,11 @@ export function TagInput({ label, itemName, items, onChange, onDeleted, placehol
           {items.map((item, index) => (
             <li
               key={item.id}
-              className="inline-flex items-center gap-1 rounded-full bg-canvas py-1 pr-1 pl-3.5 text-sm text-ink ring-1 ring-line"
+              id={item.sample ? sampleEntryElementId(item.id) : undefined}
+              className="inline-flex scroll-mt-36 items-center gap-1 rounded-full bg-canvas py-1 pr-1 pl-3.5 text-sm text-ink ring-1 ring-line"
             >
               {item.name}
+              {item.sample && <SampleTag />}
               <button
                 type="button"
                 onClick={() => {

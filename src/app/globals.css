@@ -401,6 +401,15 @@ body {
   margin-left: calc(var(--date-column) + var(--spacing) * 4);
 }
 
+/*
+  An entry without dates keeps an empty, padded date column. Firefox can place that
+  float in the last sliver of a page while its section moves whole to the next one,
+  and the print frame then ends with a blank page. It shows nothing, so it's dropped.
+*/
+.paged--gecko .entry-grid > :first-child:empty {
+  display: none;
+}
+
 .paged--gecko .resume-page,
 .paged--gecko article {
   display: block;
@@ -463,11 +472,50 @@ body {
 
 /*
   Firefox ignores break-after: avoid, so a title can end a page without its content.
-  Short entries and sections stay whole instead; long ones may break, or they would
-  jump to a new page and leave most of the last one empty.
+  Short entries stay whole instead; long ones may break, or they would jump to a new
+  page and leave most of the last one empty. A section's first entry may break too,
+  as what must stay with the heading is held by the block below, unless the heading
+  floats beside it: Firefox can add a blank last page when a block splits next to one.
 */
-.paged--gecko :is(div:has(> h3), div:has(> .flex > h3), section:not(:has(:nth-child(3) h3))):not(:has(li:nth-child(7), .long-text)) {
+.paged--gecko :is(div:has(> h3), div:has(> .flex > h3)):not(section:not(.grid) :first-child, section:not(.grid) :first-child > *):not(:has(li:nth-child(7), .long-text)) {
   break-inside: avoid;
+}
+
+/*
+  A section long enough to split between entries: its second entry has content of its
+  own. An invisible, unbreakable block as tall as a heading, its rule and the start of
+  the first entry sits under its content. If that much doesn't fit, the section starts on
+  the next page; if it does, the section can split. Anything shorter stays whole, or the
+  block could move a section that fits. So do cards and bands, whose colored top edge
+  must not end a page.
+*/
+.paged--gecko section {
+  --section-keep: calc(var(--u) * 7.5 * var(--resume-font-scale, 1));
+}
+
+.paged--gecko section:has(div + div:not(.entry-grid > *) :is(li, h3 ~ p, .flex ~ p)):not(.rounded-md, .section-bands > section, .resume-lower > section)::before {
+  content: "";
+  display: block;
+  height: var(--section-keep);
+  margin-bottom: calc(var(--section-keep) * -1);
+  break-inside: avoid;
+}
+
+.paged--gecko section:not(:has(div + div:not(.entry-grid > *) :is(li, h3 ~ p, .flex ~ p)), :has(li:nth-child(7), .long-text)),
+.paged--gecko :is(section.rounded-md, .section-bands > section):not(:has(:nth-child(3) h3, li:nth-child(7), .long-text)) {
+  break-inside: avoid;
+}
+
+/* Label sections' rule sits on top of them, so it moves into the block to go with the heading. */
+.paged--gecko section.grid:has(div + div:not(.entry-grid > *) :is(li, h3 ~ p, .flex ~ p)) {
+  padding-top: 0;
+  border-top-width: 0;
+}
+
+.paged--gecko section.grid:has(div + div:not(.entry-grid > *) :is(li, h3 ~ p, .flex ~ p))::before {
+  border-top: 1px solid;
+  border-color: inherit;
+  margin-bottom: calc(var(--section-keep) * -1 + var(--section-top));
 }
 
 /* A short section in a two-column footer stays whole, or its heading can end a page. */
@@ -600,9 +648,10 @@ body {
     height: var(--page-inset);
   }
 
-  /* At full height Firefox can add a blank last page, as the offset above leaves the table's end short of room. */
+  /* At full height Firefox can add a blank last page, as the offset above leaves the table's end short of room.
+     Compact pages keep the full height (--footer-trim 0), as trimming would leave less than the 20pt bottom margin. */
   .print-frame tfoot .print-spacer {
-    height: calc(var(--page-inset) - 16px);
+    height: calc(var(--page-inset) - var(--footer-trim, 16px));
   }
 
   /* Over the page layers before it. */

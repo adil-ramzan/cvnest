@@ -2,6 +2,7 @@
 
 import { ChevronDown, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { SampleTag } from "./fields";
 
 type SectionCardProps = {
   id: string;
@@ -11,6 +12,8 @@ type SectionCardProps = {
   summary?: string;
   /** Small label beside the title, e.g. "Hidden". */
   badge?: string;
+  /** The section's own text is still sample text. */
+  sample?: boolean;
   open: boolean;
   onToggle: () => void;
   /** Controls beside the header (e.g. a section options menu). */
@@ -21,7 +24,7 @@ type SectionCardProps = {
 };
 
 /** One collapsible card in the editor panel. */
-export function SectionCard({ id, title, icon: Icon, summary, badge, open, onToggle, actions, headerOverride, children }: SectionCardProps) {
+export function SectionCard({ id, title, icon: Icon, summary, badge, sample, open, onToggle, actions, headerOverride, children }: SectionCardProps) {
   const bodyId = `section-body-${id}`;
 
   return (
@@ -43,6 +46,7 @@ export function SectionCard({ id, title, icon: Icon, summary, badge, open, onTog
                 <span className="flex items-center gap-2">
                   <span className="truncate text-lg font-bold text-ink">{title}</span>
                   {badge && <span className="shrink-0 rounded-full bg-ink/5 px-2 py-0.5 text-xs font-medium text-muted">{badge}</span>}
+                  {sample && <SampleTag />}
                 </span>
                 {summary && <span className="block truncate text-[0.875rem] text-muted">{summary}</span>}
               </span>

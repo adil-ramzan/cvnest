@@ -1,5 +1,8 @@
 import { DEFAULT_SECTION_TITLES, type Resume, type ResumeSection, type SectionType } from "@/data/resume";
 
+/** Part of a free-text field: a paragraph, or lines the user wrote as a list. */
+export type TextBlock = { kind: "text"; text: string } | { kind: "bullets"; items: string[] };
+
 /** One entry (job, school, project, award...) normalized for rendering. */
 export type RenderEntry = {
   id: string;
@@ -9,11 +12,14 @@ export type RenderEntry = {
   link: string;
   dates: string;
   bullets: string[];
+  /** Free text on one line, for templates that run it into another line. */
   text: string;
+  /** The same text with its structure, for templates that give it its own block. */
+  details: TextBlock[];
 };
 
 export type RenderSection =
-  | { kind: "text"; id: string; type: SectionType; title: string; text: string }
+  | { kind: "text"; id: string; type: SectionType; title: string; text: string; details: TextBlock[] }
   | { kind: "entries"; id: string; type: SectionType; title: string; entries: RenderEntry[] }
   | { kind: "list"; id: string; type: SectionType; title: string; items: string[] };
 
@@ -42,9 +48,32 @@ export type PreparedResume = {
 };
 
 const text = (value: string | undefined) => value?.trim() ?? "";
+const BULLET_MARKER = /^(?:[•‣◦▪·]\s*|[-*](?:\s+|$))/;
 /** Pasted lists often keep their own markers, which would print a second bullet. */
-const stripBullet = (item: string) => item.trim().replace(/^(?:[•‣◦▪·]\s*|[-*](?:\s+|$))/, "").trim();
+const stripBullet = (item: string) => item.trim().replace(BULLET_MARKER, "").trim();
 const lines = (items: string[] | undefined) => (items ?? []).map(stripBullet).filter(Boolean);
+
+/** Splits free text into paragraphs and lists. Lines starting with a bullet marker form a list. */
+export function textBlocks(value: string | undefined): TextBlock[] {
+  const blocks: TextBlock[] = [];
+  for (const line of (value ?? "").split("\n")) {
+    const last = blocks.at(-1);
+    if (BULLET_MARKER.test(line.trim())) {
+      const item = stripBullet(line);
+      if (!item) continue;
+      if (last?.kind === "bullets") last.items.push(item);
+      else blocks.push({ kind: "bullets", items: [item] });
+    } else if (last?.kind === "text") last.text += `\n${line}`;
+    else if (line.trim()) blocks.push({ kind: "text", text: line });
+  }
+  return blocks.map((block) => (block.kind === "text" ? { ...block, text: block.text.trim() } : block));
+}
+
+/** Free text for an entry: its blocks, and one line for templates with no room for them. */
+function freeText(value: string | undefined) {
+  const details = textBlocks(value);
+  return { details, text: details.map((block) => (block.kind === "text" ? block.text : block.items.join(" · "))).join(" · ") };
+}
 
 export function dateRange(start?: string, end?: string) {
   const from = text(start);
@@ -60,7 +89,7 @@ export const longTextClass = (value: string) => (value.length > 1200 ? " long-te
 export const joinParts = (parts: string[], separator: string) => parts.filter(Boolean).join(separator);
 
 function entry(fields: Partial<RenderEntry> & { id: string }): RenderEntry {
-  return { title: "", subtitle: "", location: "", link: "", dates: "", bullets: [], text: "", ...fields };
+  return { title: "", subtitle: "", location: "", link: "", dates: "", bullets: [], text: "", details: [], ...fields };
 }
 
 const hasContent = (e: RenderEntry) => !!(e.title || e.subtitle || e.text || e.bullets.length);
@@ -80,7 +109,7 @@ function prepareSection(section: ResumeSection): RenderSection | null {
 
   switch (section.type) {
     case "summary":
-      return text(section.content) ? { ...base, kind: "text", text: text(section.content) } : null;
+      return freeText(section.content).text ? { ...base, kind: "text", ...freeText(section.content) } : null;
     case "experience":
       return entries(
         shown(section.entries).map((e) =>
@@ -116,7 +145,7 @@ function prepareSection(section: ResumeSection): RenderSection | null {
             subtitle: text(e.school),
             location: text(e.location),
             dates: dateRange(e.startDate, e.endDate),
-            text: text(e.details),
+            ...freeText(e.details),
           }),
         ),
       );
@@ -129,20 +158,20 @@ function prepareSection(section: ResumeSection): RenderSection | null {
             subtitle: text(e.role),
             link: text(e.link),
             dates: dateRange(e.startDate, e.endDate),
-            text: text(e.description),
+            ...freeText(e.description),
           }),
         ),
       );
     case "awards":
       return entries(
         shown(section.entries).map((e) =>
-          entry({ id: e.id, title: text(e.title), subtitle: text(e.issuer), dates: text(e.date), text: text(e.description) }),
+          entry({ id: e.id, title: text(e.title), subtitle: text(e.issuer), dates: text(e.date), ...freeText(e.description) }),
         ),
       );
     case "custom":
       return entries(
         shown(section.entries).map((e) =>
-          entry({ id: e.id, title: text(e.title), subtitle: text(e.subtitle), dates: text(e.date), text: text(e.description) }),
+          entry({ id: e.id, title: text(e.title), subtitle: text(e.subtitle), dates: text(e.date), ...freeText(e.description) }),
         ),
       );
     case "skills":
