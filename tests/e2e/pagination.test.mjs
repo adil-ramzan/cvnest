@@ -45,16 +45,18 @@ const note = (kind, label) => failures.set(kind, [...(failures.get(kind) ?? []),
 function inspect(result, label, slug, target) {
   for (const problem of result.problems) note(problem.kind, `${label} p${problem.page ?? "?"}`);
   if (target && result.pages !== target) note("page-count", `${label}: ${result.pages} pages, expected ${target}`);
-  if (result.contContent) {
-    if (result.contContent.max - result.contContent.min > 16) note("uneven-margin", `${label}: ${result.contContent.min}-${result.contContent.max}`);
-    if (Math.abs(result.contContent.min - inset(slug)) > 30) note("wrong-margin", `${label}: ${result.contContent.min}`);
+  // Measured at the first line's ink: a run of ink across the page skips plain text and finds the first rule instead.
+  // Anything drawn above that line is the margin-ink check's.
+  if (result.contTop) {
+    if (result.contTop.max - result.contTop.min > 16) note("uneven-margin", `${label}: ${result.contTop.min}-${result.contTop.max}`);
+    if (Math.abs(result.contTop.min - inset(slug)) > 30) note("wrong-margin", `${label}: ${result.contTop.min}`);
   }
 }
 
 const exportCase = async (exporter, slug, size, options, label, target) => {
   const resume = buildResume({ slug, size, ...options });
   const previewPages = await exporter(resume, file);
-  const result = analyze(file, { expected: expectedTokens(resume), size, bands: sectional.has(slug) });
+  const result = analyze(file, { expected: expectedTokens(resume), size, bands: sectional.has(slug), margin: inset(slug) });
   inspect(result, label, slug, target);
   return { result, previewPages };
 };
@@ -95,6 +97,7 @@ for (const [kind, label] of [
   ["text-order", "Text extracts in reading order"],
   ["uneven-margin", "Top margin matches across continuation pages"],
   ["wrong-margin", "Top margin matches the template's page padding"],
+  ["margin-ink", "Nothing but repeated decorations in the top margin"],
   ["page-count", "Page counts stay as expected"],
 ]) check(`Chrome: ${label}`, !failures.has(kind), (failures.get(kind) ?? []).slice(0, 6).join("; "));
 check("Chrome: Preview page count matches the PDF in at least 97% of cases", mismatched / compared <= 0.03, `${mismatched} of ${compared} differ`);

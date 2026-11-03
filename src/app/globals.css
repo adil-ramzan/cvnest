@@ -410,6 +410,26 @@ body {
   display: none;
 }
 
+/*
+  Firefox splits a positioned marker that crosses the end of a page. When its entry then
+  moves whole to the next page, the leftover piece adds a blank page to the print frame.
+  The timeline's dot and Modern's bullet dot sit in flow instead, taking no space, and
+  their offsets still place them as before.
+*/
+.paged--gecko .entry-grid > .relative > span[aria-hidden] {
+  position: relative;
+  display: block;
+  margin-left: calc(var(--spacing) * -5);
+  margin-bottom: calc(var(--spacing) * -2);
+}
+
+.paged--gecko li.relative.pl-3\.5 > span.absolute {
+  position: relative;
+  display: block;
+  margin-left: calc(var(--spacing) * -3.5);
+  margin-bottom: calc(var(--spacing) * -1);
+}
+
 .paged--gecko .resume-page,
 .paged--gecko article {
   display: block;
@@ -520,6 +540,24 @@ body {
 
 /* A short section in a two-column footer stays whole, or its heading can end a page. */
 .paged .resume-lower > section:not(:has(li:nth-child(7), .long-text)) {
+  break-inside: avoid;
+}
+
+/*
+  Chrome moves a grid row whole when an item in it can't break, and a stretched item is
+  as tall as its row. So a footer section of several entries splits between them instead,
+  and sections keep their own height, or a long Education moves the footer to a new page.
+  Firefox lays the footer out as columns (see above).
+*/
+.paged:not(.paged--gecko) .resume-lower > section {
+  align-self: start;
+}
+
+.paged:not(.paged--gecko) .resume-lower > section:has(> div > div + div h3) {
+  break-inside: auto;
+}
+
+.paged:not(.paged--gecko) .resume-lower > section > div > div:has(h3) {
   break-inside: avoid;
 }
 
@@ -679,6 +717,11 @@ body {
 
   .print-root .print-fixed-edge {
     position: fixed;
+  }
+
+  /* Over the page content, as on screen: a template's page color would otherwise cover them. */
+  .print-root .print-fixed-edge {
+    z-index: 1;
   }
 
   /*

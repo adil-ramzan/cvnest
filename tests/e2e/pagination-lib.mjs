@@ -218,10 +218,31 @@ function inkTop(raster, line, pageHeightPx) {
 const headingLine = (text) => FIRST_TITLES.some((t) => text.trim().toLowerCase() === t.toLowerCase());
 const overlaps = (a, b) => a.x0 < b.x1 && b.x0 < a.x1;
 
-/** Everything measured from one exported PDF. */
-export function analyze(file, { expected = [], size, dpi = 72, bands = false } = {}) {
+/** The strip above the page's top padding, `margin` CSS pixels tall less a little slack, as raw RGB. */
+function topBand(raster, margin, pageHeightPx) {
+  const { w, h, at } = raster;
+  const rows = Math.max(0, Math.floor(((margin - 4) * h) / pageHeightPx));
+  const band = Buffer.alloc(w * rows * 3);
+  for (let y = 0; y < rows; y++) for (let x = 0; x < w; x++) band.set(at(x, y), (y * w + x) * 3);
+  return band;
+}
+
+/** Pixels that differ clearly between two bands of the same size. */
+function bandDifference(a, b) {
+  let count = 0;
+  for (let i = 0; i < a.length; i += 3) if (Math.abs(a[i] - b[i]) > 32 || Math.abs(a[i + 1] - b[i + 1]) > 32 || Math.abs(a[i + 2] - b[i + 2]) > 32) count++;
+  return count;
+}
+
+/**
+ * Everything measured from one exported PDF. With `margin`, the template's top padding,
+ * ink in the top margin of a continuation page that the others don't share is a problem:
+ * page colors, sidebars, stripes and frames repeat on every page, so only content differs.
+ */
+export function analyze(file, { expected = [], size, dpi = 72, bands = false, margin } = {}) {
   const pages = readLines(file);
   const out = { pages: pages.length, perPage: [], problems: [] };
+  const topBands = new Map();
   const entryLines = new Map(); // "E3B9" etc. grouped by entry: entry -> Map(page -> line count)
   const paragraphLines = new Map();
 
@@ -230,6 +251,7 @@ export function analyze(file, { expected = [], size, dpi = 72, bands = false } =
     const lines = [...page.lines].sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0);
     const raster = rasterPage(file, n, dpi);
     const surface = pageSurface(raster);
+    if (margin && n > 1) topBands.set(n, topBand(raster, margin, page.height));
     if (!lines.length) {
       out.perPage.push({ n, blank: true, surface });
       out.problems.push({ kind: "blank-page", page: n });
@@ -307,6 +329,14 @@ export function analyze(file, { expected = [], size, dpi = 72, bands = false } =
     if (multi.length) out.contBottom = { min: Math.min(...multi), max: Math.max(...multi) };
   }
   out.firstTop = sheets[0]?.top;
+
+  // A page whose top margin differs from every other continuation page's holds content there.
+  if (topBands.size >= 2) {
+    for (const [n, band] of topBands) {
+      const fewest = Math.min(...[...topBands].filter(([other]) => other !== n).map(([, b]) => bandDifference(band, b)));
+      if (fewest > 20) out.problems.push({ kind: "margin-ink", page: n, pixels: fewest });
+    }
+  }
 
   const last = sheets.at(-1);
   if (last) {
