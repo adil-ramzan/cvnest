@@ -68,7 +68,7 @@ const densities = {
     timeline: "pb-2.5",
     body: "text-xs leading-snug",
     small: "text-2xs",
-    title: "text-xs",
+    title: "text-sm leading-tight",
     bullets: "space-y-0.5",
     header: "mb-5",
   },
@@ -82,7 +82,7 @@ type Theme = { d: TemplateDesign; r: PreparedResume; dens: Density };
 // Headings
 
 function Heading({ title, style, t }: { title: string; style: HeadingStyle; t: Theme }) {
-  const caps = "text-2xs font-semibold tracking-[0.16em] uppercase";
+  const caps = "text-xs font-semibold tracking-[0.16em] uppercase";
   const mb = t.dens.head;
 
   switch (style) {
@@ -95,7 +95,7 @@ function Heading({ title, style, t }: { title: string; style: HeadingStyle; t: T
         </h2>
       );
     case "caps":
-      return <h2 className={`${mb} text-2xs font-bold tracking-[0.18em] uppercase ${C.accent} ${C.headingFont}`}>{title}</h2>;
+      return <h2 className={`${mb} text-xs font-bold tracking-[0.18em] uppercase ${C.accent} ${C.headingFont}`}>{title}</h2>;
     case "line-after":
       return (
         <h2 className={`${mb} flex items-center gap-3 ${caps} ${C.accent} ${C.headingFont}`}>
@@ -119,7 +119,7 @@ function Heading({ title, style, t }: { title: string; style: HeadingStyle; t: T
       );
     case "pill":
       return (
-        <h2 className={`${mb} ${C.bgTint} px-2.5 py-1 text-2xs font-bold tracking-[0.16em] uppercase ${C.accent} ${C.headingFont}`}>
+        <h2 className={`${mb} ${C.bgTint} px-2.5 py-1 text-xs font-bold tracking-[0.16em] uppercase ${C.accent} ${C.headingFont}`}>
           {title}
         </h2>
       );
@@ -129,7 +129,7 @@ function Heading({ title, style, t }: { title: string; style: HeadingStyle; t: T
       );
     case "boxed":
       return (
-        <h2 className={`${mb} ${C.bgAccent} px-2.5 py-1 text-2xs font-semibold tracking-[0.2em] uppercase ${C.onAccent} ${C.headingFont}`}>
+        <h2 className={`${mb} ${C.bgAccent} px-2.5 py-1 text-xs font-semibold tracking-[0.2em] uppercase ${C.onAccent} ${C.headingFont}`}>
           {title}
         </h2>
       );
@@ -142,7 +142,7 @@ function Heading({ title, style, t }: { title: string; style: HeadingStyle; t: T
       );
     case "band-center":
       return (
-        <h2 className={`${mb} ${C.bgTint} py-1 text-center text-2xs font-semibold tracking-[0.2em] uppercase ${C.ink} ${C.headingFont}`}>
+        <h2 className={`${mb} ${C.bgTint} py-1 text-center text-xs font-semibold tracking-[0.2em] uppercase ${C.ink} ${C.headingFont}`}>
           {title}
         </h2>
       );
@@ -151,7 +151,7 @@ function Heading({ title, style, t }: { title: string; style: HeadingStyle; t: T
     case "tab":
       return (
         <h2 className={`${mb} border-b-2 ${C.accentRule} ${C.headingFont}`}>
-          <span className={`inline-block ${C.bgAccent} px-3 py-0.5 text-2xs font-semibold tracking-[0.14em] uppercase ${C.onAccent}`}>
+          <span className={`inline-block ${C.bgAccent} px-3 py-0.5 text-xs font-semibold tracking-[0.14em] uppercase ${C.onAccent}`}>
             {title}
           </span>
         </h2>
@@ -189,7 +189,7 @@ function Section({ title, t, area, children }: { title: string; t: Theme; area: 
   if (t.d.layout === "labels" && area === "main") {
     return (
       <section className={`grid grid-cols-[22%_minmax(0,1fr)] gap-5 border-t ${C.rule} pt-4 [--section-top:calc(var(--spacing)*4)]`}>
-        <h2 className={`text-2xs font-semibold tracking-[0.14em] uppercase ${C.accent} ${C.headingFont}`}>{title}</h2>
+        <h2 className={`text-xs font-semibold tracking-[0.14em] uppercase ${C.accent} ${C.headingFont}`}>{title}</h2>
         <div className="min-w-0">{children}</div>
       </section>
     );

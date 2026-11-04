@@ -345,10 +345,14 @@ export function analyze(file, { expected = [], size, dpi = 72, bands = false, ma
     out.lastLines = pages[last.n - 1].lines.length;
   }
 
-  // Reading order: bullets come out of the PDF in the order they were written.
-  const raw = run("pdftotext", [file, "-"]).toString();
-  const order = [...raw.matchAll(/E\d+B(\d+)Z/g)].map((m) => Number(m[1]));
-  if (order.some((value, i) => i > 0 && value < order[i - 1] && value !== 0)) out.problems.push({ kind: "text-order" });
+  // Reading order: bullets come out of the PDF in the order they were written, both in the order the PDF
+  // stores its text and in where they sit on the page. pdftotext's default order is a guess from the layout,
+  // and a line level with a column beside it can be grouped with that column.
+  const inOrder = (order) => !order.some((value, i) => i > 0 && value < order[i - 1] && value !== 0);
+  const bulletsIn = (text) => [...text.matchAll(/E\d+B(\d+)Z/g)].map((m) => Number(m[1]));
+  const stored = bulletsIn(run("pdftotext", ["-raw", file, "-"]).toString());
+  const placed = pages.flatMap((page) => [...page.lines].sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0).flatMap((line) => bulletsIn(line.text)));
+  if (!inOrder(stored) || !inOrder(placed)) out.problems.push({ kind: "text-order" });
 
   const text = pages.flatMap((p) => p.lines.map((l) => l.text)).join("\n");
   const missing = expected.filter((token) => !text.includes(token));

@@ -6,7 +6,7 @@ import { TextBlocks } from "./TextBlocks";
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <section className="grid grid-cols-[22%_1fr] gap-6 border-t border-[#e5e5e5] pt-5 [--section-top:calc(var(--spacing)*5)]">
-      <h2 className="text-2xs font-medium tracking-[0.14em] text-[color:var(--r-accent,#8a8a8a)] uppercase">{label}</h2>
+      <h2 className="text-xs font-medium tracking-[0.14em] text-[color:var(--r-accent,#707070)] uppercase">{label}</h2>
       <div className="min-w-0">{children}</div>
     </section>
   );
@@ -27,10 +27,10 @@ function ExperienceEntry({ entry }: { entry: RenderEntry }) {
     <div>
       <h3 className="text-sm font-medium">
         {entry.title}
-        {entry.title && entry.subtitle && <span className="font-normal text-[#8a8a8a]"> at </span>}
+        {entry.title && entry.subtitle && <span className="font-normal text-[#707070]"> at </span>}
         {entry.subtitle}
       </h3>
-      <p className="mt-0.5 text-2xs text-[#8a8a8a]">{joinParts([entry.dates, entry.location], " · ")}</p>
+      <p className="mt-0.5 text-2xs text-[#707070]">{joinParts([entry.dates, entry.location], " · ")}</p>
       {entry.bullets.length > 0 && <Bullets items={entry.bullets} />}
     </div>
   );
@@ -41,7 +41,7 @@ function SimpleEntry({ entry, meta, textClass, link, links }: { entry: RenderEnt
     <div>
       <h3 className="text-sm font-medium">{entry.title}</h3>
       {(meta || link) && (
-        <p className="mt-0.5 text-2xs text-[#8a8a8a]">
+        <p className="mt-0.5 text-2xs text-[#707070]">
           {meta}
           {meta && link && " · "}
           {link && <LinkText value={link} links={links} />}
@@ -85,7 +85,7 @@ function RowBody({ section, links }: { section: RenderSection; links?: boolean }
           {section.entries.map((entry) => (
             <div key={entry.id}>
               <h3 className="text-sm font-medium">{entry.title}</h3>
-              <p className="mt-0.5 text-2xs text-[#8a8a8a]">{joinParts([entry.subtitle, entry.dates, entry.text], " · ")}</p>
+              <p className="mt-0.5 text-2xs text-[#707070]">{joinParts([entry.subtitle, entry.dates, entry.text], " · ")}</p>
             </div>
           ))}
         </div>

@@ -218,8 +218,9 @@ body {
   font-family: var(--font-resume-sans);
   --u: calc(100cqw / 51);
   --spacing: calc(var(--u) * 0.25);
-  --text-2xs: calc(var(--u) * 0.625 * var(--resume-font-scale, 1));
-  --text-xs: calc(var(--u) * 0.75 * var(--resume-font-scale, 1));
+  /* The two smallest sizes stop just above 8pt in a PDF (0.67u), however small the text size is set. */
+  --text-2xs: max(calc(var(--u) * 0.7 * var(--resume-font-scale, 1)), calc(var(--u) * 0.67));
+  --text-xs: max(calc(var(--u) * 0.75 * var(--resume-font-scale, 1)), calc(var(--u) * 0.67));
   --text-sm: calc(var(--u) * 0.875 * var(--resume-font-scale, 1));
   --text-base: calc(var(--u) * var(--resume-font-scale, 1));
   --text-lg: calc(var(--u) * 1.125 * var(--resume-font-scale, 1));
@@ -430,6 +431,22 @@ body {
   margin-bottom: calc(var(--spacing) * -1);
 }
 
+/* The template engine's bullet markers: a dash or arrow is a line of text, the others a small box. */
+.paged--gecko li.relative.pl-3\.5 > span[aria-hidden] > span.absolute {
+  position: relative;
+  display: block;
+  margin-left: calc(var(--spacing) * -3.5);
+  margin-bottom: -1lh;
+}
+
+.paged--gecko li.relative.pl-3\.5 > span[aria-hidden] > span.absolute.size-1 {
+  margin-bottom: calc(var(--spacing) * -1);
+}
+
+.paged--gecko li.relative.pl-3\.5 > span[aria-hidden] > span.absolute.size-1\.5 {
+  margin-bottom: calc(var(--spacing) * -1.5);
+}
+
 .paged--gecko .resume-page,
 .paged--gecko article {
   display: block;
@@ -505,15 +522,17 @@ body {
   A section long enough to split between entries: its second entry has content of its
   own. An invisible, unbreakable block as tall as a heading, its rule and the start of
   the first entry sits under its content. If that much doesn't fit, the section starts on
-  the next page; if it does, the section can split. Anything shorter stays whole, or the
-  block could move a section that fits. So do cards and bands, whose colored top edge
-  must not end a page.
+  the next page; if it does, the section can split. A section holding long text gets the
+  block too, so its heading and title don't end a page above the text (not a label
+  section: its heading floats beside the text, so they can't part). Anything shorter
+  stays whole, or the block could move a section that fits. So do cards and bands, whose
+  colored top edge must not end a page.
 */
 .paged--gecko section {
   --section-keep: calc(var(--u) * 7.5 * var(--resume-font-scale, 1));
 }
 
-.paged--gecko section:has(div + div:not(.entry-grid > *) :is(li, h3 ~ p, .flex ~ p)):not(.rounded-md, .section-bands > section, .resume-lower > section)::before {
+.paged--gecko section:is(:has(div + div:not(.entry-grid > *) :is(li, h3 ~ p, .flex ~ p)), :not(.grid):has(.long-text)):not(.rounded-md, .section-bands > section, .resume-lower > section)::before {
   content: "";
   display: block;
   height: var(--section-keep);

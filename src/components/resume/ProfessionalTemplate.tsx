@@ -6,7 +6,7 @@ import { TextBlocks } from "./TextBlocks";
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-6">
-      <h2 className="border-b border-[color:var(--r-accent,#1f2a44)] pb-1 font-resume-sans text-2xs font-semibold tracking-[0.18em] text-[color:var(--r-accent,#1f2a44)] uppercase">
+      <h2 className="border-b border-[color:var(--r-accent,#1f2a44)] pb-1 font-resume-sans text-xs font-semibold tracking-[0.18em] text-[color:var(--r-accent,#1f2a44)] uppercase">
         {title}
       </h2>
       <div className="mt-3">{children}</div>

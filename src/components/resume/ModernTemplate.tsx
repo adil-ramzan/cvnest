@@ -10,7 +10,7 @@ const SIDEBAR: SectionType[] = ["skills", "education", "certifications", "langua
 function SidebarSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-7">
-      <h2 className="text-2xs font-semibold tracking-[0.16em] text-[color:var(--r-accent,#2c6e66)] uppercase">{title}</h2>
+      <h2 className="text-xs font-semibold tracking-[0.16em] text-[color:var(--r-accent,#2c6e66)] uppercase">{title}</h2>
       <div className="mt-2.5">{children}</div>
     </section>
   );
@@ -19,7 +19,7 @@ function SidebarSection({ title, children }: { title: string; children: ReactNod
 function MainSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-7 first:mt-0">
-      <h2 className="flex items-center gap-3 text-2xs font-semibold tracking-[0.16em] text-[color:var(--r-accent,#2c6e66)] uppercase">
+      <h2 className="flex items-center gap-3 text-xs font-semibold tracking-[0.16em] text-[color:var(--r-accent,#2c6e66)] uppercase">
         {title}
         <span className="h-px flex-1 bg-[var(--r-accent-rule,#d5e2df)]" />
       </h2>

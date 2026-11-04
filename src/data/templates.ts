@@ -973,7 +973,7 @@ export const templates: ResumeTemplate[] = [
       layout: "timeline",
       header: "left",
       fonts: { heading: "spaceGrotesk", body: "inter" },
-      colors: { accent: "#ea580c", ink: "#1c1917", rule: "#fed7aa" },
+      colors: { accent: "#c84a0c", ink: "#1c1917", rule: "#fed7aa" },
       heading: "line-after",
       bullets: "none",
       skills: "tags",
