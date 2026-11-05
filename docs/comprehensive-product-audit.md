@@ -116,8 +116,28 @@ Finding status after Phase 1:
 | HI-02 | **Partly addressed:** the PDF error message no longer suggests Safari (P-7). The FAQ browser disclosure was withdrawn by the owner, so the site doesn't state browser or phone support either way. README "Known limitations" still discloses it. Device verification is still required. |
 | HI-03 | **Open:** the FAQ ATS disclosure was withdrawn by the owner. The site makes no ATS claim, and the Terms (draft) disclaim any guarantee of acceptance by applicant tracking systems. The verification harness, the `templateStructure` label fix and the `ats` tag rename are still outstanding. |
 | HI-05 | **Done** for every row in the table. The `/sign-in` row needed no change after Phase 0. |
-| ME-11 | **Unchanged (open); new evidence.** In the final Phase 1 browser run (24 of 25 suites passed), `safety` failed one check, "Warning clears when the other tab closes". It then passed 5 of 5 isolated reruns on the same build. The check uses a fixed 1.5 s sleep; see `docs/phase-1-completion-report.md` section 5.3. |
+| ME-11 | **Phase 2: the flaky check is fixed; see the Phase 2 status update.** Original Phase 1 note: In the final Phase 1 browser run (24 of 25 suites passed), `safety` failed one check, "Warning clears when the other tab closes". It then passed 5 of 5 isolated reruns on the same build. The check uses a fixed 1.5 s sleep; see `docs/phase-1-completion-report.md` section 5.3. |
 | Section 8 mapping | Rows "`PrivacyNote` recommends a PDF", "Not sent to any third party", "Restore it in any browser", "Try … Safari", "Terms … FALSE" and the privacy line about extensions and sync are now **resolved in code**. The FAQ-disclosure items remain as mapped: the owner chose not to restore them. All other mapped items are unchanged. |
+
+---
+
+## Phase 2 status update (2026-11-05): security and technical hardening
+
+Details and exact results are in `docs/phase-2-completion-report.md`. No template, PDF, pagination, storage-key or migration code changed. All 480 Chrome and 480 Firefox PDFs are identical to the pre-Phase-2 baseline in page count, fonts, text and word positions (maximum shift 0.000 pt).
+
+| ID | Status after Phase 2 | Evidence |
+|---|---|---|
+| ME-09 item 3 (`X-Powered-By`) | **Resolved**: `poweredByHeader: false` | `security` suite; local Worker (`npm run preview`) responses |
+| ME-09 CSP | **Improved**: `base-uri`, `frame-src` and `worker-src` set to `'none'`; `Cross-Origin-Opener-Policy: same-origin` added. `'unsafe-inline'` kept (prerendered pages, no nonce). | `security` suite: 0 CSP violations across pages, gallery, editor, photo upload, restyling and PDF export; all 26 suites pass |
+| ME-09 item 1 (nonce-based CSP) | **Deferred**: needs on-demand rendering; only relevant once authenticated routes exist | — |
+| ME-09 item 2 (`npm audit` advisories via `@opennextjs/cloudflare`) | **Open (deferred)**: fixing needs a dependency change outside Phase 2 scope | — |
+| ME-09 item 4 (HSTS `includeSubDomains`) | **Open**: waits for the domain (CR-03) | — |
+| ME-11 (test process) | **Partly resolved**: test-only GitHub Actions CI added (`.github/workflows/ci.yml`); the flaky `safety` checks fixed by root cause. Still open: Workers Builds deploys preview without running tests (a Cloudflare setting, not changed); no WebKit run; the CI workflow hasn't yet run on GitHub. | 10 sequential and 6 concurrent `safety` runs passed; stress runs of 8 other suites passed |
+| ME-02 (large restore and inline photos) | **Open**: not implemented, by instruction (needs separate approval) | — |
+| New: unreadable restore file | **Resolved**: a file that can't be read now shows the existing error dialog instead of failing silently | `security` suite |
+| New ME-16: numbers in text fields are discarded | **Open (owner decision)**: `sanitizeResume` turns a non-string value in a text field (for example `2021` or a phone number written as a number in a hand-edited backup) into empty text, and drops non-string bullets. This is deliberate and test-protected (`tests/unit/schema.test.ts`), so it wasn't changed in Phase 2. Converting finite numbers to text would avoid the loss; it needs approval because it changes data handling. | `src/lib/resume-schema.ts` (`str`, `optStr`, `strList`) |
+
+Input validation was reviewed and found sound: colors, fonts, text size, page size, template ids, photos and links are all validated, oversized text is kept, and nothing throws on malformed data. Phase 2 added tests to prove it (16 unit tests and 11 browser checks); there were no other code changes.
 
 ---
 
