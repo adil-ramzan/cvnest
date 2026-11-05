@@ -1,4 +1,4 @@
-/** Placeholder brand name. Change it here and everywhere follows. */
+/** Product name. Final (Phase 0). Change it here and everywhere follows. */
 export const SITE_NAME = "CVNest";
 
 export const site = {

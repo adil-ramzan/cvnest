@@ -1,4 +1,6 @@
-const PRIVACY_STATEMENT = "Your resume data is stored locally in this browser. It is not uploaded to our servers.";
+import { site } from "@/data/site";
+
+const PRIVACY_STATEMENT ="Your resume data is stored locally in this browser. It is not uploaded to our servers.";
 
 /** Full explanation shown on the Overview tab. */
 export function PrivacyDetails() {
@@ -8,7 +10,8 @@ export function PrivacyDetails() {
       <ul className="list-disc space-y-2 pl-5 marker:text-line-strong">
         <li>
           Resumes are saved automatically in this browser&apos;s local storage, and profile photos in its IndexedDB
-          storage. They are not sent to our servers or to any third party, and there is no account or cloud sync.
+          storage. {site.name} doesn&apos;t send them anywhere, and there is no account or cloud sync. Browser extensions and
+          browser sync are outside our control.
         </li>
         <li>
           Saved resumes only exist in this browser on this device. They will not appear in another browser, on another
@@ -22,7 +25,7 @@ export function PrivacyDetails() {
           Browser storage is not encrypted. Anyone with access to this browser profile could read it, so avoid editing
           on shared or public computers.
         </li>
-        <li>Download a PDF of your resume from time to time so you always have your own copy.</li>
+        <li>Download a backup from time to time. It&apos;s the only file you can restore into the editor.</li>
       </ul>
     </div>
   );

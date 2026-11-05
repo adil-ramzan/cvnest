@@ -1,5 +1,7 @@
 # CVNest final audit
 
+> **Historical document.** Superseded by `docs/comprehensive-product-audit.md` (2026-11-04), which maps every open item from this audit (section 8 there). Product decisions made since are in `docs/phase-0-product-decisions.md`: the brand **CVNest** and intended domain **`getcvnest.com`** are now decided, not placeholders; accounts are optional; and PDF downloads never require an account. Statements below are kept unchanged as a record of the audit at the time.
+
 Date: 2026-10-31. Audited: the working tree as it stands, using the production build made at 14:20 that day.
 
 **Verdict: not ready for public launch.** The product core is solid, and all 480 PDF exports passed in Chrome, Edge and Firefox. It is blocked by missing security headers, holding-page legal and contact content, an undecided brand and domain, no hosting, no real-device testing, and no off-machine backup of the source.
