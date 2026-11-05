@@ -30,7 +30,11 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
       aria-modal="true"
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
-      onClose={onClose}
+      // The close event fires a task after close(). If the dialog was reopened in between,
+      // that late event belongs to the old one and must not close the new one.
+      onClose={() => {
+        if (!ref.current?.open) onClose();
+      }}
       onClick={(event) => event.target === event.currentTarget && onClose()}
       className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-line bg-surface p-0 text-ink shadow-pop backdrop:bg-ink/40"
     >
