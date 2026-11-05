@@ -2,21 +2,35 @@
 
 CVNest runs on Cloudflare Workers through [OpenNext](https://opennext.js.org/cloudflare) (`@opennextjs/cloudflare`). The app is still a normal Next.js app: `npm run dev` and `npm run build` are unchanged.
 
-## Environments
+## Current state (verified 2026-11-05)
+
+This section records what is actually deployed. It was checked with read-only HTTP requests and the GitHub API; the Cloudflare dashboard was not read. Where a setting can only be seen in the dashboard, it says so.
+
+| Worker | URL | What it serves | How it got there |
+| --- | --- | --- | --- |
+| `cvnest` | https://cvnest.emadilramzan.workers.dev | The build of merge commit `8141108` (Workers Builds version `32b32495-79df-4d63-b92b-0d6bf11be3c3`). It is a **preview build**: its canonical links, Open Graph URLs and `sitemap.xml` use `https://cvnest-preview.emadilramzan.workers.dev`, and every page is `noindex, nofollow`. All Phase 2 security headers are present. | Workers Builds, on every push to `main` |
+| `cvnest-preview` | https://cvnest-preview.emadilramzan.workers.dev | An older build from before Phase 2: no `Cross-Origin-Opener-Policy`, no `base-uri`/`frame-src`/`worker-src 'none'`, and `/editor` still sends `X-Powered-By`. | Not Workers Builds since 2026-11-01 (its two builds then both failed). Probably a terminal deploy; not verified. |
+| `cvnest-production` | https://cvnest-production.emadilramzan.workers.dev | Nothing (HTTP 404). **No production Worker exists.** | — |
+
+Consequences:
+
+- The live, auto-deployed Worker is `cvnest`, not `cvnest-preview`. `wrangler.jsonc` does not mention `cvnest` at all.
+- A terminal command such as `npm run deploy:preview` deploys to `cvnest-preview`, **not** to the Worker that Workers Builds updates. The two Workers have separate versions, rollback history and browser storage.
+- The `cvnest` build's canonical URL points at a different Worker. This is harmless while indexing is off, but it must be fixed before `cvnest` (or any Worker) is treated as production: see [Owner decisions](#owner-decisions-before-the-next-release).
+- Run `node scripts/check-deployment.mjs https://cvnest.emadilramzan.workers.dev --canonical https://cvnest-preview.emadilramzan.workers.dev` to recheck the table. Without `--canonical`, the script reports the canonical mismatch as failures, as it should.
+
+## Environments as configured in the repository
 
 | | Preview | Production |
 | --- | --- | --- |
-| Git branch | `main` | `main` |
-| How it deploys | Can be automated on push | Manual, after explicit release approval |
-| Worker | `cvnest-preview` | `cvnest-production` |
-| URL | https://cvnest-preview.emadilramzan.workers.dev | https://cvnest-production.emadilramzan.workers.dev |
 | Wrangler environment | `preview` | `production` |
-| `NEXT_PUBLIC_SITE_URL` | The preview URL | The production URL |
+| Worker name in `wrangler.jsonc` | `cvnest-preview` | `cvnest-production` (does not exist yet) |
+| `NEXT_PUBLIC_SITE_URL` in the build script | https://cvnest-preview.emadilramzan.workers.dev | https://cvnest-production.emadilramzan.workers.dev |
 | `NEXT_PUBLIC_INDEXABLE` | `false` | `false` |
 
 Each Worker has its own versions, rollback history and browser origin, so resumes saved on one are not visible on the other.
 
-No `cvnest` Worker exists, and none should. `wrangler.jsonc` names both Workers explicitly. A command without `--env` targets `cvnest-preview`, never production.
+From a terminal, a command without `--env` targets `cvnest-preview`, never production. In Workers Builds the name in `wrangler.jsonc` does **not** decide the target: see [Workers Builds](#workers-builds).
 
 ## How it is served
 
@@ -75,31 +89,93 @@ Suites that wait for `networkidle0` can time out on this port. The local preview
 
 ## Workers Builds
 
-All development uses `main`. Preview can deploy automatically from it, so only `cvnest-preview` is connected to Workers Builds, under Worker > Settings > Build.
+### What is verified
 
-| Setting | `cvnest-preview` |
+From the "Workers Builds" check runs that Cloudflare posts on GitHub commits, and from the pinned Wrangler 4.156.0 source:
+
+| Fact | Evidence |
 | --- | --- |
-| Repository | `adil-ramzan/cvnest` |
-| Git branch | `main` |
-| Build command | `npm run build:preview` |
-| Deploy command | `npx wrangler deploy --env preview` |
-| Builds for non-production branches | Off |
-| Root directory | Empty |
-| Build variables | None |
+| The repository is connected to the **`cvnest`** Worker. | Check runs are named `Workers Builds: cvnest` and link to `workers/services/view/cvnest`. |
+| Every push to `main` builds and deploys `cvnest`. | 5 of 5 `main` builds checked (`1d21795` to `8141108`) succeeded; `8141108` reports a Version ID. |
+| Builds also run for other branches, and every one has failed. | `checkpoint/phase-0-1` (`01d51fd`) and `phase-2-security-hardening` (`2532d99`, `5ab72c1`): 3 of 3 failed. So "Builds for non-production branches" is on. |
+| Workers Builds does **not** wait for GitHub Actions. | For `8141108`, the `cvnest` build finished at 09:50:22 UTC; the CI browser job finished at 09:58:05 UTC. The build had deployed 8 minutes before the tests finished. |
+| The name in `wrangler.jsonc` doesn't choose the Worker in Workers Builds. | Wrangler 4.156.0 reads `WRANGLER_CI_OVERRIDE_NAME` (set by Workers Builds to the connected Worker), replaces the config name and only **warns** ("Failed to match Worker name … Overriding using the CI provided Worker name"). This was reproduced locally with a dry run. That is how a `cvnest-preview` build landed on `cvnest`. |
+| `cvnest-preview` had its own connection on 2026-11-01. | Two `Workers Builds: cvnest-preview` check runs on `main` (`41e4e0e`, `1d21795`), both failed. None since. |
+
+The earlier statement in this guide ("a wrong `--env` fails the build, and it can't create a `cvnest` Worker") was wrong for this Wrangler version. Wrangler's `WRANGLER_CI_MATCH_TAG` check only confirms that the **overridden** name exists in the account.
+
+### What is not verified (dashboard only)
+
+These settings are visible only under Worker `cvnest` > Settings > Build. They have not been read, so they are not listed here as facts:
+
+- The build command. The deployed pages carry the preview URL, which is consistent with `npm run build:preview`, but this is inferred.
+- The deploy command, and the non-production branch deploy command. Cloudflare's default for the latter is `npx wrangler versions upload`.
+- Build variables, the build token, the root directory and the production-branch setting.
+- **Why non-`main` builds fail.** The logs are in the dashboard (each GitHub check links to its build), and GitHub has no error text. One cause has been ruled out locally: after `npm run build:preview`, `npx wrangler versions upload --dry-run` packages the same Worker as `wrangler deploy --dry-run` (8,514.69 KiB, 2,065.75 KiB gzip, `ASSETS` binding only), with or without `WRANGLER_CI_OVERRIDE_NAME=cvnest`. So the upload command can package an OpenNext build. The failure is either in a dashboard-configured step or in the real upload, which a dry run doesn't reach. Read one failed build log before changing anything.
+
+### Rules that still hold
 
 - The build command must be an OpenNext build. With `npm run build`, the deploy fails with `Could not find compiled Open Next config`, because `.open-next` is ignored by git and `next build` does not create it.
 - `npx wrangler deploy` detects the OpenNext project and calls `opennextjs-cloudflare deploy`, passing `--env` along.
 - The site URL and indexing flag are set inside the build scripts, so no build variables are needed. A dashboard value with the same name would be overridden.
-- In Workers Builds, Wrangler checks that the Worker it resolves is the one the build is connected to, and stops if that Worker is different or missing. A wrong `--env` fails the build, and it can't create a `cvnest` Worker.
-- That check only runs in Workers Builds. It does not protect commands run from a terminal.
-- Every push to `main` deploys to preview once the connection is on, so `main` must stay safe to preview.
-- Do not connect `cvnest-production` to Workers Builds. Every push to `main` would then reach production without a release approval.
+- Every push to `main` deploys to `cvnest`, so `main` must stay safe to serve.
+- Do not connect a production Worker to Workers Builds on `main` without a gate. Every push would then reach production without a release approval.
 
-The build token is chosen on the same settings page. The default token Cloudflare generates is enough, because it includes Workers Scripts: Edit. If you select your own, it must be a user token that can reach both Workers. A token that has been deleted or rolled fails the build until you select a new one.
+The build token is chosen on the same settings page. The default token Cloudflare generates is enough, because it includes Workers Scripts: Edit. A token that has been deleted or rolled fails the build until you select a new one.
+
+## Gating deploys on tests
+
+The GitHub Actions workflow (`.github/workflows/ci.yml`) only verifies. It never deploys, and nothing makes Workers Builds wait for it. Today, any push to `main` deploys whether or not CI passes. The `Protect main` ruleset only blocks force-pushes and deletion. It has no required status checks and no pull-request requirement, and `main` has no classic branch protection.
+
+Options, from least to most change:
+
+| Option | What it gates | What it needs | Notes |
+| --- | --- | --- | --- |
+| **1. Required status checks on `main`** (recommended first step) | Code reaching `main`, so also what Workers Builds deploys | GitHub ruleset change (owner): add "Require a pull request before merging" and "Require status checks to pass" with `Typecheck, lint, unit tests, build` and `Browser suites (Chrome)`; optionally "Require branches to be up to date". | No Cloudflare change and no second pipeline. Merging is blocked until CI passes on the PR. The merge commit itself still deploys before its own CI run finishes, but its content is what CI tested. |
+| 2. Verify inside the Workers Builds build command | The deploy itself | Dashboard change (owner): build command `npm run typecheck && npm run test:unit && npm run build:preview`. | Stops a deploy when typecheck or unit tests fail, even on a direct push. Browser suites can't run there (no Chrome in the build image is assumed, and not verified). Adds about 1 minute per build. |
+| 3. Deploy from GitHub Actions instead of Workers Builds | The deploy itself, after every suite | Disconnect Workers Builds, add a Cloudflare API token as a GitHub secret, add a `deploy` job that `needs` the test jobs. | Strongest gate, but a credential and a second pipeline. If the Workers Builds connection is not removed first, both deploy, which is the duplicate-pipeline risk to avoid. Not recommended until there is a production Worker. |
+
+Options 1 and 2 together give a gate on both paths into `main` and on the build itself. None of these has been applied. Each needs a GitHub or Cloudflare settings change by the owner.
+
+Separately, decide what to do about non-`main` builds. Either turn off "Builds for non-production branches" (nothing currently uses branch preview versions), or set its deploy command once the failure log has been read.
+
+## Release checklist
+
+Run this for every deploy, automated or manual. Steps 1–6 run locally or in CI and change nothing outside the machine.
+
+1. **Clean source.** On the commit being released: `git status` is clean, and `git rev-parse HEAD` matches the GitHub commit.
+2. **TypeScript:** `npm run typecheck`.
+3. **Lint:** `npm run lint` (0 errors).
+4. **Unit tests:** `npm run test:unit` (all pass).
+5. **Production build:** `npm run build`.
+6. **Browser suites:** the 20 standard suites, as CI runs them:
+
+   ```bash
+   npm run test:e2e -- a11y count customize data-model durability editor entries error-boundaries fields guard keyboard layout links open-section safety sample security template-picker templates zoom.test
+   ```
+
+   Also run `npm run test:e2e -- pdf pagination bullets zoom-firefox` (about 40 minutes; the CI `workflow_dispatch` "full" option) when templates, typography, pagination or PDF code changed. Firefox must be installed for the Firefox suites.
+7. **CI is green** on GitHub for the same commit: both jobs passed, not just started.
+8. **Deployment target.** Know which Worker the deploy will change before running it:
+   - Workers Builds on `main` changes **`cvnest`**.
+   - `npm run deploy:preview` changes **`cvnest-preview`**.
+   - `npm run deploy:production` would create or change **`cvnest-production`**. Don't run it without explicit approval.
+   - For a terminal deploy, also run `npx wrangler deploy --dry-run --env <env>` and check the canonical URL of the build (see [Verifying the target before a deploy](#verifying-the-target-before-a-deploy)).
+9. **After the deploy: HTTP checks.** `node scripts/check-deployment.mjs <deployed URL> [--canonical <the build's site URL>]` must pass. It checks status codes for every page, `robots.txt`, `sitemap.xml` and a 404, and the security headers (CSP directives, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, COOP, HSTS, no `X-Powered-By`). It also checks `noindex` in the header and meta tag, the canonical and sitemap origin, and static asset caching. It sends only GET requests.
+10. **Smoke test in a browser** on the deployed URL: open the editor, edit a field, reload (the edit is kept), download a backup, and save a PDF.
+
+## Owner decisions before the next release
+
+- Which Worker is the long-term preview: `cvnest` (connected, current) or `cvnest-preview` (named in `wrangler.jsonc`, stale). Then either rename the config to match, or move the Workers Builds connection. Until then, the `cvnest` build's canonical points at `cvnest-preview`.
+- Whether to apply gate options 1 and 2 above.
+- What to do about non-`main` Workers Builds (turn off, or fix after reading a log).
+- The production Worker and domain (`getcvnest.com` is intended but not confirmed as purchased; see below). Don't create `cvnest-production` or change URLs until this is decided.
 
 ## Production releases
 
-Production never deploys on its own. A release needs explicit approval first, and is then run by hand from `main`:
+**No production Worker exists yet.** The first `npm run deploy:production` would create `cvnest-production`. That is a release decision for the owner, not a routine step.
+
+When production is approved, it never deploys on its own. A release needs explicit approval first, and is then run by hand from `main`:
 
 ```bash
 npm run build:production
@@ -108,9 +184,9 @@ npx wrangler deploy --env production
 
 1. Get explicit approval for the commit being released, after it has been checked on the preview URL.
 2. Switch to `main` and confirm the working tree is clean and matches GitHub.
-3. Check the target, as described in [Verifying the target before a deploy](#verifying-the-target-before-a-deploy). A terminal deploy does not get the Workers Builds name check.
+3. Work through the [Release checklist](#release-checklist), steps 1–8. A terminal deploy has no Workers Builds involvement, so the Worker name comes only from `--env`.
 4. Run the two commands above. `npm run deploy:production` runs both.
-5. Check the production URL, including its `noindex, nofollow` header.
+5. Run step 9 against the production URL: `node scripts/check-deployment.mjs https://cvnest-production.emadilramzan.workers.dev`.
 
 ## Environment variables and secrets
 
@@ -174,7 +250,9 @@ While `NEXT_PUBLIC_INDEXABLE` is not `true`, indexing is blocked in two ways:
 
 ## Rollback
 
-Every deploy creates a Worker version. Run `npx wrangler deployments list --env production`, then `npx wrangler rollback <version-id> --env production`. Use `--env preview` for the preview Worker.
+Every deploy creates a Worker version. Run `npx wrangler deployments list --env production`, then `npx wrangler rollback <version-id> --env production`. Use `--env preview` for `cvnest-preview`.
+
+The Worker that Workers Builds deploys, `cvnest`, has no environment in `wrangler.jsonc`, so `--env` can't reach it. Roll it back in the dashboard (Worker `cvnest` > Deployments), or with `npx wrangler deployments list --name cvnest` and `npx wrangler rollback <version-id> --name cvnest`. The `--name` form has not been run against this account; check the list output names `cvnest` before rolling back.
 
 A rollback does not change Git, so revert the commit too. Otherwise the next push deploys the same code again.
 

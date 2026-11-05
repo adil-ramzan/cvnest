@@ -139,6 +139,22 @@ Details and exact results are in `docs/phase-2-completion-report.md`. No templat
 
 Input validation was reviewed and found sound: colors, fonts, text size, page size, template ids, photos and links are all validated, oversized text is kept, and nothing throws on malformed data. Phase 2 added tests to prove it (16 unit tests and 11 browser checks); there were no other code changes.
 
+## Phase 3 status update (2026-11-05): deployment reliability and data durability
+
+Details, evidence and exact results are in `docs/phase-3-completion-report.md`. No template, PDF, pagination, typography, storage key, backup format or migration step changed. Nothing was deployed and no Cloudflare or GitHub setting was changed.
+
+| ID | Status after Phase 3 | Evidence |
+|---|---|---|
+| ME-11 (deploys not gated on tests) | **Open, now verified and documented**: Workers Builds deploys `cvnest` on every push to `main` without waiting for CI. For `8141108` it deployed 8 minutes before the browser suites finished. The `Protect main` ruleset has no required checks. The gate options and exact settings are in `docs/deploy-cloudflare.md` ("Gating deploys on tests"). Applying them needs owner changes to GitHub or Cloudflare settings. | GitHub check-run timings; ruleset 26590341 |
+| ME-11 (release verification) | **Partly resolved**: a repeatable release checklist, and `scripts/check-deployment.mjs` (read-only post-deploy HTTP checks: status codes, security headers, noindex, canonical/sitemap origin, asset caching). The `durability` suite was added to CI. | Script run against the live Workers |
+| ME-15 (documentation drift: deploy guide) | **Resolved for the deploy guide**: it now records the verified Workers (`cvnest` live and connected; `cvnest-preview` stale; no production Worker). The false claims that `cvnest-preview` is connected, that no `cvnest` Worker exists, and that Workers Builds stops on a name mismatch are removed. | Wrangler 4.156.0 source and a local dry run (`WRANGLER_CI_OVERRIDE_NAME` only warns) |
+| New DD-01: unreadable data lost when storage has no room for a copy | **Resolved**: when part of the saved data can't be read and the copy to `folio.resumes.v2.unreadable-backup` fails, the editor no longer saves over it or says a copy was kept. Saving pauses ("Not saving") until the person downloads the stored text exactly, then resumes. | 5 unit tests (2 fail on the old code); 9 browser checks in `durability` |
+| ME-02 (large restore and inline photos) | **Open, characterized**: in Chrome, a 17.6 MB backup (10 photos, 4M characters of text) fails its first save (`QuotaExceededError`, "Not saved" shows for about 15 ms), then saves in full about 0.5 s later once the photos are in IndexedDB. Everything survives a reload, and the photos are byte-identical. Untested: Firefox, Safari, IndexedDB unavailable, and text alone over the localStorage limit. The fix (photos to IndexedDB before state, plus an atomic restore) needs approval. | `durability` suite, 3 of 3 runs identical |
+| ME-16 (numbers in text fields) | **Open (owner decision), characterized**: affects only data the editor didn't write (hand-edited or third-party files), in both schema v1 and v2, from storage and from backups. Recommendation and the required tests are in the report. | 3 characterization unit tests |
+| HI-01 (eviction, no persistent storage) | **Open**: unchanged. `navigator.storage.persist()` shows a prompt in Firefox, so it's a UX decision for the owner. | — |
+| New DD-02: completely full storage hides saved resumes | **Open**: if even the 1-character storage probe can't be written, `loadResumes` reports storage unavailable and shows a blank resume. Saved resumes stay stored but are hidden until space is freed. The recommended read-only fallback needs approval. | Code reading (`getStorage` in `resume-storage.ts`) |
+| New DD-03: a second unreadable-data incident overwrites the first copy | **Open**: `folio.resumes.v2.unreadable-backup` holds one copy. Keeping more than one needs a new storage key, which needs approval. | Code reading |
+
 ---
 
 ## 1. Executive summary

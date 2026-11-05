@@ -171,3 +171,57 @@ describe("editing limits", () => {
     assert.deepEqual(findOverLimits(sanitizeResume({ id: "r", name: "Small" }, ctx())!), []);
   });
 });
+
+// ME-16 characterization (Phase 3). Pins today's behavior so any future change to it is
+// deliberate and visible. Changing it needs owner approval; see docs/phase-3-completion-report.md.
+describe("ME-16: numbers in text fields (current behavior, unchanged)", () => {
+  it("loads a number in a text field as empty text, in current-schema data", () => {
+    const resume = sanitizeResume(
+      {
+        schemaVersion: RESUME_SCHEMA_VERSION,
+        profile: { fullName: "Ada", phone: 5551234, email: 42 },
+        sections: [
+          { type: "summary", content: 2021 },
+          { type: "experience", entries: [{ role: "Engineer", company: 3, startDate: 2019, endDate: 2021, highlights: [2021, "Kept", 7.5] }] },
+          { type: "skills", entries: [{ name: 10 }] },
+        ],
+      },
+      ctx(),
+    )!;
+    assert.equal(resume.profile.phone, "");
+    assert.equal(resume.profile.email, "");
+    assert.equal(resume.profile.fullName, "Ada");
+    const [summary, experience, skills] = resume.sections;
+    assert.ok(summary.type === "summary" && summary.content === "");
+    assert.ok(experience.type === "experience");
+    assert.equal(experience.entries[0].company, "");
+    assert.equal(experience.entries[0].startDate, undefined);
+    assert.equal(experience.entries[0].endDate, undefined);
+    assert.deepEqual(experience.entries[0].highlights, ["Kept"]);
+    assert.ok(skills.type === "skills" && skills.entries[0].name === "");
+  });
+
+  it("does the same for schema v1 data, through the v1 → v2 migration", async () => {
+    const { migrateResume } = await import("@/lib/migrations");
+    const migrated = migrateResume({ id: "v1", name: "Old", data: { name: "Ada", contact: { phone: 5551234 }, experience: [{ role: "Dev", start: 2019, highlights: [1, "Kept"] }], skills: [5, "Go"] } });
+    assert.ok(migrated && migrated.fromVersion === 1);
+    const resume = sanitizeResume(migrated.value, ctx())!;
+    assert.equal(resume.profile.phone, "");
+    const experience = resume.sections.find((s) => s.type === "experience");
+    assert.ok(experience?.type === "experience");
+    assert.equal(experience.entries[0].startDate, "");
+    assert.deepEqual(experience.entries[0].highlights, ["Kept"]);
+    const skills = resume.sections.find((s) => s.type === "skills");
+    assert.ok(skills?.type === "skills");
+    assert.deepEqual(skills.entries.map((e) => e.name), ["Go"]);
+  });
+
+  it("never sees numbers in data the editor itself saved: every text field is a string", () => {
+    const resume = sanitizeResume({ profile: { fullName: "Ada", phone: "5551234" }, sections: [{ type: "experience", entries: [{ startDate: "2019", highlights: ["2021"] }] }] }, ctx())!;
+    assert.equal(resume.profile.phone, "5551234");
+    const [experience] = resume.sections;
+    assert.ok(experience.type === "experience");
+    assert.equal(experience.entries[0].startDate, "2019");
+    assert.deepEqual(experience.entries[0].highlights, ["2021"]);
+  });
+});

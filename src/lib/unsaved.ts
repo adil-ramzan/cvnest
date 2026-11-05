@@ -6,7 +6,7 @@
 import type { Resume } from "@/data/resume";
 import { isResumeEmpty } from "./resumes";
 
-type SaveState = "saved" | "saving" | "error" | "unavailable" | "blocked";
+type SaveState = "saved" | "saving" | "error" | "unavailable" | "blocked" | "held";
 
 export function isAtRisk(resume: Resume | null, saveStatus: SaveState): boolean {
   if (!resume || isResumeEmpty(resume)) return false;

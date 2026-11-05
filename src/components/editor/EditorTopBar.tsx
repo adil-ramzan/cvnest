@@ -74,6 +74,12 @@ const statusContent: Record<SaveStatus, { icon: typeof HardDrive; text: string; 
     detail: "These resumes were saved by a newer version of this site, so this version won't write over them.",
     className: "text-[#b54708]",
   },
+  held: {
+    icon: AlertTriangle,
+    text: "Not saving",
+    detail: "Some saved data couldn't be read and there was no room to keep a copy, so nothing is saved until you download one.",
+    className: "text-[#b54708]",
+  },
 };
 
 function SaveIndicator({ status }: { status: SaveStatus }) {
