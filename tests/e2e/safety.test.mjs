@@ -2,7 +2,7 @@
 // a second tab.
 import fs from "node:fs";
 import path from "node:path";
-import { BASE, FIXTURES, OUT, createChecks, launch, sleep } from "./helpers.mjs";
+import { BASE, FIXTURES, OUT, createChecks, launch, sleep, waitFor } from "./helpers.mjs";
 
 const check = createChecks("Data safety: backup, restore, limits, storage full, two tabs");
 const browser = await launch();
@@ -42,6 +42,8 @@ const backupText = (page) => page.evaluate(() => window.__download.text());
 const restoreFile = async (page, text) => {
   const file = path.join(OUT, "test-backup.json");
   fs.writeFileSync(file, text);
+  // A dialog closed just before may still be open; otherwise the wait below would find it, not the new one.
+  await page.waitForFunction(() => !document.querySelector("dialog[open]"), { timeout: 10000 });
   await (await page.$("[aria-label='Choose a backup file']")).uploadFile(file);
   await page.waitForSelector("dialog[open]");
   await sleep(100);
@@ -168,14 +170,16 @@ check("One tab shows no warning", !(await panel(page)).includes("open in another
 const second = await context.newPage();
 await second.setViewport({ width: 1440, height: 900 });
 await second.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
-await sleep(600);
-check("Second tab warns", (await panel(second)).includes("open in another tab"));
-await sleep(5000);
-check("First tab warns too", (await panel(page)).includes("open in another tab"));
-await second.close();
+const warns = (tab) => async () => (await panel(tab)).includes("open in another tab");
+check("Second tab warns", await waitFor(warns(second), 3000));
+// The first tab learns of the second at its next ping (every 4 s).
+check("First tab warns too", await waitFor(warns(page), 6000));
+// Close the way a person does, so the tab's pagehide handler runs and says it's gone.
+// A plain close() skips the unload sequence, which made this check a race.
+await second.close({ runBeforeUnload: true });
 await page.bringToFront();
-await sleep(1500);
-check("Warning clears when the other tab closes", !(await panel(page)).includes("open in another tab"));
+// 4 s is well under the 10 s stale-tab fallback, so passing still proves the "gone" message works.
+check("Warning clears when the other tab closes", await waitFor(async () => !(await warns(page)()), 4000));
 await context.close();
 
 check("No page errors", errors.length === 0, errors.slice(0, 2).join(" | "));

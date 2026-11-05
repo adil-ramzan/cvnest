@@ -171,7 +171,16 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
       setDialog({ type: "restore-error", message: "This file is too large to be a resume backup." });
       return;
     }
-    const result = readBackup(await file.text());
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      // The file was moved, deleted or can't be read; nothing has changed.
+      setDialog({ type: "restore-error", message: "This file couldn't be read. Check that it's still there and try again." });
+      setAnnouncement("Restore failed");
+      return;
+    }
+    const result = readBackup(text);
     setRestoreMode("merge");
     setDialog(result.ok ? { type: "restore", resumes: result.resumes, skipped: result.skipped } : { type: "restore-error", message: result.message });
     if (!result.ok) setAnnouncement("Restore failed");

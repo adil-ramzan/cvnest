@@ -1,6 +1,8 @@
 /**
  * All home page wording, in one place. Strings marked ACCOUNTS depend on "no
- * account" or "browser-only storage" and must change if accounts are added.
+ * account" or "browser-only storage". Review them when optional accounts are added:
+ * creating, editing and downloading stay account-free (docs/phase-0-product-decisions.md),
+ * but storage wording may need to mention optional cloud backup.
  */
 import { site } from "./site";
 import { TEMPLATE_COUNT_LABEL } from "./template-count";
@@ -67,7 +69,7 @@ export const homeCopy = {
       { title: "Photo kept private", description: "Your photo is resized and stored in this browser, on your device." },
       { title: "Start from an example", description: "Load sample data to see a finished page, then make it yours." },
       // ACCOUNTS
-      { title: "Backup and restore", description: "Download a file with all your resumes, and restore it in any browser." },
+      { title: "Backup and restore", description: "Download a file with all your resumes, and restore it in another browser." },
       { title: "Letter or A4", description: "Pick the page size your employer expects, then save a PDF." },
       // ACCOUNTS
       { title: "No sign-up", description: "Open the editor and begin. Autosave keeps your work in this browser." },

@@ -1,6 +1,8 @@
 # CVNest
 
-CVNest is a free, browser-based resume builder. Choose a template, enter your information and see a live preview as you edit. Resume creation currently works without an account.
+CVNest is a free, browser-based resume builder. Choose a template, enter your information and see a live preview as you edit. Creating, editing and downloading resumes as PDFs is free and works without an account.
+
+The intended permanent domain is `getcvnest.com`. It isn't configured yet; see [docs/phase-0-product-decisions.md](docs/phase-0-product-decisions.md).
 
 ## Features
 
@@ -16,11 +18,17 @@ CVNest is a free, browser-based resume builder. Choose a template, enter your in
 - **Data migration:** supports migration from the earlier storage format while preserving the original data as a backup.
 - **PDF export:** supports Letter and A4 page sizes using the browser's print engine. Selectable text and page layout are covered by automated PDF tests. The user selects "Save as PDF" in the print dialog.
 
-### Account and download flow
+### Account and download policy
 
 The current implementation is browser-only and does not include authentication or cloud storage.
 
-The planned launch flow allows users to create and edit resumes without an account but requires signup or login when they choose to download a PDF. Guest resume data and photos must be migrated safely to the user's account before local data can be removed.
+Approved policy (see [docs/phase-0-product-decisions.md](docs/phase-0-product-decisions.md)):
+
+- Creating, editing, autosaving and downloading PDFs are free, unlimited and never require an account. There is no download gate and no watermark.
+- PDFs are generated in the browser. There is no server-side PDF generation.
+- All 120 existing templates stay free. Any future paid templates would be new templates.
+- Accounts, when added, are optional. They provide cloud backup, cross-device sync and recovery, and possibly future premium services. The design is in [docs/accounts-plan.md](docs/accounts-plan.md).
+- If a guest later creates an account, their local resumes and photos must be copied safely to it, and local data is never deleted automatically.
 
 ## Changes to original templates
 
@@ -172,11 +180,12 @@ Remaining pre-launch work includes:
 
 - Accessibility and editor improvements.
 - PDF testing on Safari and physical mobile devices.
-- Security headers and technical hardening.
-- Accurate legal, privacy and contact pages.
-- Final brand and domain confirmation.
-- Authentication and secure cloud storage for the planned download flow.
+- Technical hardening (security headers are in place; see the audit for the remaining items).
+- Accurate legal, privacy and contact pages. Drafts are in [docs/legal/](docs/legal/) and await owner information and legal review.
+- Attaching the intended domain `getcvnest.com` (brand and domain are decided; configuration is pending).
 - Production deployment and final launch verification.
+
+Optional accounts with cloud backup and sync are planned but are not required for launch.
 
 ## Known limitations
 
@@ -184,9 +193,10 @@ Remaining pre-launch work includes:
 - **Firefox PDF rendering:** uses a separate export path in `usePdfExport` because Firefox handles variable fonts, CSS grids and page breaks differently. This path uses static font files from `public/fonts/print`, floats for page columns and a repeating page spacer.
 - **Safari:** physical-device PDF export has not yet been verified. Do not assume Safari compatibility until it has been tested.
 - **Simultaneous editing:** when two tabs edit the same resume at the same time, the last save wins.
-- **Authentication and cloud storage:** not yet implemented. Resume data is currently stored locally in the browser.
-- **Legal pages:** Privacy and Terms content still needs to be completed and reviewed. The Contact page also needs appropriate contact information.
-- **Brand assets:** favicon and Open Graph image still need to be completed.
-- **Production readiness:** security headers, domain configuration and other launch requirements remain under review.
+- **Authentication and cloud storage:** not yet implemented. Resume data is stored locally in the browser. Optional accounts are planned for cloud backup and sync only.
+- **Legal pages:** the live Privacy, Terms and Contact pages are still holding pages. Drafts are in `docs/legal/` and are not legally reviewed.
+- **Domain and browser storage:** saved resumes belong to the exact web address. Moving to `getcvnest.com` after users have saved resumes on another address would leave those resumes behind. See section 6 of `docs/phase-0-product-decisions.md`.
+- **ATS compatibility:** not yet verified with real applicant-tracking systems. Two-column, sidebar and photo layouts may parse less reliably.
+- **Production readiness:** domain configuration and other launch requirements remain open.
 
-See `docs/audit-final.md` for the detailed pre-launch audit and remaining work.
+See [docs/comprehensive-product-audit.md](docs/comprehensive-product-audit.md) for the current pre-launch audit and [docs/phase-0-product-decisions.md](docs/phase-0-product-decisions.md) for the approved product policy. `docs/audit-final.md` is the earlier audit, kept for history.

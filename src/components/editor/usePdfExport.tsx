@@ -124,7 +124,7 @@ export function usePdfExport() {
   const start = useCallback((resume: Resume, photoUrl: string, onPrinted?: () => void) => {
     if (typeof window.print !== "function") {
       setStatus("error");
-      setMessage("This browser can't save PDFs from a web page. Try Chrome, Edge, Firefox or Safari.");
+      setMessage("This browser can't save PDFs from a web page. Try Chrome, Edge or Firefox on a computer.");
       return;
     }
     setMessage("");

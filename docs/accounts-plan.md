@@ -3,6 +3,8 @@
 **Status:** plan only, nothing built. Awaiting approval.
 **Date:** 30 October 2026. **Branch reviewed:** `redesign-ui`.
 
+> **Purpose, as of Phase 0 (2026-11-04):** this plan describes **optional** accounts for cloud backup, cross-device sync and recovery, and a foundation for possible future premium services. Under the approved policy in `docs/phase-0-product-decisions.md`, accounts are **never** required to create, edit, save locally or download a PDF. There is no download gate, and PDFs stay browser-generated. The guest principles below ("never show a sign-in wall… or a block on any guest feature") are confirmed as policy. Decisions resolved by Phase 0 are marked in section 9. Implementation is not scheduled.
+
 **Evidence labels**
 - **[V]** VERIFIED: read in this repo, or in the provider's own page fetched on the date above.
 - **[S]** SUSPECTED: reasoned or remembered, not confirmed. Re-check before relying on it.
@@ -529,17 +531,17 @@ Every phase sits behind `NEXT_PUBLIC_ACCOUNTS_ENABLED`, off by default. Turning 
 ### Decisions needed from you
 
 1. **Provider:** Supabase, or Better Auth with own Postgres?
-2. **Hosting:** where does this deploy? Route handlers need a server runtime, and I found no deployment configuration **[V]**.
+2. **Hosting:** where does this deploy? Route handlers need a server runtime, and I found no deployment configuration **[V]**. *Update (Phase 0): the site now runs on Cloudflare Workers through OpenNext (`docs/deploy-cloudflare.md`). That guide says not to add a `proxy` or middleware file, because OpenNext doesn't support it yet, while phase 1 below assumes `proxy.ts` for session refresh. Before accounts are built, confirm OpenNext's current proxy support or design session refresh in route handlers only. Still open.*
 3. **Sign-in methods:** Google plus email magic link, as you assumed?
 4. **Region:** EU, or nearer your main users?
 5. **Limits:** 50 resumes, 256KB each, 1MB photos?
 6. **Photo sync:** always, or opt-in per account?
-7. **Free accounts:** free forever, or a paid tier later?
+7. **Free accounts:** free forever, or a paid tier later? *Resolved (Phase 0): accounts are optional. Everything a guest can do stays free, including unlimited PDF downloads and all 120 existing templates. Paid services may be added later, but only as new, additive features or newly created templates. Whether cloud backup and sync themselves are free is not yet decided.*
 8. **Retention:** 30-day tombstones, and what to do with inactive accounts?
 9. **Public share links later:** if yes, plan ownership and privacy now.
-10. **Company and contact details:** who is the legal controller, and which address?
+10. **Company and contact details:** who is the legal controller, and which address? *Still open: owner items O-3 to O-7 in `docs/phase-0-product-decisions.md`.*
 11. **Timing:** do Batches 2-5 finish first? I recommend yes.
-12. **Brand:** "CVNest" is a placeholder. Auth emails and Google's consent screen show the name, so rename **before** phase 1.
+12. **Brand:** "CVNest" is a placeholder. Auth emails and Google's consent screen show the name, so rename **before** phase 1. *Resolved (Phase 0): the name is CVNest, and the intended domain is `getcvnest.com`. Auth callback URLs, cookies and the email sender domain should use that domain.*
 
 ### Not verified
 

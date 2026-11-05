@@ -23,7 +23,8 @@ No `cvnest` Worker exists, and none should. `wrangler.jsonc` names both Workers 
 - Every page is prerendered by `next build`. Nothing revalidates and there are no API routes.
 - `open-next.config.ts` uses the static assets cache, so prerendered pages, RSC payloads and the social images are read from Workers Static Assets.
 - There is no R2 bucket, KV namespace, D1 database, Queue or Durable Object. The Worker only needs its `ASSETS` binding.
-- Resume data stays in the visitor's browser (`localStorage` and IndexedDB). PDF export uses the browser's print window. Neither touches the Worker.
+- Resume data stays in the visitor's browser (`localStorage` and IndexedDB). PDF export uses the browser's print window. Neither touches the Worker. By product policy, PDF generation stays in the browser and downloads never require an account (`docs/phase-0-product-decisions.md`), so no server-side PDF rendering is planned.
+- Exception: `/editor` is rendered on demand (`ƒ` in the build output), not prerendered, because the page reads `searchParams` on the server. It outputs only a loading state. See audit finding ME-08.
 
 ## Commands
 
@@ -122,7 +123,7 @@ The application needs no secrets. Two public, build-time variables configure it,
 
 They are compiled into the build, so changing one needs a new build. They are not Worker runtime variables.
 
-Both environments stay non-indexable until the site is ready for public launch. Do not set `NEXT_PUBLIC_INDEXABLE=true` until the custom domain is configured and the legal pages are complete.
+Both environments stay non-indexable until the site is ready for public launch. Do not set `NEXT_PUBLIC_INDEXABLE=true` until the custom domain (intended: `getcvnest.com`) is configured and the legal pages are complete.
 
 Only the Wrangler CLI needs credentials, and only outside an interactive `wrangler login`:
 
@@ -161,10 +162,15 @@ While `NEXT_PUBLIC_INDEXABLE` is not `true`, indexing is blocked in two ways:
 
 ## Moving to a custom domain
 
-1. Add the domain to the account as a zone, then attach it to `cvnest-production` as a custom domain.
-2. Change `NEXT_PUBLIC_SITE_URL` in the `build:production` script.
-3. Decide how `www` should behave and add a redirect if it is used.
-4. Keep the workers.dev URL working for a while and ask users to download a backup first. Saved resumes belong to the exact URL, so a redirect would strand them.
+**Intended permanent domain: `getcvnest.com`** (decided in Phase 0, `docs/phase-0-product-decisions.md`). It hasn't been purchased, added as a zone or attached yet. Nothing in this guide or in `wrangler.jsonc` has been changed for it. The production build still uses the workers.dev URL until the steps below are done.
+
+1. Add `getcvnest.com` to the account as a zone, then attach it to `cvnest-production` as a custom domain.
+2. Change `NEXT_PUBLIC_SITE_URL` in the `build:production` script to `https://getcvnest.com` (or the `www` form, if that's chosen as canonical). Canonicals, Open Graph URLs, `sitemap.xml`, the `robots.txt` sitemap line and HSTS all follow from it.
+3. Decide how `www` should behave **before** any public traffic, and add a redirect if it's used. Bare and `www` are different browser origins (see below).
+4. Set `NEXT_PUBLIC_INDEXABLE=true` only after steps 1–3 and the legal pages are final.
+5. Keep the workers.dev URL working for a while and ask any existing users to download a backup first. Saved resumes belong to the exact URL, so a redirect would strand them.
+
+**Browser storage and domain changes.** Guest resumes are stored in `localStorage` and IndexedDB, which browsers keep separately per origin (scheme, host and port). `https://getcvnest.com`, `https://www.getcvnest.com` and `https://cvnest-production.emadilramzan.workers.dev` each have their own, separate storage. A redirect or domain change doesn't carry saved resumes across. Users see an empty editor on the new address, and their work stays on the old one. The only guest migration path is Download backup on the old address, then Restore from backup on the new one. Launch publicly on the final domain and host only, and treat any later change as a planned data-migration event.
 
 ## Rollback
 
