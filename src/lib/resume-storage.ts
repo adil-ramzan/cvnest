@@ -198,6 +198,23 @@ export function loadResumes(): LoadResult {
   }
 }
 
+const PHOTO_ID_IN_TEXT = /"photo"\s*:\s*\{[^{}]*?"id"\s*:\s*"([^"\\]{1,100})"/g;
+
+/**
+ * Photo ids mentioned anywhere in the stored text, including resumes that couldn't be
+ * read and the copy kept of them. Photo cleanup keeps these, so recovering unreadable
+ * data later doesn't find its photos gone. Works on text, so damaged JSON still counts.
+ * Null when storage can't be read: the caller must then skip cleanup.
+ */
+export function photoIdsInStoredText(): string[] | null {
+  try {
+    const texts = [RESUMES_KEY, UNREADABLE_BACKUP_KEY].map((key) => window.localStorage.getItem(key) ?? "");
+    return texts.flatMap((text) => [...text.matchAll(PHOTO_ID_IN_TEXT)].map((match) => match[1]));
+  } catch {
+    return null;
+  }
+}
+
 /** The stored text exactly as it is, for saving a copy. */
 export function readRawResumes(): string {
   try {
@@ -207,14 +224,27 @@ export function readRawResumes(): string {
   }
 }
 
-/** Returns true on success, false if the browser refused the write (e.g. quota exceeded). */
-export function saveResumes(resumes: Resume[]): boolean {
+export type WriteResult = { ok: true } | { ok: false; reason: "quota" | "refused" };
+
+/** True for the error browsers throw when storage is full (named differently in older Firefox). */
+export function isQuotaError(error: unknown): boolean {
+  if (typeof DOMException === "undefined" || !(error instanceof DOMException)) return false;
+  return error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED" || error.code === 22 || error.code === 1014;
+}
+
+/** Writes the resume list in one write and says why it failed, if it did. */
+export function writeResumes(resumes: Resume[]): WriteResult {
   try {
     window.localStorage.setItem(RESUMES_KEY, serialize(resumes));
-    return true;
-  } catch {
-    return false;
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: isQuotaError(error) ? "quota" : "refused" };
   }
+}
+
+/** Returns true on success, false if the browser refused the write (e.g. quota exceeded). */
+export function saveResumes(resumes: Resume[]): boolean {
+  return writeResumes(resumes).ok;
 }
 
 export type BackupState = { lastBackupAt: number | null; reminderDismissed: boolean };

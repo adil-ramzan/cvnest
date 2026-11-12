@@ -9,10 +9,12 @@ type DialogProps = {
   title: string;
   description?: string;
   children?: ReactNode;
+  /** False while something can't be interrupted: Escape and backdrop clicks do nothing. Defaults to true. */
+  dismissible?: boolean;
 };
 
 /** Modal built on the native <dialog> element, which provides focus trapping and Escape handling. */
-export function Dialog({ open, onClose, title, description, children }: DialogProps) {
+export function Dialog({ open, onClose, title, description, children, dismissible = true }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -32,10 +34,20 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
       aria-describedby={description ? descriptionId : undefined}
       // The close event fires a task after close(). If the dialog was reopened in between,
       // that late event belongs to the old one and must not close the new one.
-      onClose={() => {
-        if (!ref.current?.open) onClose();
+      onCancel={(event) => {
+        if (!dismissible) event.preventDefault();
       }}
-      onClick={(event) => event.target === event.currentTarget && onClose()}
+      onClose={() => {
+        const dialog = ref.current;
+        if (dialog?.open) return;
+        // Browsers let a repeated Escape close a dialog even when cancel is refused; reopen it.
+        if (!dismissible && open && dialog) {
+          dialog.showModal();
+          return;
+        }
+        onClose();
+      }}
+      onClick={(event) => dismissible && event.target === event.currentTarget && onClose()}
       className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-line bg-surface p-0 text-ink shadow-pop backdrop:bg-ink/40"
     >
       {open && (

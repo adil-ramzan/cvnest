@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
-import { loadResumes, loadSettings, parseResumes, saveResumes } from "@/lib/resume-storage";
+import { isQuotaError, loadResumes, loadSettings, parseResumes, photoIdsInStoredText, saveResumes, writeResumes } from "@/lib/resume-storage";
 import { createResume } from "@/lib/resumes";
 
 /** Minimal in-memory localStorage. `failWrites` blocks all writes; `failKeys` rejects writes to specific keys (e.g. quota exceeded). */
@@ -199,5 +199,44 @@ describe("saving and settings", () => {
     assert.deepEqual(loadSettings(), { activeResumeId: null, zoom: "fit" });
     storage.setItem("folio.editor-settings", "{bad");
     assert.deepEqual(loadSettings(), { activeResumeId: null, zoom: "fit" });
+  });
+});
+
+describe("photoIdsInStoredText: photos that cleanup must keep", () => {
+  it("finds photo ids in readable, unreadable and damaged stored text", () => {
+    const withPhoto = (id: string, photoId: string) => ({ ...createResume(), id, profile: { fullName: "", jobTitle: "", email: "", phone: "", location: "", photo: { id: photoId, mimeType: "image/jpeg", width: 1, height: 1, byteSize: 1, updatedAt: 1 } } });
+    storage.setItem("folio.resumes.v2", JSON.stringify({ schemaVersion: 2, resumes: [withPhoto("a", "readable"), { broken: true, profile: { photo: { id: "in-junk-item" } } }] }));
+    storage.setItem("folio.resumes.v2.unreadable-backup", `{"resumes":[{"profile":{"photo":{"mimeType":"image/jpeg","id":"in-copy"}}}, {not json`);
+    assert.deepEqual(photoIdsInStoredText()!.sort(), ["in-copy", "in-junk-item", "readable"]);
+  });
+
+  it("returns an empty list when nothing is stored, and null when storage can't be read", () => {
+    assert.deepEqual(photoIdsInStoredText(), []);
+    Object.assign(globalThis, { window: {} });
+    assert.equal(photoIdsInStoredText(), null);
+  });
+});
+
+describe("writeResumes: why a write failed", () => {
+  it("reports a full storage area as quota, and anything else as refused", () => {
+    storage.failKeys.add("folio.resumes.v2");
+    const quota = new DOMException("full", "QuotaExceededError");
+    const original = storage.setItem.bind(storage);
+    storage.setItem = () => {
+      throw quota;
+    };
+    assert.deepEqual(writeResumes([createResume()]), { ok: false, reason: "quota" });
+    storage.setItem = () => {
+      throw new DOMException("denied", "SecurityError");
+    };
+    assert.deepEqual(writeResumes([createResume()]), { ok: false, reason: "refused" });
+    storage.setItem = original;
+    storage.failKeys.clear();
+    assert.deepEqual(writeResumes([createResume()]), { ok: true });
+  });
+
+  it("recognises the older Firefox name for a full storage area", () => {
+    assert.equal(isQuotaError(new DOMException("full", "NS_ERROR_DOM_QUOTA_REACHED")), true);
+    assert.equal(isQuotaError(new Error("QuotaExceededError")), false);
   });
 });

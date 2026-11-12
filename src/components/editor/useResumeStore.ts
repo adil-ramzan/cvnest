@@ -3,17 +3,21 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PageSize, ProfilePhoto, Resume, ResumeCustomization } from "@/data/resume";
 import type { TemplateSlug } from "@/data/templates";
-import { dataUrlToBlob, deletePhoto, deleteUnusedPhotos, savePhoto } from "@/lib/photo-store";
+import { dataUrlToBlob, deletePhoto, deleteUnusedPhotos, listPhotoIds, savePhoto } from "@/lib/photo-store";
+import { commitRestore, prepareRestored, type RestoreMode, type RestoreOutcome, undoReplace as undoReplaceList } from "@/lib/restore";
 import {
   loadResumes,
   loadSettings,
   parseResumes,
+  photoIdsInStoredText,
   RESUMES_STORAGE_KEY,
   saveResumes,
   saveSettings,
+  writeResumes,
   type Zoom,
 } from "@/lib/resume-storage";
 import { createResume, defaultPageSize, duplicateResume, isResumeEmpty } from "@/lib/resumes";
+import { loadUndoableSnapshot, readSnapshot, saveSnapshot, type Snapshot, snapshotPhotoIds, writeSnapshot } from "@/lib/snapshot-store";
 
 /** `held`: saving is paused because stored data couldn't be read and no copy of it could be kept. */
 export type SaveStatus = "saved" | "saving" | "error" | "unavailable" | "blocked" | "held";
@@ -26,12 +30,34 @@ const mostRecent = (resumes: Resume[]) =>
 const photoIds = (resumes: Resume[]) =>
   new Set(resumes.map((r) => r.profile.photo?.id).filter((id): id is string => !!id));
 
+/** A snapshot read back from IndexedDB goes through the same validation as any stored data. */
+const readValidSnapshot = async (): Promise<Snapshot | null> => {
+  const snapshot = await readSnapshot();
+  if (!snapshot) return null;
+  const { resumes } = parseResumes(JSON.stringify({ resumes: snapshot.resumes }));
+  return resumes.length ? { ...snapshot, resumes } : null;
+};
+
+/**
+ * Removes stored photos that nothing refers to: not the resumes, not the stored text
+ * (which includes unreadable resumes and the copy kept of them), and not the undo
+ * snapshot. If any of those can't be read, nothing is removed.
+ */
+async function cleanUpPhotos(resumes: Resume[]) {
+  const inText = photoIdsInStoredText();
+  const inSnapshot = await snapshotPhotoIds();
+  if (inText === null || inSnapshot === null) return;
+  await deleteUnusedPhotos(new Set([...photoIds(resumes), ...inText, ...inSnapshot]));
+}
+
 export function useResumeStore(initialTemplate?: TemplateSlug) {
   const [resumes, setResumes] = useState<Resume[] | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [zoom, setZoom] = useState<Zoom>("fit");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [recovered, setRecovered] = useState(false);
+  /** When the last "replace all" restore happened, while it can still be undone. */
+  const [replacedAt, setReplacedAt] = useState<number | null>(null);
 
   const storageAvailable = useRef(true);
   const skipNextSave = useRef(false);
@@ -88,8 +114,12 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
       setSaveStatus("blocked");
     }
 
-    // Remove photos no resume uses any more (kept for a day in case another tab is mid-save).
-    deleteUnusedPhotos(photoIds(list)).catch(() => {});
+    // Remove photos nothing uses any more (kept for a day in case another tab is mid-save).
+    // Only after a load that could read storage: otherwise every photo would look unused.
+    if (result.available && !result.newerData) cleanUpPhotos(list).catch(() => {});
+    loadUndoableSnapshot(new Set(list.map((r) => r.id)))
+      .then((snapshot) => setReplacedAt(snapshot?.createdAt ?? null))
+      .catch(() => {});
   }, [initialTemplate]);
 
   // Debounced autosave.
@@ -123,6 +153,8 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
       movingPhotos.current.add(photo.id);
       savePhoto(photo.id, dataUrlToBlob(photo.inlineData))
         .then(() => {
+          // Moved, so a later inline copy of the same photo (another restore) is moved too.
+          movingPhotos.current.delete(photo.id);
           // Not a content change, so updatedAt is left alone.
           setResumes((list) =>
             list?.map((r) =>
@@ -179,9 +211,12 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  /** Deletes a stored photo once no remaining resume refers to it (duplicates share photos). */
+  /** Deletes a stored photo once no remaining resume, and no undo snapshot, refers to it (duplicates share photos). */
   const releasePhoto = useCallback((id: string | undefined, remaining: Resume[]) => {
-    if (id && !remaining.some((r) => r.profile.photo?.id === id)) deletePhoto(id).catch(() => {});
+    if (!id || remaining.some((r) => r.profile.photo?.id === id)) return;
+    snapshotPhotoIds()
+      .then((kept) => (kept === null || kept.includes(id) ? undefined : deletePhoto(id)))
+      .catch(() => {});
   }, []);
 
   const updateResume = useCallback((id: string, update: (resume: Resume) => Resume) => {
@@ -254,18 +289,38 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     [resumes],
   );
 
+  /**
+   * Removes a resume and returns what's needed to put it back. Its photo is left in
+   * storage so undo can bring it back; cleanup on a later visit removes it if unused.
+   */
   const deleteResume = useCallback(
-    (id: string) => {
-      if (!resumes) return;
-      const removed = resumes.find((r) => r.id === id);
+    (id: string): { resume: Resume; index: number; placeholderId?: string; activeAfter: string } | undefined => {
+      if (!resumes) return undefined;
+      const index = resumes.findIndex((r) => r.id === id);
+      if (index === -1) return undefined;
       let remaining = resumes.filter((r) => r.id !== id);
-      releasePhoto(removed?.profile.photo?.id, remaining);
-      if (remaining.length === 0) remaining = [createResume(undefined, defaultPageSize())];
+      let placeholderId: string | undefined;
+      if (remaining.length === 0) {
+        remaining = [createResume(undefined, defaultPageSize())];
+        placeholderId = remaining[0].id;
+      }
+      const activeAfter = id === activeId || !remaining.some((r) => r.id === activeId) ? mostRecent(remaining)!.id : activeId!;
       setResumes(remaining);
-      if (id === activeId || !remaining.some((r) => r.id === activeId)) setActiveId(mostRecent(remaining)!.id);
+      setActiveId(activeAfter);
+      return { resume: resumes[index], index, placeholderId, activeAfter };
     },
-    [resumes, activeId, releasePhoto],
+    [resumes, activeId],
   );
+
+  /** Undo for deleteResume. Drops the blank resume that took its place, if it's still untouched. */
+  const reinsertResume = useCallback((resume: Resume, index: number, placeholderId?: string) => {
+    setResumes((list) => {
+      if (!list || list.some((r) => r.id === resume.id)) return list;
+      const kept = list.filter((r) => !(r.id === placeholderId && isResumeEmpty(r)));
+      return [...kept.slice(0, index), resume, ...kept.slice(index)];
+    });
+    setActiveId(resume.id);
+  }, []);
 
   /** Records that a copy now exists outside this browser, without counting as an edit. */
   const markCopied = useCallback((field: "lastBackupAt" | "lastExportAt", id?: string) => {
@@ -273,12 +328,52 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     setResumes((list) => list?.map((r) => (!id || r.id === id ? { ...r, [field]: now } : r)) ?? list);
   }, []);
 
-  /** Adds restored resumes to the list, or replaces the list. Ids are renewed so they can't clash. */
-  const restoreResumes = useCallback((incoming: Resume[], mode: "merge" | "replace") => {
-    // These just came from a backup file, so a copy already exists.
-    const restored = incoming.map((resume) => ({ ...duplicateResume(resume, resume.name), lastBackupAt: Date.now() }));
-    setResumes((list) => (mode === "merge" ? [...(list ?? []), ...restored] : restored));
-    setActiveId(restored[0].id);
+  /**
+   * Adds restored resumes to the list, or replaces the list, all or nothing (see lib/restore).
+   * The new list is written before the editor shows it; if it can't be, nothing changes.
+   */
+  const restoreResumes = useCallback(async (incoming: Resume[], mode: RestoreMode): Promise<RestoreOutcome> => {
+    const current = latest.current ?? [];
+    if (!storageAvailable.current) {
+      // Not saving (blocked, held or unavailable): the restore stays in this tab only, as before.
+      // Nothing is written, so stored data that must not be overwritten stays as it is.
+      const restored = prepareRestored(incoming, Date.now());
+      const next = mode === "merge" ? [...current, ...restored] : restored;
+      setResumes(next);
+      setActiveId(restored[0].id);
+      return { ok: true, resumes: next, restoredIds: restored.map((r) => r.id), undoAvailable: false };
+    }
+    // Read at commit time, so edits made while photos are being stored are kept.
+    const outcome = await commitRestore(() => latest.current ?? current, incoming, mode, {
+      listPhotoIds,
+      savePhoto,
+      deletePhoto,
+      readSnapshot,
+      saveSnapshot,
+      writeSnapshot,
+      writeResumes,
+    });
+    if (outcome.ok) {
+      // Already written, so the autosave this state change would trigger is skipped.
+      skipNextSave.current = true;
+      setResumes(outcome.resumes);
+      setActiveId(outcome.restoredIds[0]);
+      if (outcome.undoAvailable) setReplacedAt(Date.now());
+    }
+    return outcome;
+  }, []);
+
+  /** Puts back the resumes a "replace all" restore removed. Changes made since then are replaced. */
+  const undoReplace = useCallback(async () => {
+    if (!storageAvailable.current) return { ok: false as const, message: "Saving is paused in this browser, so the resumes can't be put back right now." };
+    const outcome = await undoReplaceList({ readSnapshot: readValidSnapshot, writeSnapshot, writeResumes });
+    if (outcome.ok) {
+      skipNextSave.current = true;
+      setResumes(outcome.resumes);
+      setActiveId(mostRecent(outcome.resumes)?.id ?? null);
+      setReplacedAt(null);
+    }
+    return outcome;
   }, []);
 
   const activeResume = resumes?.find((r) => r.id === activeId) ?? null;
@@ -294,6 +389,9 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     setZoom,
     selectResume: setActiveId,
     restoreResumes,
+    replacedAt,
+    undoReplace,
+    reinsertResume,
     markCopied,
     flushSave,
     resumeSaving,

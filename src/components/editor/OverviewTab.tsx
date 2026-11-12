@@ -19,6 +19,9 @@ type OverviewTabProps = {
   onDownloadBackup: () => void;
   onRestoreBackup: () => void;
   lastBackupAt: number | null;
+  /** When the last "replace all" restore happened, while it can still be undone. */
+  replacedAt?: number | null;
+  onUndoReplace?: () => void;
 };
 
 export const formatUpdated = (timestamp: number) =>
@@ -39,7 +42,7 @@ function Card({ title, action, children }: { title: string; action?: ReactNode; 
 const smallButton = buttonClass("secondary", "sm");
 const iconButton = iconButtonClass;
 
-export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onDuplicate, onDelete, onEditSection, onDownloadBackup, onRestoreBackup, lastBackupAt }: OverviewTabProps) {
+export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onDuplicate, onDelete, onEditSection, onDownloadBackup, onRestoreBackup, lastBackupAt, replacedAt, onUndoReplace }: OverviewTabProps) {
   const { profile, sections } = active;
   const sectionStatus = (type: SectionType, label: string) => {
     const section = sections.find((s) => s.type === type);
@@ -169,6 +172,14 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
             Restore from backup
           </button>
         </div>
+        {replacedAt && onUndoReplace && (
+          <div className="mt-4 rounded-xl bg-panel p-3.5 text-[0.875rem] text-ink-soft">
+            <p>Your resumes were replaced by a restore on {formatUpdated(replacedAt)}. The earlier ones are kept in this browser for 7 days. Only the most recent replace can be undone.</p>
+            <button type="button" onClick={onUndoReplace} className={`${smallButton} mt-3`}>
+              Put back earlier resumes
+            </button>
+          </div>
+        )}
       </Card>
 
       <Card title="Privacy and storage">
