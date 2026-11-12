@@ -224,14 +224,27 @@ export function readRawResumes(): string {
   }
 }
 
-/** Returns true on success, false if the browser refused the write (e.g. quota exceeded). */
-export function saveResumes(resumes: Resume[]): boolean {
+export type WriteResult = { ok: true } | { ok: false; reason: "quota" | "refused" };
+
+/** True for the error browsers throw when storage is full (named differently in older Firefox). */
+export function isQuotaError(error: unknown): boolean {
+  if (typeof DOMException === "undefined" || !(error instanceof DOMException)) return false;
+  return error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED" || error.code === 22 || error.code === 1014;
+}
+
+/** Writes the resume list in one write and says why it failed, if it did. */
+export function writeResumes(resumes: Resume[]): WriteResult {
   try {
     window.localStorage.setItem(RESUMES_KEY, serialize(resumes));
-    return true;
-  } catch {
-    return false;
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, reason: isQuotaError(error) ? "quota" : "refused" };
   }
+}
+
+/** Returns true on success, false if the browser refused the write (e.g. quota exceeded). */
+export function saveResumes(resumes: Resume[]): boolean {
+  return writeResumes(resumes).ok;
 }
 
 export type BackupState = { lastBackupAt: number | null; reminderDismissed: boolean };

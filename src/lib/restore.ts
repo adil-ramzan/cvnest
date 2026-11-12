@@ -18,8 +18,9 @@
  */
 import type { Resume } from "@/data/resume";
 import { dataUrlToBlob } from "./photo-store";
+import type { WriteResult } from "./resume-storage";
 import { duplicateResume } from "./resumes";
-import type { Snapshot } from "./snapshot-store";
+import { SNAPSHOT_MAX_AGE_MS, type Snapshot } from "./snapshot-store";
 
 export type RestoreMode = "merge" | "replace";
 
@@ -28,10 +29,10 @@ export type RestoreDeps = {
   savePhoto: (id: string, blob: Blob) => Promise<void>;
   deletePhoto: (id: string) => Promise<void>;
   readSnapshot: () => Promise<Snapshot | null>;
-  saveSnapshot: (resumes: Resume[], createdAt: number) => Promise<void>;
+  saveSnapshot: (resumes: Resume[], createdAt: number, restoredIds: string[]) => Promise<void>;
   writeSnapshot: (snapshot: Snapshot | null) => Promise<void>;
-  /** The commit: writes the whole resume list; false if the browser refused. */
-  writeResumes: (resumes: Resume[]) => boolean;
+  /** The commit: writes the whole resume list in one write. */
+  writeResumes: (resumes: Resume[]) => WriteResult;
   now?: () => number;
 };
 
@@ -41,6 +42,11 @@ export type RestoreOutcome =
 
 export const NO_ROOM_MESSAGE =
   "There isn't enough room in this browser's storage to restore this backup. Nothing was changed. Try restoring fewer resumes, or delete some you no longer need first.";
+export const REFUSED_MESSAGE =
+  "Your browser refused to save the restored resumes, so nothing was changed. Check that this site is allowed to store data, then try again.";
+export const EXPIRED_MESSAGE = "The resumes from before the restore are no longer available. They're kept for 7 days.";
+
+const failureMessage = (result: WriteResult) => (!result.ok && result.reason === "quota" ? NO_ROOM_MESSAGE : REFUSED_MESSAGE);
 
 /** Restored resumes get fresh ids so they can't clash; photo ids are kept, since the same id means the same photo. */
 export function prepareRestored(incoming: Resume[], now: number): Resume[] {
@@ -65,11 +71,13 @@ async function storeInlinePhotos(resumes: Resume[], deps: RestoreDeps) {
       out.push(resume);
       continue;
     }
-    if (!stored.has(photo.id)) {
+    // A photo already stored under this id is never rewritten, so a failed restore can't change it.
+    // (Ids are made per upload, so the same id is the same photo.)
+    if (!existing.has(photo.id) && !stored.has(photo.id)) {
       try {
         await deps.savePhoto(photo.id, dataUrlToBlob(photo.inlineData));
         stored.add(photo.id);
-        if (!existing.has(photo.id)) added.push(photo.id);
+        added.push(photo.id);
       } catch {
         out.push(resume);
         continue;
@@ -80,41 +88,59 @@ async function storeInlinePhotos(resumes: Resume[], deps: RestoreDeps) {
   return { resumes: out, added };
 }
 
-export async function commitRestore(current: Resume[], incoming: Resume[], mode: RestoreMode, deps: RestoreDeps): Promise<RestoreOutcome> {
+/**
+ * `getCurrent` is read when it's needed, not once at the start: the person may still
+ * edit while photos are being stored, and those edits must be part of what's written.
+ */
+export async function commitRestore(getCurrent: () => Resume[], incoming: Resume[], mode: RestoreMode, deps: RestoreDeps): Promise<RestoreOutcome> {
   const now = (deps.now ?? Date.now)();
   const prepared = prepareRestored(incoming, now);
+  const restoredIds = prepared.map((r) => r.id);
   const { resumes: restored, added } = await storeInlinePhotos(prepared, deps);
-  const next = mode === "merge" ? [...current, ...restored] : restored;
 
   let previousSnapshot: Snapshot | null = null;
   let snapshotWritten = false;
   if (mode === "replace") {
     try {
       previousSnapshot = await deps.readSnapshot();
-      await deps.saveSnapshot(current, now);
+      await deps.saveSnapshot(getCurrent(), now, restoredIds);
       snapshotWritten = true;
     } catch {
       // Undo won't be offered, but the restore itself can still go ahead.
     }
   }
 
-  if (deps.writeResumes(next)) {
-    return { ok: true, resumes: next, restoredIds: restored.map((r) => r.id), undoAvailable: snapshotWritten };
-  }
+  // Built synchronously right before the write, from the latest list.
+  const next = mode === "merge" ? [...getCurrent(), ...restored] : restored;
+  const result = deps.writeResumes(next);
+  if (result.ok) return { ok: true, resumes: next, restoredIds, undoAvailable: snapshotWritten };
 
   // The commit failed, so nothing refers to what was added: take it away again.
   await Promise.all(added.map((id) => deps.deletePhoto(id).catch(() => {})));
   if (snapshotWritten) await deps.writeSnapshot(previousSnapshot).catch(() => {});
-  return { ok: false, message: NO_ROOM_MESSAGE };
+  return { ok: false, message: failureMessage(result) };
 }
 
 /** Puts back the resumes a "replace" removed. Same single commit; the snapshot is removed only once it's back. */
 export async function undoReplace(
-  deps: Pick<RestoreDeps, "readSnapshot" | "writeSnapshot" | "writeResumes">,
+  deps: Pick<RestoreDeps, "readSnapshot" | "writeSnapshot" | "writeResumes" | "now">,
 ): Promise<{ ok: true; resumes: Resume[] } | { ok: false; message: string }> {
   const snapshot = await deps.readSnapshot().catch(() => null);
-  if (!snapshot) return { ok: false, message: "The resumes from before the restore are no longer available." };
-  if (!deps.writeResumes(snapshot.resumes)) return { ok: false, message: "There isn't enough room in this browser's storage to put them back. Nothing was changed." };
+  if (!snapshot) return { ok: false, message: EXPIRED_MESSAGE };
+  // Checked here too, not only on load: a tab can stay open past the undo window.
+  if ((deps.now ?? Date.now)() - snapshot.createdAt > SNAPSHOT_MAX_AGE_MS) {
+    await deps.writeSnapshot(null).catch(() => {});
+    return { ok: false, message: EXPIRED_MESSAGE };
+  }
+  const result = deps.writeResumes(snapshot.resumes);
+  if (!result.ok) {
+    return {
+      ok: false,
+      message: result.reason === "quota"
+        ? "There isn't enough room in this browser's storage to put them back. Nothing was changed."
+        : "Your browser refused to save them, so nothing was changed. Check that this site is allowed to store data, then try again.",
+    };
+  }
   await deps.writeSnapshot(null).catch(() => {});
   return { ok: true, resumes: snapshot.resumes };
 }

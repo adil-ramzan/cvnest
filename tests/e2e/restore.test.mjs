@@ -235,5 +235,109 @@ for (const mode of ["merge", "replace"]) {
   await context.close();
 }
 
+// ---- 9. C1: Escape during a restore doesn't close it, and an edit made meanwhile survives
+{
+  const big = "data:image/jpeg;base64," + "A".repeat(1_200_000);
+  const backup = Array.from({ length: 12 }, (_, i) => ({ ...resume(`e${i}`, `Esc ${i}`), profile: { ...resume(`e${i}`, `Esc ${i}`).profile, photo: { id: `esc-photo-${i}`, mimeType: "image/jpeg", width: 1, height: 1, byteSize: 1, updatedAt: 1, inlineData: big } } }));
+  const file = backupFile("restore-escape.json", backup);
+  const { context, page } = await openEditor({ seed: { resumes: [resume("mine", "Mine")] } });
+  await page.click("[aria-controls='personal-form']");
+  await sleep(200);
+  await (await page.$("[aria-label='Choose a backup file']")).uploadFile(file);
+  await page.waitForSelector("dialog[open]");
+  await sleep(200);
+  await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent.trim() === "Restore").click());
+  await sleep(30);
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press("Escape");
+    await sleep(20);
+  }
+  const state = await page.evaluate(() => ({
+    open: !!document.querySelector("dialog[open]"),
+    restoring: [...document.querySelectorAll("dialog[open] button")].some((b) => b.textContent.includes("Restoring")),
+  }));
+  check("C1: pressing Escape three times during a restore leaves the dialog open", state.open, JSON.stringify(state));
+  // An edit that gets in during the restore (here applied directly, standing in for any route around the dialog).
+  const editedWhileRestoring = await page.evaluate(() => {
+    const restoring = [...document.querySelectorAll("button")].some((b) => b.textContent.includes("Restoring"));
+    const input = [...document.querySelectorAll("label")].find((l) => l.textContent.trim().startsWith("Full name"))?.control;
+    if (!input) return { restoring, edited: false };
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, "Edited During Restore");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    return { restoring, edited: true };
+  });
+  check("C1: the edit was made while the restore was still running", editedWhileRestoring.restoring && editedWhileRestoring.edited, JSON.stringify(editedWhileRestoring));
+  await waitFor(() => page.evaluate(() => !document.querySelector("dialog[open]")), 30000);
+  await sleep(800);
+  const after = await stored(page);
+  check("C1: the restore finished and saved all 12 resumes", after.filter((r) => r.name.startsWith("Esc ")).length === 12, String(after.length));
+  check("C1: the edit made during the restore survives it", after.find((r) => r.id === "mine")?.profile.fullName === "Edited During Restore", after.find((r) => r.id === "mine")?.profile.fullName);
+  await page.close();
+  const reopened = await context.newPage();
+  await reopened.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
+  await reopened.waitForSelector("select");
+  await sleep(500);
+  check("C1: and survives reopening the editor", (await stored(reopened)).find((r) => r.id === "mine")?.profile.fullName === "Edited During Restore");
+  await context.close();
+}
+
+// ---- 10. I2 and expiry: a snapshot is only offered for a replace that was committed, within 7 days
+{
+  const putSnapshot = (page, record) =>
+    page.evaluate((record) => new Promise((resolve) => {
+      const open = indexedDB.open("folio-snapshots", 1);
+      open.onupgradeneeded = () => open.result.createObjectStore("snapshots", { keyPath: "key" });
+      open.onsuccess = () => {
+        const tx = open.result.transaction("snapshots", "readwrite");
+        tx.objectStore("snapshots").put(record);
+        tx.oncomplete = () => { open.result.close(); resolve(); };
+      };
+    }), record);
+  const overviewText = async (page) => {
+    await page.evaluate(() => [...document.querySelectorAll("[role=tab]")].find((t) => t.textContent === "Overview").click());
+    await sleep(300);
+    return page.$eval("[role=tabpanel]", (el) => el.innerText);
+  };
+  const cases = [
+    ["Tab closed between snapshot and commit", { restoredIds: ["never-committed"], age: 0 }, false],
+    ["Snapshot older than 7 days", { restoredIds: ["current"], age: 8 * 24 * 60 * 60 * 1000 }, false],
+    ["Committed replace within 7 days (control)", { restoredIds: ["current"], age: 60_000 }, true],
+  ];
+  for (const [label, { restoredIds, age }, offered] of cases) {
+    const { context, page: first } = await openEditor({ seed: { resumes: [resume("current", "Current")] } });
+    await putSnapshot(first, { key: "folio.resumes.pre-restore", createdAt: Date.now() - age, restoredIds, resumes: [resume("old", "Old")] });
+    // A new page in the same browser profile, rather than a reload (whose "Leave site?" prompt can race the navigation).
+    await first.close();
+    const page = await context.newPage();
+    page.on("pageerror", (e) => errors.push(String(e)));
+    await page.setViewport({ width: 1440, height: 900 });
+    await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
+    await page.waitForSelector("select");
+    await sleep(800);
+    const shows = (await overviewText(page)).includes("Put back earlier resumes");
+    check(`I2: ${label}: ${offered ? "offers" : "doesn't offer"} "Put back earlier resumes"`, shows === offered);
+    const left = (await idb(page, "folio-snapshots", "snapshots")) ?? [];
+    check(`I2: ${label}: the snapshot is ${offered ? "kept" : "removed"}`, offered ? left.length === 1 : left.length === 0, JSON.stringify(left));
+    await context.close();
+  }
+}
+
+// ---- 11. A photo moved once is moved again if it comes back inline in the same session
+{
+  const inline = withPhoto(resume("m1", "Mover"), "mover-photo");
+  const { context, page } = await openEditor({ seed: { resumes: [inline] } });
+  check("Move: the inline photo is moved to IndexedDB on load", await waitFor(async () => (await stored(page)).every((r) => !r.profile.photo?.inlineData), 5000));
+  // Another tab writes the same photo inline again (for example a tab without IndexedDB).
+  const other = await context.newPage();
+  await other.goto(`${BASE}/about`, { waitUntil: "networkidle0" });
+  await other.evaluate((r) => localStorage.setItem("folio.resumes.v2", JSON.stringify({ schemaVersion: 2, resumes: [r] })), inline);
+  check(
+    "Move: the editor moves it again, so browser storage ends up without it",
+    await waitFor(async () => (await stored(page)).length === 1 && (await stored(page)).every((r) => r.profile.photo?.id === "mover-photo" && !r.profile.photo.inlineData), 5000),
+    JSON.stringify((await stored(page)).map((r) => !!r.profile.photo?.inlineData)),
+  );
+  await context.close();
+}
+
 check("No page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
 await browser.close();

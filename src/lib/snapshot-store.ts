@@ -18,7 +18,11 @@ export const PRE_RESTORE_KEY = "folio.resumes.pre-restore";
 /** How long "undo replace" stays available. */
 export const SNAPSHOT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-export type Snapshot = { key: string; createdAt: number; resumes: Resume[] };
+/**
+ * `restoredIds` are the ids the restore gave the resumes it added. They are fresh ids,
+ * so they only exist in the stored list if the restore was actually committed.
+ */
+export type Snapshot = { key: string; createdAt: number; resumes: Resume[]; restoredIds?: string[] };
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -51,7 +55,8 @@ function openDb(): Promise<IDBDatabase> {
 async function run<T>(mode: IDBTransactionMode, action: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE, mode);
+    // Strict: `complete` only fires once the write is on disk, since the restore commits right after it.
+    const transaction = db.transaction(STORE, mode, { durability: mode === "readwrite" ? "strict" : "default" });
     const request = action(transaction.objectStore(STORE));
     transaction.oncomplete = () => resolve(request.result);
     transaction.onerror = () => reject(transaction.error);
@@ -63,8 +68,19 @@ const isSnapshot = (value: unknown): value is Snapshot =>
   typeof value === "object" && value !== null && Array.isArray((value as Snapshot).resumes) && typeof (value as Snapshot).createdAt === "number";
 
 /** Resolves once the snapshot is durably written; rejects if it couldn't be. */
-export async function saveSnapshot(resumes: Resume[], createdAt = Date.now()): Promise<void> {
-  await run("readwrite", (store) => store.put({ key: PRE_RESTORE_KEY, createdAt, resumes } satisfies Snapshot));
+export async function saveSnapshot(resumes: Resume[], createdAt = Date.now(), restoredIds: string[] = []): Promise<void> {
+  await run("readwrite", (store) => store.put({ key: PRE_RESTORE_KEY, createdAt, resumes, restoredIds } satisfies Snapshot));
+}
+
+/**
+ * Whether a snapshot can still be offered as "undo replace": younger than the undo
+ * window, and from a restore that was actually committed (one of its restored resumes
+ * is in the current list). A snapshot left by a tab closed between writing it and
+ * committing fails the second test, so it's never described as a replace that happened.
+ */
+export function isSnapshotUndoable(snapshot: Snapshot, now: number, currentIds: Set<string>): boolean {
+  if (now - snapshot.createdAt > SNAPSHOT_MAX_AGE_MS || snapshot.createdAt > now + 60_000) return false;
+  return (snapshot.restoredIds ?? []).some((id) => currentIds.has(id));
 }
 
 /** The stored snapshot, whatever its age, or null. */
@@ -83,11 +99,11 @@ export async function deleteSnapshot(): Promise<void> {
   await run("readwrite", (store) => store.delete(PRE_RESTORE_KEY));
 }
 
-/** The snapshot if it is still within the undo window. Older ones are removed. */
-export async function loadUndoableSnapshot(now = Date.now()): Promise<Snapshot | null> {
+/** The snapshot if it can still be undone (see isSnapshotUndoable). Any other is removed. */
+export async function loadUndoableSnapshot(currentIds: Set<string>, now = Date.now()): Promise<Snapshot | null> {
   const snapshot = await readSnapshot();
   if (!snapshot) return null;
-  if (now - snapshot.createdAt > SNAPSHOT_MAX_AGE_MS) {
+  if (!isSnapshotUndoable(snapshot, now, currentIds)) {
     await deleteSnapshot().catch(() => {});
     return null;
   }

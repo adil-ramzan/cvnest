@@ -608,6 +608,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
       <Dialog
         open={dialog?.type === "restore"}
+        dismissible={!restoring}
         onClose={() => {
           // Its close event can arrive after an error dialog has replaced it; leave that one open.
           if (!restoring) setDialog((current) => (current?.type === "restore" ? null : current));

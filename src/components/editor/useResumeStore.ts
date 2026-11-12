@@ -13,6 +13,7 @@ import {
   RESUMES_STORAGE_KEY,
   saveResumes,
   saveSettings,
+  writeResumes,
   type Zoom,
 } from "@/lib/resume-storage";
 import { createResume, defaultPageSize, duplicateResume, isResumeEmpty } from "@/lib/resumes";
@@ -116,7 +117,7 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     // Remove photos nothing uses any more (kept for a day in case another tab is mid-save).
     // Only after a load that could read storage: otherwise every photo would look unused.
     if (result.available && !result.newerData) cleanUpPhotos(list).catch(() => {});
-    loadUndoableSnapshot()
+    loadUndoableSnapshot(new Set(list.map((r) => r.id)))
       .then((snapshot) => setReplacedAt(snapshot?.createdAt ?? null))
       .catch(() => {});
   }, [initialTemplate]);
@@ -342,14 +343,15 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
       setActiveId(restored[0].id);
       return { ok: true, resumes: next, restoredIds: restored.map((r) => r.id), undoAvailable: false };
     }
-    const outcome = await commitRestore(current, incoming, mode, {
+    // Read at commit time, so edits made while photos are being stored are kept.
+    const outcome = await commitRestore(() => latest.current ?? current, incoming, mode, {
       listPhotoIds,
       savePhoto,
       deletePhoto,
       readSnapshot,
       saveSnapshot,
       writeSnapshot,
-      writeResumes: saveResumes,
+      writeResumes,
     });
     if (outcome.ok) {
       // Already written, so the autosave this state change would trigger is skipped.
@@ -364,7 +366,7 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
   /** Puts back the resumes a "replace all" restore removed. Changes made since then are replaced. */
   const undoReplace = useCallback(async () => {
     if (!storageAvailable.current) return { ok: false as const, message: "Saving is paused in this browser, so the resumes can't be put back right now." };
-    const outcome = await undoReplaceList({ readSnapshot: readValidSnapshot, writeSnapshot, writeResumes: saveResumes });
+    const outcome = await undoReplaceList({ readSnapshot: readValidSnapshot, writeSnapshot, writeResumes });
     if (outcome.ok) {
       skipNextSave.current = true;
       setResumes(outcome.resumes);

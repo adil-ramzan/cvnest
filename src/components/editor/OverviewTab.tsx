@@ -174,7 +174,7 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
         </div>
         {replacedAt && onUndoReplace && (
           <div className="mt-4 rounded-xl bg-panel p-3.5 text-[0.875rem] text-ink-soft">
-            <p>Your resumes were replaced by a restore on {formatUpdated(replacedAt)}. The earlier ones are kept in this browser for 7 days.</p>
+            <p>Your resumes were replaced by a restore on {formatUpdated(replacedAt)}. The earlier ones are kept in this browser for 7 days. Only the most recent replace can be undone.</p>
             <button type="button" onClick={onUndoReplace} className={`${smallButton} mt-3`}>
               Put back earlier resumes
             </button>
