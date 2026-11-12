@@ -14,5 +14,15 @@ type EditorPageProps = {
 
 export default async function EditorPage({ searchParams }: EditorPageProps) {
   const { template } = await searchParams;
-  return <ResumeEditor initialTemplate={isTemplateSlug(template) ? template : undefined} />;
+  return (
+    <>
+      <noscript>
+        <div style={{ maxWidth: "36rem", margin: "4rem auto", padding: "0 1rem", fontFamily: "system-ui, sans-serif", lineHeight: 1.6 }}>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700 }}>The resume editor needs JavaScript</h1>
+          <p>Turn on JavaScript for this site in your browser settings, then reload this page. Any resumes you saved in this browser are still here.</p>
+        </div>
+      </noscript>
+      <ResumeEditor initialTemplate={isTemplateSlug(template) ? template : undefined} />
+    </>
+  );
 }

@@ -379,6 +379,22 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               </Notice>
             )}
 
+            {isResumeEmpty(active) && (
+              // Desktop shows this next to the preview; on phones the preview is behind a tab.
+              <div className="lg:hidden">
+                <Notice
+                  title="New here? See a finished example"
+                  actions={
+                    <button type="button" onClick={loadSample} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
+                      Load sample data
+                    </button>
+                  }
+                >
+                  Fill in a sample resume to see how it looks, then replace it with your own details.
+                </Notice>
+              </div>
+            )}
+
             {tab === "overview" && (
               <div className={tabCard}>
               <OverviewTab
@@ -425,6 +441,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               />
               </div>
             )}
+            {/* Keeps the last rows clear of the undo toast while it shows. */}
+            {undo?.resumeId === active.id && <div aria-hidden="true" className="h-20 lg:h-16" />}
           </div>
         </div>
 
@@ -561,7 +579,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           </button>
           <button
             type="button"
-            autoFocus
+            data-autofocus
             onClick={() => {
               setDialog(null);
               loadSample();
@@ -576,7 +594,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
       <Dialog
         open={dialog?.type === "sample"}
         onClose={() => setDialog(null)}
-        title="This resume still contains sample content."
+        title="This resume still contains sample content"
         description="Review it before downloading."
       >
         <div className="mt-6 flex flex-wrap justify-end gap-2">
@@ -602,7 +620,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           </button>
           <button
             type="button"
-            autoFocus
+            data-autofocus
             onClick={() => {
               setDialog(null);
               reviewSample();
@@ -653,12 +671,14 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 <input type="radio" name="restore-mode" checked={restoreMode === "replace"} onChange={() => setRestoreMode("replace")} className="mt-0.5 size-4 accent-[#0f766e]" />
                 <span>
                   <span className="font-bold">Replace all my resumes</span>
-                  <span className="block text-muted">Removes the {store.resumes.length} in this browser.</span>
+                  <span className="block text-muted">
+                    Removes the {store.resumes.length} {store.resumes.length === 1 ? "resume" : "resumes"} in this browser. You can put them back for 7 days.
+                  </span>
                 </span>
               </label>
             </fieldset>
             <div className="mt-6 flex justify-end gap-2">
-              <button type="button" autoFocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
+              <button type="button" data-autofocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
                 Cancel
               </button>
               <button
@@ -667,6 +687,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 onClick={() => confirmRestore(dialog.resumes)}
                 className={`${restoreMode === "replace" ? dialogButtonClass.danger : dialogButtonClass.primary} disabled:cursor-progress disabled:opacity-70`}
               >
+                {restoring && <Loader2 aria-hidden="true" className="size-4 animate-spin" />}
                 {restoring ? "Restoring…" : restoreMode === "replace" ? "Replace and restore" : "Restore"}
               </button>
             </div>
@@ -684,7 +705,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           <button type="button" onClick={downloadBackup} className={dialogButtonClass.secondary}>
             Download backup
           </button>
-          <button type="button" autoFocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
+          <button type="button" data-autofocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
             Cancel
           </button>
           <button
@@ -707,7 +728,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         description={dialog?.type === "restore-error" ? dialog.message : undefined}
       >
         <div className="mt-6 flex justify-end">
-          <button type="button" autoFocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
+          <button type="button" data-autofocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
             Close
           </button>
         </div>
@@ -728,7 +749,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             value={nameDraft}
             onChange={(event) => setNameDraft(event.target.value)}
             maxLength={120}
-            autoFocus
+            data-autofocus
             autoComplete="off"
             className={`${inputClass} mt-2 h-11`}
           />
@@ -750,7 +771,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         description="This removes the resume from this browser. You can undo it straight afterwards."
       >
         <div className="mt-6 flex justify-end gap-2">
-          <button type="button" autoFocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
+          <button type="button" data-autofocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
             Cancel
           </button>
           <button

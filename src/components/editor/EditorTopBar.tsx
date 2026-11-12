@@ -204,10 +204,11 @@ export function EditorTopBar({
     <header className="z-30 bg-canvas px-3 pt-3 pb-1.5 tall:sticky tall:top-0 sm:px-4">
       <div className="rounded-2xl bg-surface shadow-soft">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 px-3 sm:gap-x-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-        <div className="flex h-15 min-w-0 items-center gap-2 sm:gap-3">
+        {/* On phones this wrapper dissolves, so the resume switcher can take its own full-width row. */}
+        <div className="flex h-15 min-w-0 items-center gap-2 max-sm:contents sm:gap-3">
         <Link
           href="/"
-          className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-2 justify-self-start rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent max-sm:my-2.5"
         >
           <span
             aria-hidden="true"
@@ -225,7 +226,7 @@ export function EditorTopBar({
           label={`Switch resume. Current resume: ${active.name}`}
           items={resumeItems}
           menuClassName="max-h-[70vh] w-72 overflow-y-auto"
-          className="min-w-0 sm:max-w-60"
+          className="min-w-0 max-sm:order-1 max-sm:col-span-2 max-sm:-mx-1 max-sm:-mt-1.5 max-sm:mb-1 sm:max-w-60"
           triggerClassName="inline-flex h-10 max-w-full items-center gap-1.5 rounded-lg px-2 text-base font-medium text-ink hover:bg-ink/5"
           trigger={
             <>

@@ -30,7 +30,7 @@ export function LeaveGuardDialog({ open, saveFailed, onDownloadBackup, onSavePdf
           </button>
           <button
             type="button"
-            autoFocus
+            data-autofocus
             onClick={() => {
               setBackedUp(false);
               onLeave();
@@ -58,7 +58,7 @@ export function LeaveGuardDialog({ open, saveFailed, onDownloadBackup, onSavePdf
       <div className="mt-6 grid gap-2">
         <button
           type="button"
-          autoFocus
+          data-autofocus
           onClick={async () => {
             await onDownloadBackup();
             setBackedUp(true);

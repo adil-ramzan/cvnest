@@ -57,7 +57,8 @@ for (const slug of slugs) { const r = await fetch(`${BASE}/templates/${slug}`); 
 check("All 120 detail pages load", okPages === 120 && slugs.length === 120, `${okPages}/${slugs.length}`);
 
 await page.goto(`${BASE}/templates/kinetic`, { waitUntil: "networkidle0" });
-await page.locator("::-p-text(Use This Free Template)").click();
+// The page has a phone-only copy of this button above the preview; click the one that's visible.
+await page.evaluate(() => [...document.querySelectorAll("a")].find((a) => a.textContent.trim() === "Use This Free Template" && a.offsetParent !== null).click());
 await page.waitForSelector("select");
 await sleep(300);
 check("Use This Template opens editor with Kinetic", (await page.$eval("select", (s) => s.value)) === "kinetic");

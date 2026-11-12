@@ -133,7 +133,8 @@ export function Menu({ label, trigger, triggerClassName = "", className = "", it
                 aria-checked={isRadio ? item.checked : undefined}
                 tabIndex={-1}
                 onClick={() => {
-                  close(false);
+                  // Focus goes back to the trigger first, so a dialog the item opens returns focus there.
+                  close();
                   item.onSelect();
                 }}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm outline-none focus:bg-ink/5 hover:bg-ink/5 ${item.danger ? "text-[#b42318]" : "text-ink"}`}
