@@ -49,6 +49,17 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
         All templates
       </Link>
 
+      {/* On phones the preview fills the first screen, so the main action comes first. */}
+      <div className="mt-6 lg:hidden">
+        <p className="text-sm font-medium text-accent-ink">
+          {category.label} · {template.layout}
+        </p>
+        <p className="mt-1 text-2xl font-bold tracking-tight text-ink">{template.name}</p>
+        <ButtonLink href={`/editor?template=${template.slug}`} size="lg" className="mt-4 w-full">
+          Use This Free Template
+        </ButtonLink>
+      </div>
+
       <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-14">
         <div className="rounded-lg border border-line bg-panel p-4 sm:p-8 lg:p-10">
           <ResumePreview
@@ -82,7 +93,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
             </div>
           </dl>
 
-          <ButtonLink href={`/editor?template=${template.slug}`} size="lg" className="mt-8 w-full">
+          <ButtonLink href={`/editor?template=${template.slug}`} size="lg" className="mt-8 w-full max-lg:hidden">
             Use This Free Template
           </ButtonLink>
           <p className="mt-3 text-sm text-muted">

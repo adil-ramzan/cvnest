@@ -22,7 +22,12 @@ export function Dialog({ open, onClose, title, description, children, dismissibl
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // React's autoFocus runs before showModal, while the dialog can't take focus, so the
+      // browser would pick the first focusable element (for example a scrollable list).
+      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 

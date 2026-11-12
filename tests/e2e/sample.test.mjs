@@ -84,7 +84,7 @@ check("Cancel puts the sample text and its mark back", entries[0].sample === tru
 // ---- Warning
 await download();
 const warning = await dialogText();
-check("Download warns with the agreed wording", warning?.includes("This resume still contains sample content.") && warning.includes("Review it before downloading."), String(warning).slice(0, 90));
+check("Download warns with the agreed wording", warning?.includes("This resume still contains sample content") && !warning.includes("sample content.") && warning.includes("Review it before downloading."), String(warning).slice(0, 90));
 check("Warning offers all three ways on", ["Download anyway", "Review", "Clear sample content"].every((t) => warning.includes(t)));
 check("Warning stops the print until answered", (await printed()) === 0);
 await clickText("Download anyway");
