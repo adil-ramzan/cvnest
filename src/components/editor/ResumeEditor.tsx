@@ -143,6 +143,15 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   };
 
   const overLimits = findOverLimits(active);
+  /** While any warning shows, the backup reminder stays out of the way (warnings carry their own backup action). */
+  const anyWarning =
+    store.recovered ||
+    openElsewhere ||
+    overLimits.length > 0 ||
+    store.saveStatus === "error" ||
+    store.saveStatus === "unavailable" ||
+    store.saveStatus === "blocked" ||
+    store.saveStatus === "held";
   const offerUndo = (message: string, restore: () => void) => setUndo({ id: Date.now(), resumeId: active.id, message, restore });
 
   const updateBackupState = (patch: Partial<BackupState>) => {
@@ -365,8 +374,9 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               </Notice>
             )}
 
-            {!isResumeEmpty(active) && !backupState.lastBackupAt && !backupState.reminderDismissed && (
+            {!anyWarning && !isResumeEmpty(active) && !backupState.lastBackupAt && !backupState.reminderDismissed && (
               <Notice
+                compact
                 title="Back up your resume"
                 onDismiss={() => updateBackupState({ reminderDismissed: true })}
                 actions={
