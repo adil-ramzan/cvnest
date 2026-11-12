@@ -21,6 +21,7 @@ import { Notice } from "./Notice";
 import { LeaveGuardDialog } from "./LeaveGuardDialog";
 import { formatUpdated, OverviewTab } from "./OverviewTab";
 import { PreviewPanel } from "./PreviewPanel";
+import { PrintHandlers } from "./PrintHandlers";
 import { UndoToast } from "./UndoToast";
 import { usePdfExport } from "./usePdfExport";
 import { useOtherTabs } from "./useOtherTabs";
@@ -533,6 +534,13 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         />
       )}
       {pdf.printView}
+      <PrintHandlers
+        onShortcut={() => {
+          if (pdf.status !== "preparing") requestPdf();
+        }}
+        onBeforePrint={() => pdf.beginSystemPrint(active, photoUrl)}
+        onAfterPrint={pdf.endSystemPrint}
+      />
 
       <Dialog
         open={dialog?.type === "empty"}

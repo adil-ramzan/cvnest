@@ -53,3 +53,11 @@ export async function loadStaticFonts(used: FontKey[]) {
 export function needsStaticFonts() {
   return /\bFirefox\//.test(navigator.userAgent);
 }
+
+/**
+ * True when the static faces these fonts need are already loaded, regular and bold.
+ * Used when printing starts from the browser's menu, which gives no time to load them.
+ */
+export function staticFontsReady(used: FontKey[]) {
+  return used.every((key) => ["400", "700"].every((weight) => document.fonts.check(`${weight} 16px "${printFamily(key)}"`)));
+}

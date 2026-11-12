@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { customizeDesign, modernSidebar } from "@/components/resume/engine/customize";
 import { pageInset } from "@/components/resume/engine/design";
 import { DesignEdges, designVars } from "@/components/resume/engine/DesignTemplate";
@@ -10,7 +10,7 @@ import { geckoFooterTrim } from "@/components/resume/paginate";
 import type { PageSize, Resume, ResumeCustomization } from "@/data/resume";
 import { SITE_NAME } from "@/data/site";
 import { getTemplate, type ResumeTemplate, templates } from "@/data/templates";
-import { loadStaticFonts, needsStaticFonts, staticFontCss } from "./printFonts";
+import { loadStaticFonts, needsStaticFonts, staticFontCss, staticFontsReady } from "./printFonts";
 
 /**
  * Browser-based PDF export.
@@ -23,6 +23,15 @@ import { loadStaticFonts, needsStaticFonts, staticFontCss } from "./printFonts";
  */
 
 export type PdfExportStatus = "idle" | "preparing" | "warning" | "error";
+
+/**
+ * Set on <html> while a print copy is mounted. The print styles hide the rest of the
+ * page only then, so other pages (and the editor at other times) print normally.
+ * An attribute rather than `body:has(> .print-root)`, so it works in every browser.
+ */
+export const PRINTING_ATTRIBUTE = "data-printing";
+const setPrinting = (on: boolean) =>
+  on ? document.documentElement.setAttribute(PRINTING_ATTRIBUTE, "") : document.documentElement.removeAttribute(PRINTING_ATTRIBUTE);
 
 const IMAGE_TIMEOUT_MS = 8000;
 /** Fallback cleanup if the browser never fires `afterprint`. */
@@ -114,11 +123,38 @@ async function imagesReady(root: HTMLElement): Promise<boolean> {
 
 type Job = { id: number; resume: Resume; photoUrl: string; onPrinted?: () => void };
 
+/** Printing started from the browser's own menu (or Ctrl+P outside the editor's handling). */
+type SystemPrint = { resume: Resume; photoUrl: string; ready: boolean; previousTitle: string };
+
+/** Fonts the print copy of this resume needs. */
+function fontsFor(resume: Resume) {
+  const template = getTemplate(resume.design.templateId);
+  const { fontFamily } = resume.design;
+  return fontFamily ? [fontFamily] : template?.design ? [template.design.fonts.heading, template.design.fonts.body] : (["inter", "sourceSerif"] as const);
+}
+
+/** Shown instead of the resume when the browser's menu prints before fonts or the photo are ready. */
+function PrintNote() {
+  return (
+    <div className="print-note">
+      <p className="print-note-title">Use Download PDF to save your resume</p>
+      <p>
+        This print was started from the browser&apos;s menu before your resume&apos;s fonts or photo had finished loading,
+        so it could come out wrong. Close this window, then choose <strong>Download PDF</strong> at the top of the{" "}
+        {SITE_NAME} editor and pick &ldquo;Save as PDF&rdquo;.
+      </p>
+    </div>
+  );
+}
+
 export function usePdfExport() {
   const [job, setJob] = useState<Job | null>(null);
   const [status, setStatus] = useState<PdfExportStatus>("idle");
   const [message, setMessage] = useState("");
+  const [system, setSystem] = useState<SystemPrint | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const jobRef = useRef<Job | null>(null);
+  const systemRef = useRef<SystemPrint | null>(null);
 
   /** `onPrinted` runs when the print window closes. Browsers don't say whether a PDF was actually saved. */
   const start = useCallback((resume: Resume, photoUrl: string, onPrinted?: () => void) => {
@@ -138,6 +174,7 @@ export function usePdfExport() {
   }, []);
 
   useEffect(() => {
+    jobRef.current = job;
     if (!job) return;
     let cancelled = false;
     const previousTitle = document.title;
@@ -148,6 +185,7 @@ export function usePdfExport() {
       if (event) job.onPrinted?.();
       window.removeEventListener("afterprint", finish);
       clearTimeout(timer);
+      setPrinting(false);
       document.title = previousTitle;
       setJob(null);
       setStatus((current) => (current === "preparing" ? (photoFailed ? "warning" : "idle") : current));
@@ -158,11 +196,7 @@ export function usePdfExport() {
         // Let the print copy lay out so any template fonts it needs start loading, then wait for them.
         await nextFrame();
         await nextFrame();
-        if (needsStaticFonts()) {
-          const template = getTemplate(job.resume.design.templateId);
-          const { fontFamily } = job.resume.design;
-          await loadStaticFonts(fontFamily ? [fontFamily] : template?.design ? [template.design.fonts.heading, template.design.fonts.body] : ["inter", "sourceSerif"]);
-        }
+        if (needsStaticFonts()) await loadStaticFonts([...fontsFor(job.resume)]);
         await document.fonts.ready;
         const root = rootRef.current;
         if (!root) throw new Error("Print view missing");
@@ -174,11 +208,13 @@ export function usePdfExport() {
           setMessage("Your photo couldn't be loaded, so it may be missing from the PDF.");
         }
         document.title = pdfFileName(job.resume.profile.fullName);
+        setPrinting(true);
         window.addEventListener("afterprint", finish);
         timer = setTimeout(() => finish(), PRINT_FALLBACK_MS);
         window.print();
       } catch {
         if (cancelled) return;
+        setPrinting(false);
         document.title = previousTitle;
         setJob(null);
         setStatus("error");
@@ -191,22 +227,55 @@ export function usePdfExport() {
     };
   }, [job]);
 
+  /**
+   * The browser's print menu (or a print the editor didn't start). It gives no time to
+   * wait, so the print copy is rendered straight away and checked: if its fonts or photo
+   * aren't loaded yet, a note saying to use Download PDF is printed instead.
+   */
+  const beginSystemPrint = useCallback((resume: Resume, photoUrl: string) => {
+    if (jobRef.current) return; // Download PDF's own print: already prepared.
+    const previousTitle = systemRef.current?.previousTitle ?? document.title;
+    const pending: SystemPrint = { resume, photoUrl, ready: true, previousTitle };
+    flushSync(() => setSystem(pending));
+    const root = rootRef.current;
+    const imagesLoaded = !root || [...root.querySelectorAll("img")].every((img) => img.complete && img.naturalWidth > 0);
+    const fontsLoaded = document.fonts.status === "loaded" && (!needsStaticFonts() || staticFontsReady([...fontsFor(resume)]));
+    const current = imagesLoaded && fontsLoaded ? pending : { ...pending, ready: false };
+    if (!current.ready) flushSync(() => setSystem(current));
+    systemRef.current = current;
+    document.title = pdfFileName(resume.profile.fullName);
+    setPrinting(true);
+  }, []);
+
+  const endSystemPrint = useCallback(() => {
+    const current = systemRef.current;
+    if (!current) return;
+    systemRef.current = null;
+    document.title = current.previousTitle;
+    if (!jobRef.current) setPrinting(false);
+    setSystem(null);
+  }, []);
+
+  const printing = job ?? (system && { resume: system.resume, photoUrl: system.photoUrl });
   let printView: ReactNode = null;
-  if (job && typeof document !== "undefined") {
-    const template = getTemplate(job.resume.design.templateId) ?? templates[0];
+  if (printing && typeof document !== "undefined") {
+    const template = getTemplate(printing.resume.design.templateId) ?? templates[0];
     const gecko = needsStaticFonts();
     const inset = pageInset(template.slug, template.design) * 4;
-    const preview = (
-      <ResumePreview
-        template={template}
-        resume={job.resume}
-        photoUrl={job.photoUrl}
-        size={job.resume.design.pageSize}
-        flow
-        printCopy
-        asideFirst={gecko}
-      />
-    );
+    const preview =
+      system && !job && !system.ready ? (
+        <PrintNote />
+      ) : (
+        <ResumePreview
+          template={template}
+          resume={printing.resume}
+          photoUrl={printing.photoUrl}
+          size={printing.resume.design.pageSize}
+          flow
+          printCopy
+          asideFirst={gecko}
+        />
+      );
     printView = createPortal(
       <div
         ref={rootRef}
@@ -214,13 +283,22 @@ export function usePdfExport() {
         aria-hidden="true"
         style={{ "--page-inset": `${inset}px`, "--footer-trim": `${geckoFooterTrim(inset)}px` } as CSSProperties}
       >
-        <style>{pageRule(job.resume.design.pageSize) + (gecko ? staticFontCss : "")}</style>
-        <PrintLayers template={template} customization={job.resume.design} />
+        <style>{pageRule(printing.resume.design.pageSize) + (gecko ? staticFontCss : "")}</style>
+        {!(system && !job && !system.ready) && <PrintLayers template={template} customization={printing.resume.design} />}
         <div className="print-page-content">{gecko ? <PrintFrame>{preview}</PrintFrame> : preview}</div>
       </div>,
       document.body,
     );
   }
 
-  return { start, status, message, dismiss, printView, fileName: job ? `${pdfFileName(job.resume.profile.fullName)}.pdf` : "" };
+  return {
+    start,
+    status,
+    message,
+    dismiss,
+    printView,
+    beginSystemPrint,
+    endSystemPrint,
+    fileName: job ? `${pdfFileName(job.resume.profile.fullName)}.pdf` : "",
+  };
 }
