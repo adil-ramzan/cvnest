@@ -34,7 +34,7 @@ async function newPage(context = browser) {
 const panel = (page) => page.$eval("[role=tabpanel]", (el) => el.innerText);
 const rawStored = (page) => page.evaluate(() => localStorage.getItem("folio.resumes.v2"));
 const saveIndicator = (page) =>
-  page.evaluate(() => [...document.querySelectorAll("span[title]")].map((s) => (s.querySelector("span")?.textContent ?? "").trim()).find((t) => /^(Saved locally|Saving…|Not saved|Not saving|Saving paused|Storage unavailable)/.test(t)) ?? "");
+  page.evaluate(() => [...document.querySelectorAll("span[title]")].map((s) => (s.querySelector("span")?.textContent ?? "").trim()).find((t) => /^(Saved locally|Saving…|Not saved|Not saving|Paused|No storage|Storage unavailable)/.test(t)) ?? "");
 const clickText = (page, text, scope = "button") =>
   page.evaluate((t, s) => [...document.querySelectorAll(s)].find((b) => b.textContent.trim() === t && (b.offsetParent || b.closest("dialog"))).click(), text, scope);
 const clearAll = (page) =>
@@ -67,7 +67,7 @@ const clearAll = (page) =>
   let text = await panel(page);
   check("Held: explains that the data can't be copied", text.includes("Some saved data couldn’t be read") && text.includes("Download a copy"));
   check("Held: doesn't claim a copy was kept", !text.includes("A copy of the original data"));
-  check("Held: save indicator says saving is paused, not the newer-version text", (await saveIndicator(page)).startsWith("Saving paused"));
+  check("Held: save indicator says Paused, not the newer-version text", (await saveIndicator(page)) === "Paused");
   check("Held: the readable resume is open", (await page.$eval("[aria-label='Resume preview']", (el) => el.textContent)).includes("Alpha Person"));
 
   await page.click("[aria-controls='personal-form']");
@@ -158,7 +158,7 @@ const clearAll = (page) =>
       try { return set.call(this, k, v); } catch (error) { entry.error = error.name; throw error; }
     };
     window.__states = [];
-    const read = () => [...document.querySelectorAll("span[title]")].map((s) => (s.querySelector("span")?.textContent ?? "").trim()).find((t) => /^(Saved locally|Saving…|Not saved|Not saving|Saving paused|Storage unavailable)/.test(t)) ?? "";
+    const read = () => [...document.querySelectorAll("span[title]")].map((s) => (s.querySelector("span")?.textContent ?? "").trim()).find((t) => /^(Saved locally|Saving…|Not saved|Not saving|Paused|No storage|Storage unavailable)/.test(t)) ?? "";
     const record = () => { const s = read(); if (window.__states.at(-1)?.state !== s) window.__states.push({ state: s, at: performance.now() }); };
     new MutationObserver(record).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true });
     record();

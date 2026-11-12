@@ -2,7 +2,7 @@
 
 import { AlertTriangle, ChevronDown, Copy, Download, Eraser, HardDrive, Info, LayoutDashboard, Loader2, type LucideIcon, MoreHorizontal, Pencil, PencilLine, Plus, SlidersHorizontal, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
-import { type KeyboardEvent, useRef } from "react";
+import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import { getTemplate } from "@/data/templates";
 import { site } from "@/data/site";
 import type { Resume } from "@/data/resume";
@@ -43,7 +43,11 @@ type EditorTopBarProps = {
   downloading: boolean;
 };
 
-const statusContent: Record<SaveStatus, { icon: typeof HardDrive; text: string; detail: string; className: string }> = {
+/**
+ * `short` is shown at every width for problems, so held, blocked and unavailable can be told
+ * apart by text on phones too. Saved and saving stay icon-only below xl.
+ */
+const statusContent: Record<SaveStatus, { icon: typeof HardDrive; text: string; short?: string; detail: string; className: string }> = {
   saved: {
     icon: HardDrive,
     text: "Saved locally",
@@ -59,40 +63,90 @@ const statusContent: Record<SaveStatus, { icon: typeof HardDrive; text: string; 
   error: {
     icon: AlertTriangle,
     text: "Not saved",
+    short: "Not saved",
     detail: "Your browser refused to save. Storage may be full or blocked. Your changes stay open in this tab.",
     className: "text-[#b42318]",
   },
   unavailable: {
     icon: AlertTriangle,
     text: "Storage unavailable",
+    short: "No storage",
     detail: "Browser storage is blocked or disabled, so changes will be lost when you close this tab.",
     className: "text-[#b54708]",
   },
   blocked: {
     icon: AlertTriangle,
     text: "Not saving",
+    short: "Not saving",
     detail: "These resumes were saved by a newer version of this site, so this version won't write over them.",
     className: "text-[#b54708]",
   },
   held: {
     icon: AlertTriangle,
     text: "Saving paused",
+    short: "Paused",
     detail: "Some saved data couldn't be read and there was no room to keep a copy, so nothing is saved until you download one.",
     className: "text-[#b54708]",
   },
 };
 
 function SaveIndicator({ status }: { status: SaveStatus }) {
-  const { icon: Icon, text, detail, className } = statusContent[status];
+  const { icon: Icon, text, short, detail, className } = statusContent[status];
   const isProblem = status === "error" || status === "unavailable";
+  const [open, setOpen] = useState(false);
+  const wrapper = useRef<HTMLSpanElement>(null);
+  const detailId = useId();
+
+  // Closes on Escape or a tap elsewhere.
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!(event.target instanceof Node) || !wrapper.current?.contains(event.target)) setOpen(false);
+    };
+    const onKeyDown = (event: globalThis.KeyboardEvent) => event.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
   return (
     <>
-      <span title={detail} className={`inline-flex items-center gap-1.5 text-[0.875rem] whitespace-nowrap ${className}`}>
-        <Icon aria-hidden="true" className={`size-4 ${status === "saving" ? "animate-spin" : ""}`} />
-        <span className="hidden xl:inline">{text}</span>
-        <span className="sr-only xl:hidden">{text}</span>
+      {/* A button, so the explanation can be read by tapping or with the keyboard, not only on hover. */}
+      <span ref={wrapper} className="relative inline-flex">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={detailId}
+          onClick={() => setOpen((value) => !value)}
+          className={`inline-flex h-10 min-w-10 items-center justify-center rounded-lg px-1.5 hover:bg-ink/5 ${focusRing}`}
+        >
+          <span title={detail} className={`inline-flex items-center gap-1.5 text-[0.875rem] whitespace-nowrap ${className}`}>
+            <Icon aria-hidden="true" className={`size-4 ${status === "saving" ? "animate-spin" : ""}`} />
+            {short ? (
+              <span className="font-medium">{short}</span>
+            ) : (
+              <>
+                <span className="hidden xl:inline">{text}</span>
+                <span className="sr-only xl:hidden">{text}</span>
+              </>
+            )}
+          </span>
+        </button>
+        <span
+          id={detailId}
+          hidden={!open}
+          className="absolute top-full right-0 z-40 mt-2 w-64 rounded-xl bg-ink px-3 py-2 text-[0.875rem] whitespace-normal text-white shadow-pop"
+        >
+          {detail}
+        </span>
       </span>
-      <StorageInfo />
+      {/* The general storage note makes room for the problem's label on phones. */}
+      <span className={short ? "hidden sm:inline-flex" : "inline-flex"}>
+        <StorageInfo />
+      </span>
       {/* Only announce problems; announcing every autosave would be noisy. */}
       <span role="status" className="sr-only">
         {isProblem ? `${text}. ${detail}` : ""}
@@ -251,7 +305,7 @@ export function EditorTopBar({
             {downloading ? (
               <Loader2 aria-hidden="true" className="size-4 animate-spin" />
             ) : (
-              <Download aria-hidden="true" className="hidden size-4 min-[360px]:block" />
+              <Download aria-hidden="true" className={`hidden size-4 ${statusContent[saveStatus].short ? "min-[420px]:block" : "min-[360px]:block"}`} />
             )}
             <span className="sm:hidden">PDF</span>
             <span className="hidden sm:inline">{downloading ? "Preparing PDF…" : "Download PDF"}</span>
