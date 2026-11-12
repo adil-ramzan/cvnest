@@ -17,20 +17,21 @@ const buttonVariants: Record<ButtonVariant, string> = {
 };
 
 const buttonSizes: Record<ButtonSize, string> = {
-  sm: "h-10 px-4 text-sm",
+  // 44px on touch screens; desktop keeps 40px.
+  sm: "h-10 px-4 text-sm pointer-coarse:h-11",
   md: "h-11 px-5 text-base",
   lg: "h-12 px-6 text-base",
   xl: "h-15 px-8 text-lg",
 };
 
 export function buttonClass(variant: ButtonVariant = "primary", size: ButtonSize = "md", extra = "") {
-  const shape = variant === "link" ? "h-10 px-1 text-sm" : buttonSizes[size];
+  const shape = variant === "link" ? "h-10 px-1 text-sm pointer-coarse:h-11" : buttonSizes[size];
   return `inline-flex items-center justify-center gap-2 rounded-[14px] font-bold whitespace-nowrap transition-colors disabled:pointer-events-none disabled:opacity-50 ${focusRing} ${buttonVariants[variant]} ${shape} ${extra}`;
 }
 
-/** Square icon-only button, 40px everywhere. */
+/** Square icon-only button: 40px, or 44px on touch screens. */
 export const iconButtonClass =
-  "inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-30 " +
+  "inline-flex size-10 pointer-coarse:size-11 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-30 " +
   focusRing;
 
 /** Editor fields: 15px text, 16px on phones so iOS doesn't zoom in on focus. */

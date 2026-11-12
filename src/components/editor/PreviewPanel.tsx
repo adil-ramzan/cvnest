@@ -33,7 +33,7 @@ type PreviewPanelProps = {
 };
 
 const toolbarButton =
-  "inline-flex h-9 items-center justify-center rounded-lg text-muted hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-35";
+  "inline-flex h-9 pointer-coarse:h-11 pointer-coarse:min-w-11 items-center justify-center rounded-lg text-muted hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-35";
 
 export function PreviewPanel({ resume, photoUrl, zoom, onZoomChange, onTemplateChange, onLoadSample }: PreviewPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);

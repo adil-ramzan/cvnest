@@ -57,7 +57,7 @@ export default function TemplatesPage() {
         <nav aria-label="Breadcrumb">
           <ol className="flex items-center gap-1.5 text-base text-muted">
             <li>
-              <Link href="/" className="underline-offset-4 hover:text-ink hover:underline">
+              <Link href="/" className="underline-offset-4 hover:text-ink hover:underline pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center">
                 Home
               </Link>
             </li>

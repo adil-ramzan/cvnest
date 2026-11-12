@@ -463,7 +463,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               type="button"
               aria-pressed={mobileView === id}
               onClick={() => setMobileView(id)}
-              className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-full px-4 text-base font-medium text-muted aria-pressed:bg-ink aria-pressed:text-white"
+              className="inline-flex min-h-10 pointer-coarse:min-h-11 flex-1 items-center justify-center gap-2 rounded-full px-4 text-base font-medium text-muted aria-pressed:bg-ink aria-pressed:text-white"
             >
               <Icon aria-hidden="true" className="size-4" />
               {label}
