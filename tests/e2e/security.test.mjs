@@ -161,7 +161,7 @@ await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
 const loaded = await waitFor(() => page.evaluate(() => !!document.querySelector("[aria-label='Resume preview'] .resume-page")), 10000);
 check("Editor opens malformed stored data without crashing", loaded && errors.length === errorsBefore, errors.slice(errorsBefore).join(" | "));
 const panelText = await page.$eval("[role=tabpanel]", (el) => el.innerText);
-check("Unreadable items are reported, and a copy of the original is kept", panelText.includes("could not be read and was skipped") && (await page.evaluate(() => localStorage.getItem("folio.resumes.v2.unreadable-backup") !== null)));
+check("Unreadable items are reported, and a copy of the original is kept", panelText.includes("Part of your saved data couldn’t be read") && panelText.includes("The unreadable part is kept, untouched") && (await page.evaluate(() => localStorage.getItem("folio.resumes.v2.unreadable-backup") !== null)));
 const previewText = await page.$eval("[aria-label='Resume preview']", (el) => el.innerText);
 check("The readable content is shown, including the long paragraph in full", previewText.includes("Malformed Person") && previewText.includes("Kept Role") && previewText.includes("Kept bullet") && previewText.replace(/\s+/g, " ").includes(long.trim().slice(-200)));
 const links = await page.$$eval("[aria-label='Resume preview'] a", (els) => els.map((a) => a.getAttribute("href")));

@@ -97,7 +97,7 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   await seed(page, { "folio.resumes.v2": "{not json", "folio.resumes": fixture.resumes });
   await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
   await page.waitForSelector("[role='tabpanel']");
-  check("Corrupted v2 shows recovery notice", (await page.$eval("[role='tabpanel']", (e) => e.innerText)).includes("could not be read"));
+  check("Corrupted v2 shows recovery notice", (await page.$eval("[role='tabpanel']", (e) => e.innerText)).includes("Part of your saved data couldn’t be read"));
   check("Corrupted v2 backed up", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2.unreadable-backup"))) === "{not json");
   check("Legacy data still untouched", (await page.evaluate(() => localStorage.getItem("folio.resumes"))) === fixture.resumes);
 
@@ -112,7 +112,7 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   await page.locator("::-p-aria(Job title)").fill("Edited");
   await sleep(800);
   check("Data from a newer version is never overwritten", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2"))) === newerData);
-  check("Newer data shows a warning with a copy option", await page.$eval("[role=tabpanel]", (el) => el.innerText.includes("Saved by a newer version") && el.innerText.includes("Download a copy")));
+  check("Newer data shows a warning with a copy option", await page.$eval("[role=tabpanel]", (el) => el.innerText.includes("Saved by a newer version") && el.innerText.includes("Your resumes are safe") && el.innerText.includes("Reload") && el.innerText.includes("Download backup")));
   await seed(page, { "folio.resumes.v2": JSON.stringify({ schemaVersion: 2, resumes: [good, dupe, "garbage", null] }), "folio.editor-settings": JSON.stringify({ activeResumeId: "dup", zoom: "fit" }) });
   await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
   await page.waitForSelector("select");

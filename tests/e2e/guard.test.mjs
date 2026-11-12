@@ -58,8 +58,8 @@ await page.click(logo);
 await page.waitForSelector("dialog[open]");
 await sleep(100);
 const attrs = await page.$eval("dialog[open]", (d) => ({ modal: d.getAttribute("aria-modal"), label: document.getElementById(d.getAttribute("aria-labelledby"))?.textContent, describe: document.getElementById(d.getAttribute("aria-describedby"))?.textContent }));
-check("Internal link opens the dialog", attrs.label === "Leave without saving a copy?" && onEditor(page));
-check("Dialog is labelled and modal", attrs.modal === "true" && attrs.describe.includes("stored only in this browser"));
+check("Internal link opens the dialog", attrs.label === "Leave without a backup file?" && onEditor(page));
+check("Dialog is labelled and modal", attrs.modal === "true" && attrs.describe.includes("saved in this browser, but only here"));
 check("Focus starts on Download backup", (await focused(page)) === "Download backup");
 await press(page, "Stay and keep editing");
 await sleep(150);
@@ -104,7 +104,7 @@ page = await open(base());
 await page.click(logo);
 await page.waitForSelector("dialog[open]");
 await press(page, "Download backup");
-await page.waitForFunction(() => document.querySelector("dialog[open]")?.textContent.includes("Backup downloaded. Leave now?"));
+await page.waitForFunction(() => document.querySelector("dialog[open]")?.textContent.includes("Backup file downloaded. Leave now?"));
 await press(page, "Stay");
 await sleep(800);
 check("Backup releases the guard", (await unload(page)) === 0);
@@ -130,7 +130,7 @@ await page.locator("::-p-aria(Job title)").fill("Will not save");
 await sleep(800);
 await page.click(logo);
 await page.waitForSelector("dialog[open]");
-check("Failed saving changes the message", (await page.$eval("dialog[open]", (el) => el.textContent)).includes("Saving to this browser failed"));
+check("Failed saving changes the message", (await page.$eval("dialog[open]", (el) => el.textContent)).includes("Your latest changes couldn’t be saved in this browser"));
 await page.close();
 
 // ---- Back

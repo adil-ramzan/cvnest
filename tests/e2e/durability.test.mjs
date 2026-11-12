@@ -65,8 +65,8 @@ const clearAll = (page) =>
   await sleep(300);
 
   let text = await panel(page);
-  check("Held: explains that the data can't be copied", text.includes("Some saved data couldn’t be read") && text.includes("Download a copy"));
-  check("Held: doesn't claim a copy was kept", !text.includes("A copy of the original data"));
+  check("Held: explains that saving is paused and offers a backup file", text.includes("Saving is paused to protect your data") && text.includes("download a backup file") && text.includes("Download backup"));
+  check("Held: doesn't claim the unreadable part was kept", !text.includes("kept, untouched"));
   check("Held: save indicator says saving is paused, not the newer-version text", (await saveIndicator(page)).startsWith("Saving paused"));
   check("Held: the readable resume is open", (await page.$eval("[aria-label='Resume preview']", (el) => el.textContent)).includes("Alpha Person"));
 
@@ -75,13 +75,43 @@ const clearAll = (page) =>
   await sleep(900); // longer than the autosave delay; shows that nothing is written
   check("Held: an edit doesn't write over the stored data", (await rawStored(page)) === raw);
 
-  await clickText(page, "Download a copy", "[role=alert] button");
-  check("Held: the download is the stored data exactly", await waitFor(async () => (await page.evaluate(() => window.__download?.text())) === raw, 3000));
-  check("Held: saving resumes after the download", await waitFor(async () => (await rawStored(page)) !== raw, 3000));
+  await clickText(page, "Download backup", "[role=alert] button");
+  check("Held: asks whether the backup file downloaded", await waitFor(async () => (await page.evaluate(() => document.querySelector("dialog[open]")?.innerText ?? "")).includes("Did the backup file download?"), 3000));
+  const fileText = await waitFor(async () => !!(await page.evaluate(() => window.__download?.size)), 5000) ? await page.evaluate(() => window.__download.text()) : "{}";
+  const file = JSON.parse(fileText);
+  check("Held: the download is a restorable backup file", file.kind === "resume-backup" && Array.isArray(file.resumes) && file.resumes.some((r) => r.profile?.fullName === "Alpha Person"));
+  check("Held: the backup file keeps the stored text exactly, byte for byte", file.storedText === raw);
+  await sleep(900);
+  check("Held: nothing is saved before the download is confirmed", (await rawStored(page)) === raw);
+
+  await clickText(page, "Not yet", "dialog[open] button");
+  await sleep(900);
+  check("Held: \"Not yet\" keeps saving paused", (await rawStored(page)) === raw && (await saveIndicator(page)).startsWith("Saving paused"));
+
+  await clickText(page, "Download backup", "[role=alert] button");
+  await page.waitForSelector("dialog[open]");
+  await clickText(page, "Yes, I have it", "dialog[open] button");
+  check("Held: saving resumes once the download is confirmed", await waitFor(async () => (await rawStored(page)) !== raw, 3000));
   const saved = JSON.parse(await rawStored(page));
   check("Held: the edit made while held is saved", saved.resumes.length === 1 && saved.resumes[0].profile.jobTitle === "Edited while held");
-  check("Held: the notice is gone and the indicator says saved", !(await panel(page)).includes("couldn’t be read") && (await saveIndicator(page)).startsWith("Saved locally"));
+  check("Held: the notice is gone and the indicator says saved", !(await panel(page)).includes("Saving is paused") && (await saveIndicator(page)).startsWith("Saved locally"));
   await context.close();
+
+  // That exact file restores in a fresh browser profile.
+  const heldFile = path.join(OUT, "held-backup.json");
+  fs.mkdirSync(OUT, { recursive: true });
+  fs.writeFileSync(heldFile, fileText);
+  const fresh = await browser.createBrowserContext();
+  const restorePage = await newPage(fresh);
+  await restorePage.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
+  await restorePage.waitForSelector("select");
+  await sleep(300);
+  await (await restorePage.$("[aria-label='Choose a backup file']")).uploadFile(heldFile);
+  await restorePage.waitForSelector("dialog[open]");
+  check("Held file: Restore from backup accepts it", (await restorePage.$eval("dialog[open]", (el) => el.innerText)).includes("This backup holds 1 resume"));
+  await clickText(restorePage, "Restore", "dialog[open] button");
+  check("Held file: the readable resume is restored", await waitFor(async () => (JSON.parse((await rawStored(restorePage)) ?? "{}").resumes ?? []).some((r) => r.profile.fullName === "Alpha Person"), 5000));
+  await fresh.close();
 }
 
 // ---- 1b. Same data with room for a copy: unchanged behavior
@@ -96,7 +126,7 @@ const clearAll = (page) =>
   await page.waitForSelector("select");
   await sleep(300);
   const text = await panel(page);
-  check("Copy kept: the existing recovery notice shows", text.includes("A copy of the original data") && !text.includes("couldn’t be read"));
+  check("Copy kept: the recovery notice says the unreadable part is kept", text.includes("Part of your saved data couldn’t be read") && text.includes("kept, untouched") && !text.includes("Saving is paused"));
   check("Copy kept: the copy holds the original text", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2.unreadable-backup"))) === raw);
   check("Copy kept: the save indicator is normal", (await saveIndicator(page)).startsWith("Saved locally"));
   await context.close();

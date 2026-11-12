@@ -23,7 +23,7 @@ export function LeaveGuardDialog({ open, saveFailed, onDownloadBackup, onSavePdf
 
   if (backedUp) {
     return (
-      <Dialog open={open} onClose={close} title="Backup downloaded. Leave now?">
+      <Dialog open={open} onClose={close} title="Backup file downloaded. Leave now?">
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" onClick={close} className={dialogButtonClass.secondary}>
             Stay
@@ -48,11 +48,11 @@ export function LeaveGuardDialog({ open, saveFailed, onDownloadBackup, onSavePdf
     <Dialog
       open={open}
       onClose={close}
-      title="Leave without saving a copy?"
+      title="Leave without a backup file?"
       description={
         saveFailed
-          ? "Saving to this browser failed. Download a backup so you don’t lose your latest changes."
-          : "Your resume is stored only in this browser. Download a backup so you don’t lose it."
+          ? "Your latest changes couldn’t be saved in this browser. Download a backup file so you don’t lose them."
+          : "Your changes are saved in this browser, but only here. A backup file lets you restore them if this browser’s data is cleared."
       }
     >
       <div className="mt-6 grid gap-2">

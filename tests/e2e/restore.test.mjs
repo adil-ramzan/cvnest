@@ -230,7 +230,7 @@ for (const mode of ["merge", "replace"]) {
   });
   await page.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
   await sleep(1500);
-  check("Storage full: the editor says storage is unavailable", await page.evaluate(() => document.body.innerText.includes("Storage unavailable") || document.body.innerText.includes("can't be saved")));
+  check("Storage full: the recovery screen says the saved resumes are still here", await page.evaluate(() => document.body.innerText.includes("Your saved resumes are still in this browser") && document.body.innerText.includes("is full")));
   check("Storage full: the stored resume's photo is not cleaned up", ((await idb(page, "folio", "photos")) ?? []).includes("full-photo"));
   await context.close();
 }

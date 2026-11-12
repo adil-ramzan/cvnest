@@ -39,8 +39,14 @@ export type EditorSettings = {
 
 export type LoadResult = {
   resumes: Resume[];
-  /** False when localStorage cannot be used at all (blocked, disabled, private mode quirks). */
+  /** False when localStorage cannot be written at all (full, blocked, disabled, private mode quirks). */
   available: boolean;
+  /**
+   * Why it can't be written: "full" when the browser said it's out of space (the saved
+   * resumes can usually still be read, and are returned), "blocked" for anything else
+   * (disabled, blocked by settings; often nothing can be read).
+   */
+  unavailableReason?: "full" | "blocked";
   /** True when stored data was partly or fully unreadable and has been skipped. */
   recovered: boolean;
   /** Schema version the data was migrated from during this load, if any. */
@@ -59,16 +65,31 @@ export type LoadResult = {
 
 type ParseResult = { resumes: Resume[]; recovered: boolean; oldestVersion: number; newerData: boolean };
 
-function getStorage(): Storage | null {
+type StorageAccess = { storage: Storage } | { storage: null; reason: "full" | "blocked" };
+
+function getStorage(): StorageAccess {
   try {
     const storage = window.localStorage;
     const probe = "folio.probe";
     storage.setItem(probe, "1");
     storage.removeItem(probe);
-    return storage;
-  } catch {
-    return null;
+    return { storage };
+  } catch (error) {
+    return { storage: null, reason: isQuotaError(error) ? "full" : "blocked" };
   }
+}
+
+/** What can still be read when storage can't be written. Never writes anything. */
+function readOnly(reason: "full" | "blocked"): LoadResult {
+  let resumes: Resume[] = [];
+  try {
+    const storage = window.localStorage;
+    const raw = storage.getItem(RESUMES_KEY) ?? storage.getItem(LEGACY_RESUMES_KEY);
+    resumes = parseResumes(raw).resumes;
+  } catch {
+    // Can't be read either.
+  }
+  return { resumes, available: false, unavailableReason: reason, recovered: false, migratedFrom: null, persisted: false };
 }
 
 function trySet(storage: Storage, key: string, value: string): boolean {
@@ -137,8 +158,9 @@ function logMigration(storage: Storage, entry: Record<string, unknown>) {
 }
 
 export function loadResumes(): LoadResult {
-  const storage = getStorage();
-  if (!storage) return { resumes: [], available: false, recovered: false, migratedFrom: null, persisted: false };
+  const access = getStorage();
+  if (!access.storage) return readOnly(access.reason);
+  const { storage } = access;
 
   try {
     const raw = storage.getItem(RESUMES_KEY);
@@ -194,7 +216,7 @@ export function loadResumes(): LoadResult {
     }
     return { resumes: result.resumes, available: true, recovered: result.recovered, migratedFrom: 1, persisted };
   } catch {
-    return { resumes: [], available: false, recovered: false, migratedFrom: null, persisted: false };
+    return { resumes: [], available: false, unavailableReason: "blocked", recovered: false, migratedFrom: null, persisted: false };
   }
 }
 
@@ -215,7 +237,16 @@ export function photoIdsInStoredText(): string[] | null {
   }
 }
 
-/** The stored text exactly as it is, for saving a copy. */
+/** The text kept when stored data couldn't be read, or "" if there is none. */
+export function readUnreadableBackup(): string {
+  try {
+    return window.localStorage.getItem(UNREADABLE_BACKUP_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/** The stored text exactly as it is, for keeping inside a backup file. */
 export function readRawResumes(): string {
   try {
     return window.localStorage.getItem(RESUMES_KEY) ?? "";
