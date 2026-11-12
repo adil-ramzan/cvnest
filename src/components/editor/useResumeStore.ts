@@ -15,7 +15,8 @@ import {
 } from "@/lib/resume-storage";
 import { createResume, defaultPageSize, duplicateResume, isResumeEmpty } from "@/lib/resumes";
 
-export type SaveStatus = "saved" | "saving" | "error" | "unavailable" | "blocked";
+/** `held`: saving is paused because stored data couldn't be read and no copy of it could be kept. */
+export type SaveStatus = "saved" | "saving" | "error" | "unavailable" | "blocked" | "held";
 
 const AUTOSAVE_DELAY = 400;
 
@@ -73,8 +74,14 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     setResumes(list);
     setActiveId(active.id);
     setZoom(settings.zoom);
-    setRecovered(result.recovered);
+    // The "recovered" notice says a copy was kept, so it only shows when one was.
+    setRecovered(result.recovered && !result.unreadableNotCopied);
     if (!result.available) setSaveStatus("unavailable");
+    if (result.unreadableNotCopied) {
+      // The stored text is the only copy of what couldn't be read; keep it until the person downloads it.
+      storageAvailable.current = false;
+      setSaveStatus("held");
+    }
     if (result.newerData) {
       // Never write over data this version can't fully read.
       storageAvailable.current = false;
@@ -140,6 +147,14 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
   }, []);
 
   useEffect(() => flushSave, [flushSave]);
+
+  /** Ends a `held` state once the person has a copy of the stored data, and saves straight away. */
+  const resumeSaving = useCallback(() => {
+    if (!latest.current) return;
+    storageAvailable.current = true;
+    pendingSave.current = false;
+    setSaveStatus(saveResumes(latest.current) ? "saved" : "error");
+  }, []);
 
   useEffect(() => {
     if (resumes !== null && storageAvailable.current) saveSettings({ activeResumeId: activeId, zoom });
@@ -281,6 +296,7 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     restoreResumes,
     markCopied,
     flushSave,
+    resumeSaving,
     updateActive,
     setTemplate,
     setPageSize,

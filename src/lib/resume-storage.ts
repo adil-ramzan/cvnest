@@ -49,6 +49,12 @@ export type LoadResult = {
   persisted: boolean;
   /** Stored data came from a newer version of the app, so this version must not write over it. */
   newerData?: boolean;
+  /**
+   * Part of the stored data was unreadable and no copy of the original text could be kept
+   * (usually because storage is nearly full). Saving would overwrite the only copy, so the
+   * editor must not save until the person has downloaded it.
+   */
+  unreadableNotCopied?: boolean;
 };
 
 type ParseResult = { resumes: Resume[]; recovered: boolean; oldestVersion: number; newerData: boolean };
@@ -139,18 +145,20 @@ export function loadResumes(): LoadResult {
 
     if (raw !== null) {
       const result = parseResumes(raw);
-      if (result.recovered) trySet(storage, UNREADABLE_BACKUP_KEY, raw);
+      // The skipped part exists only in `raw` until this copy is made, and the next save drops it.
+      const copyKept = !result.recovered || trySet(storage, UNREADABLE_BACKUP_KEY, raw);
       if (result.newerData) return { resumes: result.resumes, recovered: false, available: true, migratedFrom: null, persisted: true, newerData: true };
 
       // In-place upgrade of the current key (future schema versions): back up first, then write.
       if (result.oldestVersion < RESUME_SCHEMA_VERSION) {
         const backupKey = upgradeBackupKey(result.oldestVersion);
+        // Unchanged migration path: the upgrade backup below is what protects the original text here.
         const backedUp = storage.getItem(backupKey) !== null || trySet(storage, backupKey, raw);
         const persisted = backedUp && writeVerified(storage, result.resumes);
         if (persisted) logMigration(storage, { from: result.oldestVersion, to: RESUME_SCHEMA_VERSION, source: RESUMES_KEY, backup: backupKey, resumes: result.resumes.length });
         return { ...result, available: true, migratedFrom: result.oldestVersion, persisted };
       }
-      return { resumes: result.resumes, recovered: result.recovered, available: true, migratedFrom: null, persisted: true };
+      return { resumes: result.resumes, recovered: result.recovered, available: true, migratedFrom: null, persisted: true, ...(!copyKept && { unreadableNotCopied: true }) };
     }
 
     // First run of this version: migrate schema v1 data, leaving the original key untouched as the backup.

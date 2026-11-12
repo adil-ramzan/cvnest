@@ -130,6 +130,58 @@ describe("loadResumes: damaged or partial current data", () => {
   });
 });
 
+describe("loadResumes: unreadable data that can't be copied", () => {
+  const UNREADABLE = "folio.resumes.v2.unreadable-backup";
+  const good = () => ({ ...createResume("classic"), id: "good" });
+
+  it("says so when the copy of unreadable data can't be written, and leaves the original untouched", () => {
+    const raw = JSON.stringify({ schemaVersion: 2, resumes: [good(), "junk"] });
+    storage.setItem("folio.resumes.v2", raw);
+    storage.failKeys.add(UNREADABLE);
+    const result = loadResumes();
+    assert.equal(result.recovered, true);
+    assert.equal(result.unreadableNotCopied, true);
+    assert.deepEqual(result.resumes.map((r) => r.id), ["good"]);
+    assert.equal(storage.getItem("folio.resumes.v2"), raw);
+    assert.equal(storage.getItem(UNREADABLE), null);
+  });
+
+  it("also flags data that is unreadable as a whole", () => {
+    storage.setItem("folio.resumes.v2", "{not json");
+    storage.failKeys.add(UNREADABLE);
+    const result = loadResumes();
+    assert.equal(result.unreadableNotCopied, true);
+    assert.equal(storage.getItem("folio.resumes.v2"), "{not json");
+  });
+
+  it("doesn't flag anything when the copy was kept, or when nothing was unreadable", () => {
+    storage.setItem("folio.resumes.v2", JSON.stringify({ schemaVersion: 2, resumes: [good(), "junk"] }));
+    assert.equal(loadResumes().unreadableNotCopied, undefined);
+    storage.clear();
+    storage.failKeys.add(UNREADABLE);
+    storage.setItem("folio.resumes.v2", JSON.stringify({ schemaVersion: 2, resumes: [good()] }));
+    const clean = loadResumes();
+    assert.equal(clean.recovered, false);
+    assert.equal(clean.unreadableNotCopied, undefined);
+  });
+
+  it("leaves the result shape unchanged for ordinary data", () => {
+    storage.setItem("folio.resumes.v2", JSON.stringify({ schemaVersion: 2, resumes: [good()] }));
+    assert.equal("unreadableNotCopied" in loadResumes(), false);
+  });
+
+  it("leaves the in-place upgrade path as it was: its own backup keeps the original text", () => {
+    const raw = JSON.stringify({ schemaVersion: 2, resumes: [{ id: "old", data: { name: "Old" } }, "junk"] });
+    storage.failKeys.add(UNREADABLE);
+    storage.setItem("folio.resumes.v2", raw);
+    const result = loadResumes();
+    assert.equal(result.migratedFrom, 1);
+    assert.equal(result.persisted, true);
+    assert.equal("unreadableNotCopied" in result, false);
+    assert.equal(storage.getItem("folio.resumes.backup-v1"), raw);
+  });
+});
+
 describe("saving and settings", () => {
   it("returns false instead of throwing when a save fails", () => {
     storage.failWrites = true;

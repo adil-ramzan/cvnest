@@ -55,7 +55,7 @@ jobs:
       # "zoom.test" matches only the Chrome zoom suite, not zoom-firefox.
       - run: >-
           npm run test:e2e --
-          a11y count customize data-model editor entries error-boundaries fields guard keyboard
+          a11y count customize data-model durability editor entries error-boundaries fields guard keyboard
           layout links open-section safety sample security template-picker templates zoom.test
       - if: failure()
         uses: actions/upload-artifact@v4

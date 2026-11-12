@@ -286,6 +286,30 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               </Notice>
             )}
 
+            {store.saveStatus === "held" && (
+              <Notice
+                tone="warning"
+                title="Some saved data couldn’t be read"
+                actions={
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const raw = readRawResumes();
+                      downloadTextFile(`${site.name}-saved-data.json`, raw);
+                      // An empty read means there is no copy in the download, so keep holding.
+                      if (raw) store.resumeSaving();
+                    }}
+                    className={buttonClass("secondary", "sm", "h-9 px-3.5")}
+                  >
+                    Download a copy
+                  </button>
+                }
+              >
+                There isn’t room in this browser’s storage to keep a copy of it. To protect it, nothing will be saved here until you
+                download a copy. Saving starts again once you do.
+              </Notice>
+            )}
+
             {overLimits.length > 0 && (
               <Notice
                 tone="warning"
@@ -450,7 +474,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
       <LeaveGuardDialog
         open={guard.pending !== null}
-        saveFailed={store.saveStatus === "error" || store.saveStatus === "unavailable" || store.saveStatus === "blocked"}
+        saveFailed={store.saveStatus === "error" || store.saveStatus === "unavailable" || store.saveStatus === "blocked" || store.saveStatus === "held"}
         onDownloadBackup={downloadBackup}
         onSavePdf={() => {
           guard.stay();
