@@ -76,7 +76,7 @@ const statusContent: Record<SaveStatus, { icon: typeof HardDrive; text: string; 
   },
   held: {
     icon: AlertTriangle,
-    text: "Not saving",
+    text: "Saving paused",
     detail: "Some saved data couldn't be read and there was no room to keep a copy, so nothing is saved until you download one.",
     className: "text-[#b54708]",
   },

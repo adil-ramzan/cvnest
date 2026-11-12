@@ -198,6 +198,23 @@ export function loadResumes(): LoadResult {
   }
 }
 
+const PHOTO_ID_IN_TEXT = /"photo"\s*:\s*\{[^{}]*?"id"\s*:\s*"([^"\\]{1,100})"/g;
+
+/**
+ * Photo ids mentioned anywhere in the stored text, including resumes that couldn't be
+ * read and the copy kept of them. Photo cleanup keeps these, so recovering unreadable
+ * data later doesn't find its photos gone. Works on text, so damaged JSON still counts.
+ * Null when storage can't be read: the caller must then skip cleanup.
+ */
+export function photoIdsInStoredText(): string[] | null {
+  try {
+    const texts = [RESUMES_KEY, UNREADABLE_BACKUP_KEY].map((key) => window.localStorage.getItem(key) ?? "");
+    return texts.flatMap((text) => [...text.matchAll(PHOTO_ID_IN_TEXT)].map((match) => match[1]));
+  } catch {
+    return null;
+  }
+}
+
 /** The stored text exactly as it is, for saving a copy. */
 export function readRawResumes(): string {
   try {

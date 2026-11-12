@@ -52,6 +52,12 @@ export async function loadPhoto(id: string): Promise<Blob | null> {
   return record?.blob ?? null;
 }
 
+/** Ids of every stored photo. */
+export async function listPhotoIds(): Promise<Set<string>> {
+  const keys = await run("readonly", (store) => store.getAllKeys());
+  return new Set(keys.filter((key): key is string => typeof key === "string"));
+}
+
 export async function deletePhoto(id: string): Promise<void> {
   forgetPhotoUrl(id);
   await run("readwrite", (store) => store.delete(id));

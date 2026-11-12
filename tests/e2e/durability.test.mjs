@@ -34,7 +34,7 @@ async function newPage(context = browser) {
 const panel = (page) => page.$eval("[role=tabpanel]", (el) => el.innerText);
 const rawStored = (page) => page.evaluate(() => localStorage.getItem("folio.resumes.v2"));
 const saveIndicator = (page) =>
-  page.evaluate(() => [...document.querySelectorAll("span[title]")].map((s) => (s.querySelector("span")?.textContent ?? "").trim()).find((t) => /^(Saved locally|Saving…|Not saved|Not saving|Storage unavailable)/.test(t)) ?? "");
+  page.evaluate(() => [...document.querySelectorAll("span[title]")].map((s) => (s.querySelector("span")?.textContent ?? "").trim()).find((t) => /^(Saved locally|Saving…|Not saved|Not saving|Saving paused|Storage unavailable)/.test(t)) ?? "");
 const clickText = (page, text, scope = "button") =>
   page.evaluate((t, s) => [...document.querySelectorAll(s)].find((b) => b.textContent.trim() === t && (b.offsetParent || b.closest("dialog"))).click(), text, scope);
 const clearAll = (page) =>
@@ -67,7 +67,7 @@ const clearAll = (page) =>
   let text = await panel(page);
   check("Held: explains that the data can't be copied", text.includes("Some saved data couldn’t be read") && text.includes("Download a copy"));
   check("Held: doesn't claim a copy was kept", !text.includes("A copy of the original data"));
-  check("Held: save indicator says it isn't saving", (await saveIndicator(page)).startsWith("Not saving"));
+  check("Held: save indicator says saving is paused, not the newer-version text", (await saveIndicator(page)).startsWith("Saving paused"));
   check("Held: the readable resume is open", (await page.$eval("[aria-label='Resume preview']", (el) => el.textContent)).includes("Alpha Person"));
 
   await page.click("[aria-controls='personal-form']");
@@ -158,7 +158,7 @@ const clearAll = (page) =>
       try { return set.call(this, k, v); } catch (error) { entry.error = error.name; throw error; }
     };
     window.__states = [];
-    const read = () => [...document.querySelectorAll("span[title]")].map((s) => (s.querySelector("span")?.textContent ?? "").trim()).find((t) => /^(Saved locally|Saving…|Not saved|Not saving|Storage unavailable)/.test(t)) ?? "";
+    const read = () => [...document.querySelectorAll("span[title]")].map((s) => (s.querySelector("span")?.textContent ?? "").trim()).find((t) => /^(Saved locally|Saving…|Not saved|Not saving|Saving paused|Storage unavailable)/.test(t)) ?? "";
     const record = () => { const s = read(); if (window.__states.at(-1)?.state !== s) window.__states.push({ state: s, at: performance.now() }); };
     new MutationObserver(record).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true });
     record();
@@ -186,6 +186,9 @@ const clearAll = (page) =>
   console.log(`ME-02 observation: first save after restore ${sawError ? "FAILED (\"Not saved\" shown), then recovered" : "did not show \"Not saved\""}`);
 
   check("ME-02: after a large restore, everything ends up saved", settled, states.join(" → "));
+  // The restore is all or nothing: one write, with the photos already moved out of the list.
+  check("ME-02: no save fails during the restore (\"Not saved\" never shown)", !sawError, states.join(" → "));
+  check("ME-02: no write of the resume list is refused, and none holds an inline photo", writes.length > 0 && writes.every((w) => w.includes(" 0 inline photos, ok")), writes.join(" | "));
   const stored = JSON.parse((await rawStored(page)) ?? "{}").resumes ?? [];
   check("ME-02: stored resumes hold photo references, not inline photos", stored.length === PHOTOS && stored.every((r) => r.profile.photo?.id && !r.profile.photo.inlineData));
   check("ME-02: all text is stored in full", stored.every((r) => r.sections[0].content.length === TEXT_PER_RESUME));

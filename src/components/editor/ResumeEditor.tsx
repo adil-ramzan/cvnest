@@ -35,7 +35,8 @@ type DialogState =
   | { type: "empty" }
   | { type: "sample" }
   | { type: "restore"; resumes: Resume[]; skipped: number }
-  | { type: "restore-error"; message: string }
+  | { type: "restore-error"; message: string; title?: string }
+  | { type: "undo-replace" }
   | null;
 
 export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSlug }) {
@@ -48,6 +49,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const [nameDraft, setNameDraft] = useState("");
   const [backupState, setBackupState] = useState<BackupState>(loadBackupState);
   const [restoreMode, setRestoreMode] = useState<"merge" | "replace">("merge");
+  const [restoring, setRestoring] = useState(false);
   const restoreInput = useRef<HTMLInputElement>(null);
   const [undo, setUndo] = useState<{ id: number; resumeId: string; message: string; restore: () => void } | null>(null);
   const dismissUndo = useCallback(() => setUndo(null), []);
@@ -184,6 +186,38 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     setRestoreMode("merge");
     setDialog(result.ok ? { type: "restore", resumes: result.resumes, skipped: result.skipped } : { type: "restore-error", message: result.message });
     if (!result.ok) setAnnouncement("Restore failed");
+  };
+
+  /** Puts back the resumes from before the last "replace all" restore. */
+  const runUndoReplace = async () => {
+    const outcome = await store.undoReplace();
+    if (outcome.ok) setAnnouncement("Resumes from before the restore put back");
+    else setDialog({ type: "restore-error", title: "Couldn’t put the resumes back", message: outcome.message });
+  };
+
+  /** Restores all or nothing; the dialog stays open, and can't be closed, until it's done. */
+  const confirmRestore = async (resumes: Resume[]) => {
+    if (restoring) return;
+    setRestoring(true);
+    const mode = restoreMode;
+    try {
+      const outcome = await store.restoreResumes(resumes, mode);
+      if (!outcome.ok) {
+        setDialog({ type: "restore-error", title: "Nothing was restored", message: outcome.message });
+        setAnnouncement("Restore failed");
+        return;
+      }
+      setDialog(null);
+      const count = `${resumes.length} ${resumes.length === 1 ? "resume" : "resumes"}`;
+      setAnnouncement(`${count} restored`);
+      if (mode === "replace" && outcome.undoAvailable) {
+        setUndo({ id: Date.now(), resumeId: outcome.restoredIds[0], message: `Replaced with ${count}`, restore: () => void runUndoReplace() });
+      }
+    } catch {
+      setDialog({ type: "restore-error", title: "Nothing was restored", message: "Something went wrong while restoring. Nothing was changed." });
+    } finally {
+      setRestoring(false);
+    }
   };
 
   const openRename = (id: string) => {
@@ -358,6 +392,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 onDownloadBackup={downloadBackup}
                 onRestoreBackup={() => restoreInput.current?.click()}
                 lastBackupAt={backupState.lastBackupAt}
+                replacedAt={store.replacedAt}
+                onUndoReplace={() => setDialog({ type: "undo-replace" })}
               />
               </div>
             )}
@@ -572,7 +608,10 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
       <Dialog
         open={dialog?.type === "restore"}
-        onClose={() => setDialog(null)}
+        onClose={() => {
+          // Its close event can arrive after an error dialog has replaced it; leave that one open.
+          if (!restoring) setDialog((current) => (current?.type === "restore" ? null : current));
+        }}
         title="Restore from backup"
         description={
           dialog?.type === "restore"
@@ -615,14 +654,11 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  store.restoreResumes(dialog.resumes, restoreMode);
-                  setAnnouncement(`${dialog.resumes.length} ${dialog.resumes.length === 1 ? "resume" : "resumes"} restored`);
-                  setDialog(null);
-                }}
-                className={restoreMode === "replace" ? dialogButtonClass.danger : dialogButtonClass.primary}
+                disabled={restoring}
+                onClick={() => confirmRestore(dialog.resumes)}
+                className={`${restoreMode === "replace" ? dialogButtonClass.danger : dialogButtonClass.primary} disabled:cursor-progress disabled:opacity-70`}
               >
-                {restoreMode === "replace" ? "Replace and restore" : "Restore"}
+                {restoring ? "Restoring…" : restoreMode === "replace" ? "Replace and restore" : "Restore"}
               </button>
             </div>
           </>
@@ -630,9 +666,35 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
       </Dialog>
 
       <Dialog
+        open={dialog?.type === "undo-replace"}
+        onClose={() => setDialog(null)}
+        title="Put back your earlier resumes?"
+        description={`This brings back the resumes you had before the restore${store.replacedAt ? ` on ${formatUpdated(store.replacedAt)}` : ""}. The resumes you have now will be replaced, so download a backup first if you want to keep them.`}
+      >
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <button type="button" onClick={downloadBackup} className={dialogButtonClass.secondary}>
+            Download backup
+          </button>
+          <button type="button" autoFocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDialog(null);
+              void runUndoReplace();
+            }}
+            className={dialogButtonClass.danger}
+          >
+            Put them back
+          </button>
+        </div>
+      </Dialog>
+
+      <Dialog
         open={dialog?.type === "restore-error"}
         onClose={() => setDialog(null)}
-        title="Couldn’t restore this file"
+        title={dialog?.type === "restore-error" && dialog.title ? dialog.title : "Couldn’t restore this file"}
         description={dialog?.type === "restore-error" ? dialog.message : undefined}
       >
         <div className="mt-6 flex justify-end">
@@ -676,7 +738,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         open={dialog?.type === "delete" && !!dialogResume}
         onClose={() => setDialog(null)}
         title={`Delete “${dialogResume?.name ?? ""}”?`}
-        description="This permanently removes the resume from this browser. It can't be undone."
+        description="This removes the resume from this browser. You can undo it straight afterwards."
       >
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" autoFocus onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
@@ -685,8 +747,17 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           <button
             type="button"
             onClick={() => {
-              if (dialog && "id" in dialog) store.deleteResume(dialog.id);
+              const removed = dialog && "id" in dialog ? store.deleteResume(dialog.id) : undefined;
               setDialog(null);
+              if (removed) {
+                setUndo({
+                  id: Date.now(),
+                  resumeId: removed.activeAfter,
+                  message: `“${removed.resume.name}” deleted`,
+                  restore: () => store.reinsertResume(removed.resume, removed.index, removed.placeholderId),
+                });
+                setAnnouncement(`${removed.resume.name} deleted`);
+              }
             }}
             className={dialogButtonClass.danger}
           >
