@@ -6,6 +6,8 @@ import type { Resume } from "@/data/resume";
 import { site } from "@/data/site";
 import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
 import { backupFileName, createBackup, downloadTextFile, MAX_BACKUP_BYTES, readBackup } from "@/lib/backup";
+import { shouldShowBackupReminder, snoozeUntil } from "@/lib/backup-reminder";
+import { requestStorageProtection, shouldRequestPersistence, type StorageProtection, storageProtection } from "@/lib/persistence";
 import { findOverLimits } from "@/lib/resume-limits";
 import { type BackupState, loadBackupState, loadOpenSection, readRawResumes, saveBackupState, saveOpenSection } from "@/lib/resume-storage";
 import { duplicateResume, isResumeEmpty } from "@/lib/resumes";
@@ -49,6 +51,10 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const [dialog, setDialog] = useState<DialogState>(null);
   const [nameDraft, setNameDraft] = useState("");
   const [backupState, setBackupState] = useState<BackupState>(loadBackupState);
+  /** Fixed for the visit: the reminder schedule works in days, so it needn't tick. */
+  const [openedAt] = useState(() => Date.now());
+  const [protection, setProtection] = useState<StorageProtection | null>(null);
+  const persistAsked = useRef(backupState.persistRequestedAt !== null);
   const [restoreMode, setRestoreMode] = useState<"merge" | "replace">("merge");
   const [restoring, setRestoring] = useState(false);
   const restoreInput = useRef<HTMLInputElement>(null);
@@ -83,6 +89,15 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     if (focus) (element?.querySelector<HTMLElement>("[aria-expanded]") ?? element?.querySelector("button"))?.focus({ preventScroll: true });
     scrollTarget.current = null;
   }, [openSections]);
+
+  // Only reads the current state; asking happens after the first PDF or backup.
+  useEffect(() => {
+    let cancelled = false;
+    storageProtection().then((state) => !cancelled && setProtection(state));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!store.ready || !active) {
     return (
@@ -146,19 +161,45 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const offerUndo = (message: string, restore: () => void) => setUndo({ id: Date.now(), resumeId: active.id, message, restore });
 
   const updateBackupState = (patch: Partial<BackupState>) => {
-    const next = { ...backupState, ...patch };
-    setBackupState(next);
-    saveBackupState(next);
+    setBackupState((current) => {
+      const next = { ...current, ...patch };
+      saveBackupState(next);
+      return next;
+    });
+  };
+
+  /**
+   * After the first PDF export or backup download, whichever comes first, asks the browser
+   * once to keep this site's storage. Recorded before asking, so it can never ask twice.
+   */
+  const requestPersistenceOnce = () => {
+    if (persistAsked.current || !shouldRequestPersistence(backupState.persistRequestedAt)) return;
+    persistAsked.current = true;
+    updateBackupState({ persistRequestedAt: Date.now() });
+    requestStorageProtection().then(setProtection);
   };
 
   const downloadBackup = async () => {
     downloadTextFile(backupFileName(site.name), await createBackup(store.resumes));
-    updateBackupState({ lastBackupAt: Date.now() });
+    updateBackupState({ lastBackupAt: Date.now(), remindAfter: null });
     store.markCopied("lastBackupAt");
     setAnnouncement("Backup downloaded");
+    requestPersistenceOnce();
   };
 
-  const startPdf = () => pdf.start(active, photoUrl, () => store.markCopied("lastExportAt", active.id));
+  const startPdf = () =>
+    pdf.start(active, photoUrl, () => {
+      store.markCopied("lastExportAt", active.id);
+      requestPersistenceOnce();
+    });
+
+  const showBackupReminder = shouldShowBackupReminder({
+    lastBackupAt: backupState.lastBackupAt,
+    remindAfter: backupState.remindAfter,
+    lastEditAt: Math.max(0, ...store.resumes.map((r) => r.updatedAt)),
+    hasContent: !isResumeEmpty(active),
+    now: openedAt,
+  });
 
   /** Starts the PDF, first checking for a resume that isn't ready to send. */
   const requestPdf = () => {
@@ -365,10 +406,10 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               </Notice>
             )}
 
-            {!isResumeEmpty(active) && !backupState.lastBackupAt && !backupState.reminderDismissed && (
+            {showBackupReminder && (
               <Notice
                 title="Back up your resume"
-                onDismiss={() => updateBackupState({ reminderDismissed: true })}
+                onDismiss={() => updateBackupState({ remindAfter: snoozeUntil(Date.now()) })}
                 actions={
                   <button type="button" onClick={downloadBackup} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
                     Download backup
@@ -393,6 +434,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 onDownloadBackup={downloadBackup}
                 onRestoreBackup={() => restoreInput.current?.click()}
                 lastBackupAt={backupState.lastBackupAt}
+                storageProtection={protection}
                 replacedAt={store.replacedAt}
                 onUndoReplace={() => setDialog({ type: "undo-replace" })}
               />

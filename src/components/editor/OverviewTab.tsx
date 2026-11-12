@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { getTemplate } from "@/data/templates";
 import type { Resume, SectionType } from "@/data/resume";
 import { buttonClass, iconButtonClass } from "@/components/ui/styles";
+import type { StorageProtection } from "@/lib/persistence";
 import { PrivacyDetails } from "./PrivacyNote";
 
 type OverviewTabProps = {
@@ -19,6 +20,8 @@ type OverviewTabProps = {
   onDownloadBackup: () => void;
   onRestoreBackup: () => void;
   lastBackupAt: number | null;
+  /** Whether the browser has agreed to keep this site's storage; null while checking. */
+  storageProtection?: StorageProtection | null;
   /** When the last "replace all" restore happened, while it can still be undone. */
   replacedAt?: number | null;
   onUndoReplace?: () => void;
@@ -42,7 +45,7 @@ function Card({ title, action, children }: { title: string; action?: ReactNode; 
 const smallButton = buttonClass("secondary", "sm");
 const iconButton = iconButtonClass;
 
-export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onDuplicate, onDelete, onEditSection, onDownloadBackup, onRestoreBackup, lastBackupAt, replacedAt, onUndoReplace }: OverviewTabProps) {
+export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onDuplicate, onDelete, onEditSection, onDownloadBackup, onRestoreBackup, lastBackupAt, storageProtection, replacedAt, onUndoReplace }: OverviewTabProps) {
   const { profile, sections } = active;
   const sectionStatus = (type: SectionType, label: string) => {
     const section = sections.find((s) => s.type === type);
@@ -162,6 +165,11 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
           Keep a copy of all your resumes and photos in one file. You can restore it here or in another browser.
         </p>
         <p className="mt-1 text-[0.875rem] text-muted">{lastBackupAt ? `Last backup: ${formatUpdated(lastBackupAt)}` : "No backup yet"}</p>
+        {storageProtection && (
+          <p className="mt-1 text-[0.875rem] text-muted" data-storage-protection={storageProtection}>
+            {storageProtection === "protected" ? "Storage: protected" : "Storage: may be cleared by the browser"}
+          </p>
+        )}
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="button" onClick={onDownloadBackup} className={smallButton}>
             <Download aria-hidden="true" className="size-4" />
