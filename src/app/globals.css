@@ -651,8 +651,31 @@ body {
     display: block !important;
   }
 
-  body > :not(.print-root) {
+  /*
+    Only while the editor has mounted a print copy (it sets data-printing on <html>), so
+    every other page, and the editor at other times, prints its own content. An attribute
+    rather than :has(), so this works in every browser.
+  */
+  html[data-printing] body > :not(.print-root) {
     display: none !important;
+  }
+
+  /* Printed instead of the resume when the browser's menu prints before it's ready. */
+  .print-note {
+    max-width: 34rem;
+    margin: 96px auto 0;
+    padding: 0 48px;
+    font-family: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #1f2937;
+  }
+
+  .print-note-title {
+    margin-bottom: 12px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
   }
 
   .print-root {
