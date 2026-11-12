@@ -59,25 +59,25 @@ const statusContent: Record<SaveStatus, { icon: typeof HardDrive; text: string; 
   error: {
     icon: AlertTriangle,
     text: "Not saved",
-    detail: "Your browser refused to save. Storage may be full or blocked. Your changes stay open in this tab.",
+    detail: "This browser refused to save your latest changes. They're safe in this tab until you close it; download a backup file to keep them.",
     className: "text-[#b42318]",
   },
   unavailable: {
     icon: AlertTriangle,
     text: "Storage unavailable",
-    detail: "Browser storage is blocked or disabled, so changes will be lost when you close this tab.",
+    detail: "This browser won't let the site save anything, so changes will be lost when you close this tab.",
     className: "text-[#b54708]",
   },
   blocked: {
     icon: AlertTriangle,
     text: "Not saving",
-    detail: "These resumes were saved by a newer version of this site, so this version won't write over them.",
+    detail: "Your resumes were saved by a newer version of this site. They're safe; reload to get it. Nothing is saved here meanwhile.",
     className: "text-[#b54708]",
   },
   held: {
     icon: AlertTriangle,
     text: "Saving paused",
-    detail: "Some saved data couldn't be read and there was no room to keep a copy, so nothing is saved until you download one.",
+    detail: "Part of your saved data couldn't be read and there's no room to keep it aside, so saving is paused until you download a backup file.",
     className: "text-[#b54708]",
   },
 };

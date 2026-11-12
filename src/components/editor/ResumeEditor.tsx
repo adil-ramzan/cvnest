@@ -5,9 +5,9 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from "react"
 import type { Resume } from "@/data/resume";
 import { site } from "@/data/site";
 import { getTemplate, type TemplateSlug, templates } from "@/data/templates";
-import { backupFileName, createBackup, downloadTextFile, MAX_BACKUP_BYTES, readBackup } from "@/lib/backup";
+import { backupFileName, createBackup, createNewerVersionBackup, downloadTextFile, MAX_BACKUP_BYTES, readBackup } from "@/lib/backup";
 import { findOverLimits } from "@/lib/resume-limits";
-import { type BackupState, loadBackupState, loadOpenSection, readRawResumes, saveBackupState, saveOpenSection } from "@/lib/resume-storage";
+import { type BackupState, loadBackupState, loadOpenSection, readRawResumes, readUnreadableBackup, saveBackupState, saveOpenSection } from "@/lib/resume-storage";
 import { duplicateResume, isResumeEmpty } from "@/lib/resumes";
 import { clearSampleContent, findSampleContent, hasSampleContent, markAsSample } from "@/lib/sample-content";
 import { isAtRisk } from "@/lib/unsaved";
@@ -21,6 +21,7 @@ import { Notice } from "./Notice";
 import { LeaveGuardDialog } from "./LeaveGuardDialog";
 import { formatUpdated, OverviewTab } from "./OverviewTab";
 import { PreviewPanel } from "./PreviewPanel";
+import { StorageRecovery } from "./StorageRecovery";
 import { PrintHandlers } from "./PrintHandlers";
 import { UndoToast } from "./UndoToast";
 import { usePdfExport } from "./usePdfExport";
@@ -38,6 +39,7 @@ type DialogState =
   | { type: "restore"; resumes: Resume[]; skipped: number }
   | { type: "restore-error"; message: string; title?: string }
   | { type: "undo-replace" }
+  | { type: "held-confirm" }
   | null;
 
 export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSlug }) {
@@ -83,6 +85,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     if (focus) (element?.querySelector<HTMLElement>("[aria-expanded]") ?? element?.querySelector("button"))?.focus({ preventScroll: true });
     scrollTarget.current = null;
   }, [openSections]);
+
+  if (store.recovery) return <StorageRecovery reason={store.recovery.reason} resumes={store.recovery.resumes} />;
 
   if (!store.ready || !active) {
     return (
@@ -158,6 +162,20 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     setAnnouncement("Backup downloaded");
   };
 
+  /** Saving is paused: the backup file also keeps the stored text exactly, including what couldn't be read. */
+  const downloadHeldBackup = async () => {
+    downloadTextFile(backupFileName(site.name), await createBackup(store.resumes, { storedText: readRawResumes() }));
+    setDialog({ type: "held-confirm" });
+  };
+
+  /** Some data couldn't be read but a copy was kept: the backup file includes that copy too. */
+  const downloadRecoveredBackup = async () => {
+    downloadTextFile(backupFileName(site.name), await createBackup(store.resumes, { storedText: readUnreadableBackup() }));
+    updateBackupState({ lastBackupAt: Date.now() });
+    store.markCopied("lastBackupAt");
+    setAnnouncement("Backup file downloaded");
+  };
+
   const startPdf = () => pdf.start(active, photoUrl, () => store.markCopied("lastExportAt", active.id));
 
   /** Starts the PDF, first checking for a resume that isn't ready to send. */
@@ -171,7 +189,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     if (restoreInput.current) restoreInput.current.value = "";
     if (!file) return;
     if (file.size > MAX_BACKUP_BYTES) {
-      setDialog({ type: "restore-error", message: "This file is too large to be a resume backup." });
+      setDialog({ type: "restore-error", message: "This file is too large to be a backup file." });
       return;
     }
     let text: string;
@@ -266,25 +284,19 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             className="outline-none"
           >
             {store.recovered && (
-              <div className="mx-4 mt-4 flex items-start gap-3 rounded-lg border border-[#fedf89] bg-[#fffaeb] p-3.5 text-sm text-[#93370d] sm:mx-6">
-                <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                <p className="flex-1">
-                  Some saved resume data in this browser could not be read and was skipped. A copy of the original data
-                  was kept in this browser&apos;s storage.
-                </p>
-                <button type="button" onClick={store.dismissRecovered} aria-label="Dismiss message" className="rounded p-0.5 hover:bg-black/5">
-                  <X aria-hidden="true" className="size-4" />
-                </button>
-              </div>
-            )}
-            {store.saveStatus === "unavailable" && (
-              <div className="mx-4 mt-4 flex items-start gap-3 rounded-lg border border-[#fedf89] bg-[#fffaeb] p-3.5 text-sm text-[#93370d] sm:mx-6">
-                <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                <p>
-                  Browser storage is blocked or disabled, so your resume can&apos;t be saved. You can keep editing, but
-                  changes will be lost when you close this tab.
-                </p>
-              </div>
+              <Notice
+                tone="warning"
+                title="Part of your saved data couldn’t be read"
+                onDismiss={store.dismissRecovered}
+                actions={
+                  <button type="button" onClick={downloadRecoveredBackup} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
+                    Download backup
+                  </button>
+                }
+              >
+                Everything that could be read is open here and saves as usual. The unreadable part is kept, untouched, in this browser.
+                Download a backup file to keep both somewhere safe.
+              </Notice>
             )}
 
             {openElsewhere && (
@@ -303,7 +315,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                   </button>
                 }
               >
-                Browser storage is full or blocked. Your work is safe in this tab for now, so download a backup before closing it.
+                This browser refused to save them, usually because its storage is full. Everything saved before is still here, and your
+                latest changes are safe in this tab until you close it. Download a backup file now so you don’t lose them.
               </Notice>
             )}
 
@@ -312,36 +325,37 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 tone="warning"
                 title="Saved by a newer version of this site"
                 actions={
-                  <button type="button" onClick={() => downloadTextFile(`${site.name}-saved-data.json`, readRawResumes())} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
-                    Download a copy
-                  </button>
+                  <>
+                    <button type="button" onClick={() => window.location.reload()} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
+                      Reload
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => downloadTextFile(backupFileName(site.name), createNewerVersionBackup(readRawResumes()))}
+                      className={buttonClass("secondary", "sm", "h-9 px-3.5")}
+                    >
+                      Download backup
+                    </button>
+                  </>
                 }
               >
-                To protect your resumes, nothing will be saved here until you reload to get the latest version. Changes in this tab will be lost.
+                Your resumes are safe: this older version of the editor won’t change them. Reload the page to get the latest version and
+                carry on. Changes you make in this tab won’t be saved.
               </Notice>
             )}
 
             {store.saveStatus === "held" && (
               <Notice
                 tone="warning"
-                title="Some saved data couldn’t be read"
+                title="Saving is paused to protect your data"
                 actions={
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const raw = readRawResumes();
-                      downloadTextFile(`${site.name}-saved-data.json`, raw);
-                      // An empty read means there is no copy in the download, so keep holding.
-                      if (raw) store.resumeSaving();
-                    }}
-                    className={buttonClass("secondary", "sm", "h-9 px-3.5")}
-                  >
-                    Download a copy
+                  <button type="button" onClick={downloadHeldBackup} className={buttonClass("secondary", "sm", "h-9 px-3.5")}>
+                    Download backup
                   </button>
                 }
               >
-                There isn’t room in this browser’s storage to keep a copy of it. To protect it, nothing will be saved here until you
-                download a copy. Saving starts again once you do.
+                Part of your saved data couldn’t be read, and there’s no room in this browser to keep it aside. Everything else is open
+                here and safe. To make sure nothing is lost, download a backup file. Saving starts again once you confirm you have it.
               </Notice>
             )}
 
@@ -375,7 +389,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                   </button>
                 }
               >
-                It only lives in this browser, so keep a copy somewhere safe.
+                It’s saved only in this browser. Download a backup file and keep it somewhere safe, like your email or cloud storage.
               </Notice>
             )}
 
@@ -672,6 +686,34 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             </div>
           </>
         )}
+      </Dialog>
+
+      <Dialog
+        open={dialog?.type === "held-confirm"}
+        onClose={() => setDialog(null)}
+        title="Did the backup file download?"
+        description={`Check your downloads for ${backupFileName(site.name)}. It holds everything saved in this browser, including the part that couldn’t be read. Saving starts again only once you have it.`}
+      >
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <button type="button" onClick={() => setDialog(null)} className={dialogButtonClass.secondary}>
+            Not yet
+          </button>
+          <button type="button" onClick={downloadHeldBackup} className={dialogButtonClass.secondary}>
+            Download again
+          </button>
+          <button
+            type="button"
+            autoFocus
+            onClick={() => {
+              setDialog(null);
+              // An empty read means the file holds no stored text, so saving stays paused.
+              if (readRawResumes()) store.resumeSaving();
+            }}
+            className={dialogButtonClass.primary}
+          >
+            Yes, I have it
+          </button>
+        </div>
       </Dialog>
 
       <Dialog

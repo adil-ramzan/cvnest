@@ -240,3 +240,41 @@ describe("writeResumes: why a write failed", () => {
     assert.equal(isQuotaError(new Error("QuotaExceededError")), false);
   });
 });
+
+describe("loadResumes: storage that can't be written", () => {
+  const raw = () => JSON.stringify({ schemaVersion: 2, resumes: [{ ...createResume("classic"), id: "kept" }] });
+  const refuseProbe = (error: unknown) => {
+    const original = storage.setItem.bind(storage);
+    storage.setItem = (key: string, value: string) => {
+      if (key === "folio.probe") throw error;
+      original(key, value);
+    };
+  };
+
+  it("full: says so and still reads the saved resumes, writing nothing", () => {
+    storage.data.set("folio.resumes.v2", raw());
+    refuseProbe(new DOMException("full", "QuotaExceededError"));
+    const before = [...storage.data.entries()];
+    const result = loadResumes();
+    assert.equal(result.available, false);
+    assert.equal(result.unavailableReason, "full");
+    assert.deepEqual(result.resumes.map((r) => r.id), ["kept"]);
+    assert.deepEqual([...storage.data.entries()], before, "nothing written or removed");
+  });
+
+  it("blocked: anything that isn't a full storage area", () => {
+    storage.data.set("folio.resumes.v2", raw());
+    refuseProbe(new DOMException("denied", "SecurityError"));
+    const result = loadResumes();
+    assert.equal(result.unavailableReason, "blocked");
+    assert.equal(result.available, false);
+  });
+
+  it("blocked and unreadable: no resumes, no error", () => {
+    Object.assign(globalThis, { window: {} });
+    const result = loadResumes();
+    assert.equal(result.available, false);
+    assert.equal(result.unavailableReason, "blocked");
+    assert.deepEqual(result.resumes, []);
+  });
+});

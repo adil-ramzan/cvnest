@@ -41,7 +41,7 @@ export type RestoreOutcome =
   | { ok: false; message: string };
 
 export const NO_ROOM_MESSAGE =
-  "There isn't enough room in this browser's storage to restore this backup. Nothing was changed. Try restoring fewer resumes, or delete some you no longer need first.";
+  "There isn't enough room in this browser's storage to restore this backup file. Nothing was changed. Try restoring fewer resumes, or delete some you no longer need first.";
 export const REFUSED_MESSAGE =
   "Your browser refused to save the restored resumes, so nothing was changed. Check that this site is allowed to store data, then try again.";
 export const EXPIRED_MESSAGE = "The resumes from before the restore are no longer available. They're kept for 7 days.";

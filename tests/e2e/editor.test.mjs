@@ -147,7 +147,7 @@ await page.evaluate(() => localStorage.setItem("folio.resumes.v2", "{not json"))
 await page.reload({ waitUntil: "networkidle0" });
 await page.waitForSelector("[role='tabpanel']");
 const panel = await page.$eval("[role='tabpanel']", (el) => el.innerText);
-check("Corrupt storage shows recovery notice", panel.includes("could not be read"));
+check("Corrupt storage shows recovery notice", panel.includes("Part of your saved data couldn’t be read") && panel.includes("kept, untouched"));
 check("Corrupt original backed up", (await page.evaluate(() => localStorage.getItem("folio.resumes.v2.unreadable-backup"))) === "{not json");
 await sleep(700);
 data = await stored();

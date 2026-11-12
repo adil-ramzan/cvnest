@@ -56,6 +56,11 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
   const [zoom, setZoom] = useState<Zoom>("fit");
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [recovered, setRecovered] = useState(false);
+  /**
+   * Storage can't be written at all (full, or blocked by the browser). The editor shows a
+   * recovery screen instead of a blank resume; nothing is written while this is set.
+   */
+  const [recovery, setRecovery] = useState<{ reason: "full" | "blocked"; resumes: Resume[] } | null>(null);
   /** When the last "replace all" restore happened, while it can still be undone. */
   const [replacedAt, setReplacedAt] = useState<number | null>(null);
 
@@ -68,8 +73,16 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
   // Load saved resumes once, on the client. Older data is migrated by loadResumes.
   useEffect(() => {
     const result = loadResumes();
-    const settings = loadSettings();
     storageAvailable.current = result.available;
+    if (!result.available) {
+      // No blank resume, no photo cleanup, no snapshot check: this state must not write anything.
+      // Browser storage doesn't exist during server rendering, so this can only run after mounting.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRecovery({ reason: result.unavailableReason ?? "blocked", resumes: result.resumes });
+      setSaveStatus("unavailable");
+      return;
+    }
+    const settings = loadSettings();
 
     let list = result.resumes;
     let active = list.find((r) => r.id === settings.activeResumeId) ?? mostRecent(list);
@@ -95,8 +108,6 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     }
 
     skipNextSave.current = !changed;
-    // Browser storage doesn't exist during server rendering, so this can only run after mounting.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setResumes(list);
     setActiveId(active.id);
     setZoom(settings.zoom);
@@ -385,6 +396,7 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
     saveStatus,
     recovered,
     dismissRecovered: () => setRecovered(false),
+    recovery,
     zoom,
     setZoom,
     selectResume: setActiveId,
