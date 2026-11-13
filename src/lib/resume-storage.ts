@@ -247,16 +247,26 @@ export function saveResumes(resumes: Resume[]): boolean {
   return writeResumes(resumes).ok;
 }
 
-export type BackupState = { lastBackupAt: number | null; reminderDismissed: boolean };
+/**
+ * Backup reminders and the persistent-storage request. Holds no resume content.
+ * `remindAfter`: the reminder is snoozed until then. `persistRequestedAt`: when the
+ * browser was asked to keep this site's storage, so it is only ever asked once.
+ * Older versions stored `reminderDismissed: true` with no date; that now counts as not
+ * snoozed, so the reminder shows once more and a new dismissal snoozes it for 7 days.
+ */
+export type BackupState = { lastBackupAt: number | null; remindAfter: number | null; persistRequestedAt: number | null };
+
+const EMPTY_BACKUP_STATE: BackupState = { lastBackupAt: null, remindAfter: null, persistRequestedAt: null };
 
 export function loadBackupState(): BackupState {
   try {
     const parsed: unknown = JSON.parse(window.localStorage.getItem(BACKUP_STATE_KEY) ?? "null");
-    if (typeof parsed !== "object" || parsed === null) return { lastBackupAt: null, reminderDismissed: false };
-    const { lastBackupAt, reminderDismissed } = parsed as Record<string, unknown>;
-    return { lastBackupAt: typeof lastBackupAt === "number" ? lastBackupAt : null, reminderDismissed: reminderDismissed === true };
+    if (typeof parsed !== "object" || parsed === null) return EMPTY_BACKUP_STATE;
+    const { lastBackupAt, remindAfter, persistRequestedAt } = parsed as Record<string, unknown>;
+    const time = (value: unknown) => (typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null);
+    return { lastBackupAt: time(lastBackupAt), remindAfter: time(remindAfter), persistRequestedAt: time(persistRequestedAt) };
   } catch {
-    return { lastBackupAt: null, reminderDismissed: false };
+    return EMPTY_BACKUP_STATE;
   }
 }
 
@@ -264,7 +274,7 @@ export function saveBackupState(state: BackupState): void {
   try {
     window.localStorage.setItem(BACKUP_STATE_KEY, JSON.stringify(state));
   } catch {
-    // Only affects whether the reminder shows again.
+    // Only affects the reminder schedule, and whether storage protection is asked for again.
   }
 }
 
