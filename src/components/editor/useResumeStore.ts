@@ -16,6 +16,7 @@ import {
   writeResumes,
   type Zoom,
 } from "@/lib/resume-storage";
+import { createSaveGuard } from "@/lib/save-guard";
 import { createResume, defaultPageSize, duplicateResume, isResumeEmpty } from "@/lib/resumes";
 import { loadUndoableSnapshot, readSnapshot, saveSnapshot, type Snapshot, snapshotPhotoIds, writeSnapshot } from "@/lib/snapshot-store";
 
@@ -64,6 +65,8 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
   const pendingSave = useRef(false);
   const latest = useRef<Resume[] | null>(null);
   const movingPhotos = useRef(new Set<string>());
+  /** Stops a save scheduled from the list before a restore or undo from writing over it (see lib/save-guard). */
+  const saveGuard = useRef(createSaveGuard());
 
   // Load saved resumes once, on the client. Older data is migrated by loadResumes.
   useEffect(() => {
@@ -137,7 +140,10 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
 
     pendingSave.current = true;
     setSaveStatus("saving");
+    const ticket = saveGuard.current.ticket();
     const timer = setTimeout(() => {
+      // A restore or undo has written the whole list since this state; it would be put back to the old one.
+      if (!saveGuard.current.mayWrite(ticket)) return;
       pendingSave.current = false;
       setSaveStatus(saveResumes(resumes) ? "saved" : "error");
     }, AUTOSAVE_DELAY);
@@ -172,7 +178,7 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
 
   /** Writes any pending change straight away. */
   const flushSave = useCallback(() => {
-    if (pendingSave.current && latest.current && storageAvailable.current) {
+    if (pendingSave.current && latest.current && storageAvailable.current && saveGuard.current.mayWrite(saveGuard.current.ticket())) {
       pendingSave.current = false;
       saveResumes(latest.current);
     }
@@ -329,6 +335,19 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
   }, []);
 
   /**
+   * The single write of a restore or undo. Once it's done, a save scheduled before it,
+   * or from the state the editor shows until it takes the written list, is out of date.
+   */
+  const writeWholeList = useCallback((list: Resume[]) => {
+    const result = writeResumes(list);
+    if (result.ok) {
+      saveGuard.current.wroteWholeList();
+      pendingSave.current = false;
+    }
+    return result;
+  }, []);
+
+  /**
    * Adds restored resumes to the list, or replaces the list, all or nothing (see lib/restore).
    * The new list is written before the editor shows it; if it can't be, nothing changes.
    */
@@ -351,30 +370,32 @@ export function useResumeStore(initialTemplate?: TemplateSlug) {
       readSnapshot,
       saveSnapshot,
       writeSnapshot,
-      writeResumes,
+      writeResumes: writeWholeList,
     });
     if (outcome.ok) {
       // Already written, so the autosave this state change would trigger is skipped.
+      saveGuard.current.showingLatestWrite();
       skipNextSave.current = true;
       setResumes(outcome.resumes);
       setActiveId(outcome.restoredIds[0]);
       if (outcome.undoAvailable) setReplacedAt(Date.now());
     }
     return outcome;
-  }, []);
+  }, [writeWholeList]);
 
   /** Puts back the resumes a "replace all" restore removed. Changes made since then are replaced. */
   const undoReplace = useCallback(async () => {
     if (!storageAvailable.current) return { ok: false as const, message: "Saving is paused in this browser, so the resumes can't be put back right now." };
-    const outcome = await undoReplaceList({ readSnapshot: readValidSnapshot, writeSnapshot, writeResumes });
+    const outcome = await undoReplaceList({ readSnapshot: readValidSnapshot, writeSnapshot, writeResumes: writeWholeList });
     if (outcome.ok) {
+      saveGuard.current.showingLatestWrite();
       skipNextSave.current = true;
       setResumes(outcome.resumes);
       setActiveId(mostRecent(outcome.resumes)?.id ?? null);
       setReplacedAt(null);
     }
     return outcome;
-  }, []);
+  }, [writeWholeList]);
 
   const activeResume = resumes?.find((r) => r.id === activeId) ?? null;
 
