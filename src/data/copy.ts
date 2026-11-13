@@ -6,9 +6,6 @@
  */
 import { site } from "./site";
 import { TEMPLATE_COUNT_LABEL } from "./template-count";
-import { templateCategories } from "./templates";
-
-const categoryList = new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(templateCategories.map((category) => category.label));
 
 export const homeCopy = {
   seo: {
@@ -58,22 +55,25 @@ export const homeCopy = {
   features: {
     eyebrow: "Features",
     title: "The parts that matter, and nothing extra",
-    items: [
-      { title: "Live preview", description: "Your page updates beside the form as you type." },
-      { title: `${TEMPLATE_COUNT_LABEL} templates`, description: `${categoryList} designs.` },
-      { title: "Your section order", description: "Rename, hide and reorder sections to suit your story." },
-      { title: "Several resumes", description: "Keep a version for each kind of job, and duplicate one to start the next." },
-      { title: "Hide, don’t delete", description: "Take an entry off the page and keep it saved for later." },
-      { title: "Your own sections", description: "Add custom sections for publications, interests or anything else." },
+    /** Read by screen readers in place of the animated demo, which is decorative. */
+    demoDescription: "Demo: typing a name and job title updates the resume preview live.",
+    demo: {
+      labels: { name: "Full name", jobTitle: "Job title", summary: "Summary" },
+      name: "Adil Ramzan",
+      jobTitle: "Frontend developer",
+      sections: ["Experience", "Skills"],
+    },
+    chips: [
+      `${TEMPLATE_COUNT_LABEL} templates`,
+      "Your section order",
+      "Several resumes",
+      "Hide, don’t delete",
+      "Your own sections",
       // ACCOUNTS
-      { title: "Photo kept private", description: "Your photo is resized and stored in this browser, on your device." },
-      { title: "Start from an example", description: "Load sample data to see a finished page, then make it yours." },
+      "Photo kept private",
       // ACCOUNTS
-      { title: "Backup and restore", description: "Download a file with all your resumes, and restore it in another browser." },
-      { title: "Letter or A4", description: "Pick the page size your employer expects, then save a PDF." },
-      // ACCOUNTS
-      { title: "No sign-up", description: "Open the editor and begin. Autosave keeps your work in this browser." },
-      { title: "No watermark", description: "Nothing is added to your document. It’s entirely yours." },
+      "Backup and restore",
+      "Letter or A4",
     ],
   },
   faq: {
