@@ -339,5 +339,149 @@ for (const mode of ["merge", "replace"]) {
   await context.close();
 }
 
+// ---- 12. An autosave scheduled before a restore's (or undo's) single write never writes the old list over it.
+// The edit is made just before the write, and the page is held busy inside the write so the
+// autosave is overdue the moment it returns: the timing that lost restores before the save guard.
+{
+  const fullNameInput = () => [...document.querySelectorAll("label")].find((l) => l.textContent.trim().startsWith("Full name"))?.control;
+  const editFullName = async (page, value) => {
+    if (!(await page.evaluate(`!!(${fullNameInput})()`))) {
+      await page.click("[aria-controls='personal-form']");
+      await sleep(200);
+    }
+    return page.evaluate((fn, value) => {
+      const input = eval(fn)();
+      if (!input) return false;
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      return true;
+    }, String(fullNameInput), value);
+  };
+  /** Makes the first write of the resume list holding `marker` at least `count` times hold the page for 600 ms. */
+  const holdInWrite = (marker, count) => {
+    const set = Storage.prototype.setItem;
+    window.__holds = 0;
+    Storage.prototype.setItem = function (k, v) {
+      const result = set.call(this, k, v);
+      if (k === "folio.resumes.v2" && !window.__held && String(v).split(marker).length - 1 >= count) {
+        window.__held = true;
+        window.__holds++;
+        const until = performance.now() + 600;
+        while (performance.now() < until) { /* busy */ }
+      }
+      return result;
+    };
+  };
+  const reopen = async (context, page) => {
+    await page.close();
+    const next = await context.newPage();
+    next.on("pageerror", (e) => errors.push(String(e)));
+    await next.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
+    await next.waitForSelector("select");
+    await sleep(800);
+    return next;
+  };
+  /** What a reload sees: the editor opened fresh in another page, before anything else is edited. */
+  const storedAfterReload = async (context) => {
+    const fresh = await context.newPage();
+    fresh.on("pageerror", (e) => errors.push(String(e)));
+    await fresh.goto(`${BASE}/editor`, { waitUntil: "networkidle0" });
+    await fresh.waitForSelector("select");
+    await sleep(800);
+    const list = await stored(fresh);
+    await fresh.close();
+    return list;
+  };
+  const fullName = (list, id) => list.find((r) => r.id === id)?.profile.fullName;
+
+  // Restore (merge): the edit is made as the last photo is stored, just before the commit write.
+  {
+    const backup = Array.from({ length: 12 }, (_, i) => withPhoto(resume(`r${i}`, `Race ${i}`), `race-photo-${i}`));
+    const file = backupFile("restore-race.json", backup);
+    const { context, page } = await openEditor({
+      seed: { resumes: [resume("mine", "Mine")] },
+      init: `(${holdInWrite})(${JSON.stringify('"name":"Race ')}, 12);
+        (() => {
+          let puts = 0;
+          const put = IDBObjectStore.prototype.put;
+          IDBObjectStore.prototype.put = function (...args) {
+            if (this.name === "photos" && ++puts === 12) {
+              const input = (${fullNameInput})();
+              if (input) {
+                Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, "Edited Before Commit");
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                window.__editedDuringRestore = true;
+              }
+            }
+            return put.apply(this, args);
+          };
+        })();`,
+    });
+    await page.click("[aria-controls='personal-form']");
+    await sleep(200);
+    await restore(page, file);
+    const timing = await page.evaluate(() => ({ edited: !!window.__editedDuringRestore, held: window.__holds }));
+    check("Race (restore): the edit was made during the restore, and the commit write was held", timing.edited && timing.held === 1, JSON.stringify(timing));
+    await sleep(1000); // well past the 400 ms autosave delay
+    let list = await stored(page);
+    check("Race (restore): after the autosave delay, storage holds all 12 restored resumes", list.filter((r) => r.name.startsWith("Race ")).length === 12, `${list.length} stored`);
+    check("Race (restore): the edit made during the restore survives it", fullName(list, "mine") === "Edited Before Commit", fullName(list, "mine"));
+    list = await storedAfterReload(context);
+    check(
+      "Race (restore): after a reload, all 12 restored resumes and the edit are stored",
+      list.filter((r) => r.name.startsWith("Race ")).length === 12 && fullName(list, "mine") === "Edited Before Commit",
+      `${list.length} stored`,
+    );
+    // An edit after the commit still autosaves normally.
+    const editedAfter = await editFullName(page, "Edited After Commit");
+    await sleep(1000);
+    list = await stored(page);
+    const afterEdit = list.find((r) => r.profile.fullName === "Edited After Commit");
+    check("Race (restore): an edit after the commit is autosaved", editedAfter && !!afterEdit, String(editedAfter));
+    check("Race (restore): and the restored resumes are still all stored", list.filter((r) => r.name.startsWith("Race ")).length === 12 && fullName(list, "mine") === "Edited Before Commit", `${list.length} stored`);
+    const reopened = await reopen(context, page);
+    list = await stored(reopened);
+    check(
+      "Race (restore): after another reload, all 12 restored resumes and both edits are stored",
+      list.filter((r) => r.name.startsWith("Race ")).length === 12 && fullName(list, "mine") === "Edited Before Commit" && list.some((r) => r.profile.fullName === "Edited After Commit"),
+      `${list.length} stored`,
+    );
+    await context.close();
+  }
+
+  // Undo of "replace all": the edit is made just before the undo's write.
+  {
+    const { context, page } = await openEditor({ seed: { resumes: [resume("mine", "Mine"), resume("other", "Other")] } });
+    await restore(page, backupFile("restore-race-undo.json", [resume("b1", "FromBackup")]), "replace");
+    check("Race (undo): the replace was stored", (await stored(page)).map((r) => r.name).join() === "FromBackup");
+    await page.click("[aria-controls='personal-form']");
+    await sleep(500);
+    await page.evaluate(`(${holdInWrite})(${JSON.stringify('"name":"Mine"')}, 1)`);
+    const edited = await editFullName(page, "Edited Before Undo");
+    await sleep(50);
+    await clickUndo(page);
+    await waitFor(() => page.evaluate(() => window.__holds === 1), 5000);
+    await sleep(1000); // well past the 400 ms autosave delay
+    let list = await stored(page);
+    check("Race (undo): the edit was made just before the undo, and the undo write was held", edited && (await page.evaluate(() => window.__holds)) === 1);
+    check("Race (undo): after the autosave delay, storage holds the earlier resumes", list.map((r) => r.name).sort().join() === "Mine,Other", list.map((r) => r.name).join());
+    list = await storedAfterReload(context);
+    check("Race (undo): after a reload, storage holds the earlier resumes", list.map((r) => r.name).sort().join() === "Mine,Other", list.map((r) => r.name).join());
+    const editedAfter = await editFullName(page, "Edited After Undo");
+    await sleep(1000);
+    list = await stored(page);
+    check("Race (undo): an edit after the undo is autosaved", editedAfter && list.some((r) => r.profile.fullName === "Edited After Undo"), list.map((r) => r.profile.fullName).join());
+    check("Race (undo): and the earlier resumes are still the ones stored", list.map((r) => r.name).sort().join() === "Mine,Other", list.map((r) => r.name).join());
+    const reopened = await reopen(context, page);
+    list = await stored(reopened);
+    check(
+      "Race (undo): after another reload, the earlier resumes and the later edit are stored",
+      list.map((r) => r.name).sort().join() === "Mine,Other" && list.some((r) => r.profile.fullName === "Edited After Undo"),
+      list.map((r) => `${r.name}:${r.profile.fullName}`).join(),
+    );
+    await context.close();
+  }
+}
+
 check("No page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
 await browser.close();
