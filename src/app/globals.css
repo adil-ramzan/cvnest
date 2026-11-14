@@ -127,6 +127,120 @@ body {
 }
 
 /*
+  Editor section cards and the Add section panel. One duration drives the height, the
+  chevron and "+" turns, the card and button surfaces and the fade; change it here. The
+  editor reads it too, to keep an opening card or panel in view (see content/accordion.ts).
+*/
+:root {
+  --accordion-duration: 700ms;
+  --accordion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Rows fade in one after another on open: six at most, the last done within the duration. */
+  --entry-stagger: 60ms;
+  --entry-fade: 350ms;
+  /* A new entry slides in. */
+  --entry-enter: 400ms;
+}
+
+/*
+  The body grows a grid row from 0fr to 1fr, so a transition reverses from wherever it
+  is. Closed, it is hidden once it has finished closing, so nothing in it can be reached
+  or read (it is also inert at once); open, it shows at once, so it can be used while it grows.
+*/
+.accordion-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--accordion-duration) var(--accordion-ease),
+    visibility 0s linear var(--accordion-duration);
+}
+
+.accordion-body[data-open] {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--accordion-duration) var(--accordion-ease),
+    visibility 0s;
+}
+
+/* Clips the content while the row grows; the content fades over 60% of the time so it never looks squashed. */
+.accordion-inner {
+  min-height: 0;
+  overflow: hidden;
+  overflow-anchor: none;
+  opacity: 0;
+  transition: opacity calc(var(--accordion-duration) * 0.6) ease-out;
+}
+
+.accordion-body[data-open] > .accordion-inner {
+  opacity: 1;
+}
+
+/*
+  The chevron on a card and the "+" on Add section turn with the height. Tailwind's
+  rotate-* classes set the separate rotate property, so that is what transitions.
+*/
+.accordion-chevron {
+  transition:
+    rotate var(--accordion-duration) var(--accordion-ease),
+    transform var(--accordion-duration) var(--accordion-ease),
+    color 150ms ease-out;
+}
+
+.accordion-card {
+  transition:
+    box-shadow var(--accordion-duration) var(--accordion-ease),
+    background-color var(--accordion-duration) var(--accordion-ease),
+    border-color var(--accordion-duration) var(--accordion-ease);
+}
+
+@keyframes entry-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* A new entry slides in. */
+.entry-enter {
+  animation: entry-in var(--entry-enter) var(--accordion-ease) both;
+}
+
+/*
+  The first six rows fade in one by one: a card's entries the first time it opens, the
+  Add section options each time the panel opens. Never on re-renders or typing.
+*/
+.accordion-body[data-stagger] .stagger-list > li:nth-child(-n + 6) {
+  animation: entry-in var(--entry-fade) var(--accordion-ease) both;
+}
+
+.accordion-body[data-stagger] .stagger-list > li:nth-child(2) { animation-delay: var(--entry-stagger); }
+.accordion-body[data-stagger] .stagger-list > li:nth-child(3) { animation-delay: calc(2 * var(--entry-stagger)); }
+.accordion-body[data-stagger] .stagger-list > li:nth-child(4) { animation-delay: calc(3 * var(--entry-stagger)); }
+.accordion-body[data-stagger] .stagger-list > li:nth-child(5) { animation-delay: calc(4 * var(--entry-stagger)); }
+.accordion-body[data-stagger] .stagger-list > li:nth-child(6) { animation-delay: calc(5 * var(--entry-stagger)); }
+
+/* Add section's button: hover stays quick, the open state's border and shadow soften with the panel. */
+.accordion-toggle {
+  transition:
+    background-color 150ms ease-out,
+    border-color var(--accordion-duration) var(--accordion-ease),
+    box-shadow var(--accordion-duration) var(--accordion-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Closed content hides at once too. */
+  .accordion-body {
+    transition: none;
+  }
+
+  .entry-enter,
+  .accordion-body[data-stagger] .stagger-list > li {
+    animation: none;
+  }
+}
+
+/*
   Editor scroll areas. Firefox uses the standard properties below. Chrome, Edge
   and Safari use the WebKit rules instead, because only those can restyle the
   thumb on hover, and Chrome ignores them while the standard properties are set.
@@ -187,6 +301,17 @@ body {
   }
 }
 
+/*
+  Room for the scrollbar is kept, so opening a card that makes the page scroll doesn't shift
+  the layout. Screen only: printed, the reserved strip would narrow the page and leave white
+  edges beside sidebars and page colors.
+*/
+@media screen {
+  html:has(.editor-page) {
+    scrollbar-gutter: stable;
+  }
+}
+
 /* Keeps focused and scrolled-to controls clear of the editor's sticky bars. */
 @media (min-height: 600px) {
   html:has(.editor-page) {
@@ -200,10 +325,70 @@ body {
   }
 }
 
+/*
+  Controls show the pointer everywhere, as links already do, so buttons, chips, tabs and
+  rows read as clickable. In the base layer, so utilities such as cursor-grab (drag handles)
+  and cursor-not-allowed (disabled color choices) still win. Disabled buttons keep the arrow.
+*/
+@layer base {
+  :where(button, [role="tab"], [role="menuitem"], [role="menuitemradio"], summary, label:has(> input[type="radio"]), label:has(> input[type="checkbox"])):not(:disabled, [aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}
+
 /* Consistent keyboard focus for anything without its own focus style. */
 :where(a, button, summary, select, [tabindex]):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+/*
+  Public-site buttons (ButtonLink's primary and secondary). On hover they lift 1px with a
+  soft shadow and a trailing arrow slides 3px; on press they settle and darken. The lift is
+  only on devices that hover, so a tap never leaves it stuck, and reduced motion keeps the
+  color change without the movement. Transform and shadow only: nothing around them moves.
+*/
+.site-button {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+
+.site-button > svg:last-child {
+  transition: transform 180ms ease-out;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .site-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -6px rgb(20 33 61 / 0.35);
+  }
+
+  .site-button:hover > svg:last-child {
+    transform: translateX(3px);
+  }
+}
+
+/* Outlined buttons fill with a light teal tint and their border darkens. */
+@media (hover: hover) {
+  .site-button--secondary:hover {
+    border-color: var(--color-accent-ink);
+    background-color: var(--color-accent-soft);
+  }
+}
+
+.site-button:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.site-button--primary:active {
+  background-color: color-mix(in srgb, var(--color-ink) 85%, black);
+}
+
+.site-button--secondary:active {
+  border-color: var(--color-accent-ink);
+  background-color: color-mix(in srgb, var(--color-accent-soft) 80%, var(--color-accent));
 }
 
 /*
@@ -318,16 +503,30 @@ body {
   padding-bottom: 0;
 }
 
-/* Keep a card's rounded border closed on both sides of a page break. */
+/*
+  A card split across pages is sliced: its padding and border aren't repeated on each
+  page's piece. Repeating them ("clone") made Chrome print the last piece one padding
+  too low, over the start of the next card (audit T-01). The card stays open at the
+  break instead.
+*/
 .paged section.rounded-md {
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
+  box-decoration-break: slice;
+  -webkit-box-decoration-break: slice;
 }
 
 /* At least two lines stay on each side of a break, wherever a block splits. */
 .paged {
   orphans: 2;
   widows: 2;
+}
+
+/*
+  Chrome doesn't always honour orphans and widows: a two-line education note or project
+  description could print one line on each page. Paragraphs move whole instead; only long
+  text (.long-text, see prepareResume) may split, so a long statement still flows on.
+*/
+.paged p:not(.long-text) {
+  break-inside: avoid;
 }
 
 /* Keep lines whole and headings with the content that follows them. */
@@ -487,11 +686,20 @@ body {
   margin-right: calc(var(--side-width) + var(--split-gap, 0px));
 }
 
-/* The preview's copy keeps the page's order, and no print frame, so its main column can float. */
+/*
+  The preview's copy keeps the page's order (main column first, then the sidebar), and no
+  print frame, so its main column can float to the side away from the sidebar.
+*/
 .pagination-host.paged--gecko .resume-split[data-side="right"] > :not(aside) {
   float: left;
   width: calc(100% - var(--side-width) - var(--split-gap, 0px));
   margin-right: 0;
+}
+
+.pagination-host.paged--gecko .resume-split[data-side="left"] > :not(aside) {
+  float: right;
+  width: calc(100% - var(--side-width) - var(--split-gap, 0px));
+  margin-left: 0;
 }
 
 /* Columns, not grid, so a long footer can start on the current page. */

@@ -15,17 +15,23 @@ export const socialImage = { url: "/opengraph-image", width: 1200, height: 630, 
 
 // site.ts is imported by client components, so counts are passed in rather than
 // read from the template registry, which would pull it into those bundles.
+// ACCOUNTS
 export const siteDescription = (templateCount: string) =>
-  `Create a professional resume for free with ${templateCount} customizable resume templates. Edit your resume online, keep your data private and get started without an account.`;
+  `Create a resume for free with ${templateCount} templates. Your resume stays in your browser, and you don't need an account.`;
 
 /** What is free today. Only list features that exist and work. */
 export const freeFeatures = (templateCount: string) => [
   { title: `All ${templateCount} resume templates`, description: "Every template in the gallery is free to use. None are locked or premium." },
-  { title: "Resume creation and editing", description: "Write and edit as many resumes as you like with the live preview." },
+  { title: "Resume creation and editing", description: "Create and edit several resumes, with a live preview." },
   { title: "Template customization", description: "Switch templates, reorder and rename sections, and choose Letter or A4 pages." },
-  { title: "Autosave in your browser", description: "Your work saves automatically in this browser as you type." },
+  // ACCOUNTS
+  {
+    title: "Autosave in your browser",
+    description: "Your work saves in this browser as you type. If the browser blocks storage, the editor tells you.",
+  },
+  // ACCOUNTS
   { title: "No account required", description: "Start straight away. There is no sign-up, login or email needed." },
-  { title: "No watermarks", description: "We never add logos, badges or branding to your resume." },
+  { title: "No watermarks", description: `${SITE_NAME} doesn't add logos, badges or branding to your resume.` },
 ];
 
 export const mainNav = [

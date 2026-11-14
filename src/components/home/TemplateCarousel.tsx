@@ -8,8 +8,8 @@ import type { TemplateCategory } from "@/data/templates";
 export type CarouselCard = { slug: string; category: TemplateCategory; inAll: boolean; node: ReactNode };
 type Filter = TemplateCategory | "all";
 
-const arrowClass = `inline-flex size-12 items-center justify-center rounded-[14px] bg-surface text-ink shadow-soft transition-colors hover:bg-panel disabled:opacity-40 ${focusRing}`;
-const chipClass = `h-11 rounded-full border border-line px-5 text-base font-medium text-ink-soft transition-colors hover:border-ink/35 aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white ${focusRing}`;
+const arrowClass = `inline-flex size-12 items-center justify-center rounded-[14px] bg-surface text-ink shadow-soft transition-colors duration-150 ease-out enabled:hover:bg-canvas enabled:active:bg-sheet disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`;
+const chipClass = `h-11 rounded-full border border-line px-5 text-base font-medium text-ink-soft transition-colors duration-150 ease-out hover:border-ink/35 hover:bg-surface hover:text-ink active:bg-surface aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white ${focusRing}`;
 
 /**
  * Cards are rendered on the server and passed in, like the gallery's, so the
@@ -67,8 +67,10 @@ export function TemplateCarousel({ cards, filters }: { cards: CarouselCard[]; fi
       <ul
         ref={trackRef}
         onScroll={onScroll}
+        // Chrome doesn't scroll a partly visible card into view when it gets keyboard focus.
+        onFocus={(event) => (event.target as HTMLElement).closest("li")?.scrollIntoView({ block: "nearest", inline: "nearest" })}
         aria-label="Template previews"
-        className="mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-2 mt-6 -mb-2 flex snap-x snap-mandatory scroll-px-2 gap-5 overflow-x-auto px-2 pt-2 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {cards.map((card) => (
           <li key={card.slug} hidden={!isShown(card)} className="w-[82%] shrink-0 snap-start [contain-intrinsic-block-size:auto_480px] [content-visibility:auto] sm:w-[46%] lg:w-[30.5%]">

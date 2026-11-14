@@ -3,7 +3,7 @@
 import { Search, X } from "lucide-react";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { Container } from "@/components/ui/Container";
-import { buttonClass } from "@/components/ui/styles";
+import { buttonClass, siteButtonMotion } from "@/components/ui/styles";
 import { CategoryChips } from "./CategoryChips";
 import type { GalleryCategory, GalleryTemplate } from "./gallery";
 import { GalleryCard } from "./GalleryCard";
@@ -68,7 +68,7 @@ export function TemplateGallery({ categories, items, eager, total }: TemplateGal
             <div className="mt-6 rounded-3xl bg-surface px-6 py-14 text-center shadow-soft">
               <p className="text-title text-ink">No templates match that search</p>
               <p className="mt-2 text-base text-muted">Try a style, a color or a job title.</p>
-              <button type="button" onClick={() => setQuery("")} className={buttonClass("secondary", "md", "mt-6")}>
+              <button type="button" onClick={() => setQuery("")} className={buttonClass("secondary", "md", `${siteButtonMotion.secondary} mt-6`)}>
                 <X aria-hidden="true" className="size-4" />
                 Clear search
               </button>

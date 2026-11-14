@@ -83,7 +83,9 @@ await page.evaluate(() => {
   [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click();
 });
 await sleep(100);
-await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Download anyway")?.click());
+await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Save as PDF anyway")?.click());
+await sleep(100);
+await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Continue")?.click());
 await page.waitForFunction(() => window.__printed > 0);
 check("The print copy keeps one h1", (await page.$$eval(".print-root h1", (els) => els.length)) === 1);
 await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));

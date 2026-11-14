@@ -66,6 +66,8 @@ const downloadBackup = async (page) => {
 const exportPdf = async (page) => {
   const before = await page.evaluate(() => window.__printed || 0);
   await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click());
+  await page.waitForSelector("dialog[open]");
+  await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Continue")?.click());
   await page.waitForFunction((b) => (window.__printed || 0) > b, {}, before);
   await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));
   await sleep(500);
@@ -86,7 +88,7 @@ const exportPdf = async (page) => {
   await downloadBackup(page);
   check("First backup download: persist() is called exactly once", await waitFor(async () => (await calls(page)) === 1, 3000), String(await calls(page)));
   check("The request is recorded in the existing backup-state key", typeof (await backupState(page))?.persistRequestedAt === "number");
-  check("Overview: shows storage as protected once the browser agrees", await waitFor(async () => (await panel(page)).includes("Storage: protected"), 3000));
+  check("Overview: shows storage as protected once the browser agrees", await waitFor(async () => (await panel(page)).includes("Storage: your browser agreed to keep it"), 3000));
 
   // ---- Later actions never ask again, even after reopening
   await downloadBackup(page);

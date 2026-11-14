@@ -1,5 +1,5 @@
 import { Globe, Link2, type LucideIcon, Mail, MapPin, Phone } from "lucide-react";
-import { type CSSProperties, Fragment, type ReactNode } from "react";
+import { cloneElement, type CSSProperties, Fragment, type ReactElement, type ReactNode } from "react";
 import type { SectionType } from "@/data/resume";
 import { LinkText } from "../LinkText";
 import { joinParts, type PreparedResume, type RenderSection, type TextBlock } from "../prepareResume";
@@ -866,7 +866,7 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
 
   const vars = designVars(design);
 
-  const mainSections = (
+  const mainSections: ReactElement<{ style?: CSSProperties }> = (
     <div className={`flex flex-col ${dens.sections}${design.sectionBands ? ` section-bands [&>section:nth-child(even)]:[background-color:var(--t-tint)] ${dens.band}` : ""}`}>
       {mainList.map((section) => renderSection(section, t, "main"))}
       {lowerList.length > 0 && (
@@ -895,25 +895,32 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
   const sideLeft = (design.side?.position ?? (design.layout === "sidebar" ? "left" : "right")) === "left";
   const columns = sideLeft ? `${width} minmax(0,1fr)` : `minmax(0,1fr) ${width}`;
   const splitStyle = { gridTemplateColumns: columns, "--side-width": width } as CSSProperties;
+  // Main content comes first in the document, then the sidebar, whichever side the sidebar
+  // is drawn on: the grid places each column, so text order (tagged PDFs, screen readers,
+  // copy and paste) is main-first while the page looks the same (audit T-02). Firefox's
+  // print copy is the exception: its sidebar must come first to float from the top.
+  const asideFirst = !!r.asideFirst;
+  const mainPlace: CSSProperties = asideFirst ? {} : { gridColumn: sideLeft ? 2 : 1, gridRow: 1 };
+  const asidePlace: CSSProperties = asideFirst ? {} : { gridColumn: sideLeft ? 1 : 2, gridRow: 1 };
 
   let body: ReactNode;
   if (design.layout === "sidebar") {
     const aside = (
-      <aside className={`resume-inset min-w-0 ${dens.side} ${C.ink}`} style={sideStyle(design.side)}>
+      <aside className={`resume-inset min-w-0 ${dens.side} ${C.ink}`} style={{ ...sideStyle(design.side), ...asidePlace }}>
         {design.header === "sidebar" && <SidebarHeader t={t} />}
         {sideContent}
       </aside>
     );
     const main = (
-      <div className={`resume-inset min-w-0 ${dens.page}`}>
+      <div className={`resume-inset min-w-0 ${dens.page}`} style={mainPlace}>
         {inlineHeader && <Header t={t} showContact={!contactInSide} />}
         {mainSections}
       </div>
     );
     body = (
       <div className="resume-split grid flex-1" data-side={sideLeft ? "left" : "right"} style={splitStyle}>
-        {sideLeft || r.asideFirst ? aside : main}
-        {sideLeft || r.asideFirst ? main : aside}
+        {asideFirst ? aside : main}
+        {asideFirst ? main : aside}
       </div>
     );
   } else if (design.layout === "columns") {
@@ -921,18 +928,19 @@ export function DesignTemplate({ resume: r, design }: { resume: PreparedResume; 
     const aside = (
       <aside
         className={`min-w-0 ${tinted ? "self-start px-5 py-5" : `${sideLeft ? "border-r pr-7" : "border-l pl-7"} ${C.rule}`} ${C.ink}`}
-        style={sideStyle(design.side)}
+        style={{ ...sideStyle(design.side), ...asidePlace }}
       >
         {sideContent}
       </aside>
     );
+    const main = cloneElement(mainSections, { style: mainPlace });
     body = (
       <div className={`resume-inset flex-1 ${dens.page}`}>
         {inlineHeader && <Header t={t} showContact={!contactInSide} />}
         {topList.length > 0 && <div className={`mb-5 flex flex-col ${dens.sections}`}>{topList.map((section) => renderSection(section, t, "main"))}</div>}
         <div className="resume-split grid gap-7" data-side={sideLeft ? "left" : "right"} style={splitStyle}>
-          {sideLeft || r.asideFirst ? aside : mainSections}
-          {sideLeft || r.asideFirst ? mainSections : aside}
+          {asideFirst ? aside : main}
+          {asideFirst ? main : aside}
         </div>
       </div>
     );

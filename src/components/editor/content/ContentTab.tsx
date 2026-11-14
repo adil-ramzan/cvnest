@@ -16,13 +16,12 @@ import {
   type LucideIcon,
   MoreHorizontal,
   Pencil,
-  Plus,
   Sparkles,
   Trash2,
   Wrench,
 } from "lucide-react";
 import { type KeyboardEvent, useState } from "react";
-import { buttonClass, focusRing, iconButtonClass, inputClass } from "@/components/ui/styles";
+import { focusRing, iconButtonClass, inputClass } from "@/components/ui/styles";
 import {
   DEFAULT_SECTION_TITLES,
   type EntrySection,
@@ -46,6 +45,7 @@ import {
 } from "@/lib/resumes";
 import { LIMITS } from "@/lib/resume-limits";
 import { Menu, type MenuItem } from "../Menu";
+import { type AddSectionOption, AddSectionPanel } from "./AddSectionPanel";
 import { EntryList } from "./EntryList";
 import { TagInput, TextArea, TextField } from "./fields";
 import { PhotoField } from "./PhotoField";
@@ -211,7 +211,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
   };
 
   const present = new Set(sections.map((s) => s.type));
-  const addItems: MenuItem[] = [
+  const addItems: AddSectionOption[] = [
     ...ADDABLE.filter((type) => !present.has(type)).map((type) => ({
       label: DEFAULT_SECTION_TITLES[type],
       icon: sectionIcons[type],
@@ -515,18 +515,7 @@ export function ContentTab({ resume, photoUrl, onChange, onPhotoChange, openSect
       })}
 
       {sections.length < LIMITS.sections ? (
-        <Menu
-          label="Add section"
-          items={addItems}
-          menuClassName="w-72"
-          triggerClassName={buttonClass("secondary", "lg", "h-14 w-full")}
-          trigger={
-            <>
-              <Plus aria-hidden="true" className="size-5" />
-              Add section
-            </>
-          }
-        />
+        <AddSectionPanel options={addItems} allAdded={ADDABLE.every((type) => present.has(type))} />
       ) : (
         <p role="status" className="text-center text-[0.875rem] font-medium text-[#b42318]">
           Limit reached: {LIMITS.sections} sections maximum

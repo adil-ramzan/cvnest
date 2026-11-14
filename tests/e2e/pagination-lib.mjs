@@ -1,5 +1,5 @@
 // Shared by the pagination tests. Builds resumes of a chosen length, exports real
-// PDFs through the editor's Download PDF path, and measures each printed page from
+// PDFs through the editor's Save as PDF path, and measures each printed page from
 // the PDF itself: text positions with pdftotext, colors and rules with pdftoppm.
 import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
@@ -56,7 +56,9 @@ export async function chromeExporter(browser, base) {
     await page.evaluate(async () => {
       [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click();
       await new Promise((r) => setTimeout(r, 60));
-      [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Download anyway")?.click();
+      [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Save as PDF anyway")?.click();
+      await new Promise((r) => setTimeout(r, 60));
+      [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Continue")?.click();
     });
     await page.waitForFunction(() => (window.__printed || 0) > 0, { timeout: 60000 });
     if (printCss) await page.addStyleTag({ content: printCss });
@@ -92,7 +94,9 @@ export async function firefoxExporter(base, port) {
     await exec("window.__printed = 0; window.print = () => window.__printed++;");
     await exec('[...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click();');
     await sleep(80);
-    await exec('[...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Download anyway")?.click();');
+    await exec('[...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Save as PDF anyway")?.click();');
+    await sleep(80);
+    await exec('[...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Continue")?.click();');
     for (let i = 0; i < 300 && (await exec("return window.__printed")) === 0; i++) await sleep(50);
     const [width, height] = size[resume.design.pageSize];
     const pdf = await wd("POST", `${s}/print`, { background: true, margin: { top: 0, bottom: 0, left: 0, right: 0 }, page: { width, height } });

@@ -102,6 +102,8 @@ check("Hide stores the optional field", (await entries())[1].hidden === true);
 check("Hidden entry leaves the preview", !(await preview()).includes("Second role"));
 check("Button reports its state", await page.$eval("button[aria-label='Show Second role on resume']", (el) => el.getAttribute("aria-pressed") === "true"));
 await page.evaluate(() => { window.__printed = 0; window.print = () => window.__printed++; [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click(); });
+await page.waitForSelector("dialog[open]");
+await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Continue")?.click());
 await page.waitForFunction(() => window.__printed > 0);
 check("Hidden entry leaves the print copy", await page.$eval(".print-root", (el) => el.textContent.includes("Third role") && !el.textContent.includes("Second role")));
 await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));
@@ -160,7 +162,7 @@ check("Empty resume previews the sample", (await preview()).includes("Load sampl
 check("Nothing in the sample can take focus", await page.$eval("[aria-label='Resume preview'] [aria-hidden='true']", (el) => el.inert && el.querySelectorAll("a, button, input").length === 0));
 await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click());
 await page.waitForSelector("dialog[open]");
-check("Download PDF warns that the resume is empty", await page.$eval("dialog[open]", (el) => el.textContent.includes("Your resume is empty") && el.textContent.includes("Download anyway")));
+check("Save as PDF warns that the resume is empty", await page.$eval("dialog[open]", (el) => el.textContent.includes("Your resume is empty") && el.textContent.includes("Save as PDF anyway")));
 await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Load sample data").click());
 await sleep(800);
 await seed(null);

@@ -29,7 +29,7 @@ const browser = await launch();
   await sleep(800);
   const screen = await page.evaluate(() => document.querySelector("[role=alert]")?.textContent ?? "");
   check("Editor crash shows the editor error screen", screen.includes("The editor ran into a problem"));
-  check("Error screen reassures that resumes are saved", screen.includes("nothing has been deleted"));
+  check("Error screen reassures that resumes are saved", screen.includes("doesn't delete anything"));
   const actions = await page.$$eval("[role=alert] button, [role=alert] a", (els) => els.map((e) => e.textContent.trim()));
   check("Recovery actions offered", ["Try again", "Reload editor", "Home"].every((a) => actions.includes(a)), actions.join(", "));
   const after = await page.evaluate(() => localStorage.getItem("folio.resumes.v2"));

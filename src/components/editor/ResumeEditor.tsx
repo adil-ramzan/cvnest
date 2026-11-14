@@ -9,11 +9,12 @@ import { backupFileName, createBackup, downloadTextFile, MAX_BACKUP_BYTES, readB
 import { shouldShowBackupReminder, snoozeUntil } from "@/lib/backup-reminder";
 import { requestStorageProtection, shouldRequestPersistence, type StorageProtection, storageProtection } from "@/lib/persistence";
 import { findOverLimits } from "@/lib/resume-limits";
-import { type BackupState, loadBackupState, loadOpenSection, readRawResumes, saveBackupState, saveOpenSection } from "@/lib/resume-storage";
+import { type BackupState, loadBackupState, loadOpenSection, loadPrintNoticeHidden, readRawResumes, saveBackupState, saveOpenSection, savePrintNoticeHidden } from "@/lib/resume-storage";
 import { duplicateResume, isResumeEmpty } from "@/lib/resumes";
 import { clearSampleContent, findSampleContent, hasSampleContent, markAsSample } from "@/lib/sample-content";
 import { isAtRisk } from "@/lib/unsaved";
 import { ContentTab } from "./content/ContentTab";
+import { accordionDuration, keepInView } from "./content/accordion";
 import { buttonClass } from "@/components/ui/styles";
 import { inputClass } from "./content/fields";
 import { CustomizeTab } from "./CustomizeTab";
@@ -24,8 +25,9 @@ import { LeaveGuardDialog } from "./LeaveGuardDialog";
 import { formatUpdated, OverviewTab } from "./OverviewTab";
 import { PreviewPanel } from "./PreviewPanel";
 import { PrintHandlers } from "./PrintHandlers";
+import { PrintNoticeDialog } from "./PrintNoticeDialog";
 import { UndoToast } from "./UndoToast";
-import { usePdfExport } from "./usePdfExport";
+import { pdfFileName, usePdfExport } from "./usePdfExport";
 import { useOtherTabs } from "./useOtherTabs";
 import { useUnsavedGuard } from "./useUnsavedGuard";
 import { usePhotoUrl } from "./usePhotoUrl";
@@ -35,12 +37,20 @@ const tabCard = "m-4 overflow-hidden rounded-[22px] bg-surface shadow-soft sm:m-
 
 type DialogState =
   | { type: "rename" | "delete"; id: string }
-  | { type: "empty" }
-  | { type: "sample" }
+  | { type: "empty"; fromShortcut: boolean }
+  | { type: "sample"; fromShortcut: boolean }
+  /** Said before the print window opens; `touch` picks the wording for a phone's print screen. */
+  | { type: "print-notice"; touch: boolean }
   | { type: "restore"; resumes: Resume[]; skipped: number }
   | { type: "restore-error"; message: string; title?: string }
   | { type: "undo-replace" }
   | null;
+
+/** "1 photo", "2 photos"; `capital` starts the sentence ("One photo"). */
+function missingPhotoText(count: number, capital = false) {
+  if (count === 1) return capital ? "One photo" : "1 photo";
+  return `${count} photos`;
+}
 
 export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSlug }) {
   const store = useResumeStore(initialTemplate);
@@ -61,6 +71,8 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
   const [undo, setUndo] = useState<{ id: number; resumeId: string; message: string; restore: () => void } | null>(null);
   const dismissUndo = useCallback(() => setUndo(null), []);
   const [announcement, setAnnouncement] = useState("");
+  /** Photos the last backup couldn't include. A warning shows while this is above zero. */
+  const [backupMissingPhotos, setBackupMissingPhotos] = useState(0);
 
   const { activeResume: active } = store;
   const photoUrl = usePhotoUrl(active?.profile.photo);
@@ -84,10 +96,15 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     if (!scrollTarget.current) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const { elementId, focus } = scrollTarget.current;
-    const element = document.getElementById(elementId);
-    element?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: focus ? "center" : "start" });
-    if (focus) (element?.querySelector<HTMLElement>("[aria-expanded]") ?? element?.querySelector("button"))?.focus({ preventScroll: true });
     scrollTarget.current = null;
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    if (focus) {
+      element.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+      (element.querySelector<HTMLElement>("[aria-expanded]") ?? element.querySelector("button"))?.focus({ preventScroll: true });
+      return;
+    }
+    return keepInView(element, reduced ? 0 : accordionDuration());
   }, [openSections]);
 
   // Only reads the current state; asking happens after the first PDF or backup.
@@ -114,7 +131,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
   const toggleSection = (id: string) => {
     const next = openSections.has(id) ? null : id;
-    // Closing the section above moves this one, so bring it back into view.
+    // Closing the section above moves this one; keepInView brings it back if it leaves the view.
     scrollTarget.current = next ? { elementId: `section-${next}` } : null;
     setOpenSections(new Set(next ? [next] : []));
     saveOpenSection(active.id, next);
@@ -179,12 +196,16 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     requestStorageProtection().then(setProtection);
   };
 
+  /** Returns how many photos couldn't be included, so the leave dialog can say so too. */
   const downloadBackup = async () => {
-    downloadTextFile(backupFileName(site.name), await createBackup(store.resumes));
+    const { text, missingPhotos } = await createBackup(store.resumes);
+    downloadTextFile(backupFileName(site.name), text);
     updateBackupState({ lastBackupAt: Date.now(), remindAfter: null });
     store.markCopied("lastBackupAt");
-    setAnnouncement("Backup downloaded");
+    setBackupMissingPhotos(missingPhotos);
+    setAnnouncement(missingPhotos > 0 ? `Backup downloaded without ${missingPhotoText(missingPhotos)}` : "Backup downloaded");
     requestPersistenceOnce();
+    return missingPhotos;
   };
 
   const startPdf = () =>
@@ -201,11 +222,27 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
     now: openedAt,
   });
 
+  /**
+   * Closes a dialog only if it is still the one showing. A dialog that was just replaced
+   * ("Save as PDF anyway" opens the notice) gets its close event a moment later, and that
+   * must not close the dialog that took its place.
+   */
+  const closeDialog = (type: NonNullable<DialogState>["type"]) => setDialog((current) => (current?.type === type ? null : current));
+
+  /**
+   * Opens the print window, first saying to choose "Save as PDF" unless the person turned
+   * that off. Ctrl/Cmd+P never shows it: whoever presses it is already asking to print.
+   */
+  const savePdf = (fromShortcut: boolean) => {
+    if (fromShortcut || loadPrintNoticeHidden()) startPdf();
+    else setDialog({ type: "print-notice", touch: window.matchMedia("(pointer: coarse)").matches });
+  };
+
   /** Starts the PDF, first checking for a resume that isn't ready to send. */
-  const requestPdf = () => {
-    if (isResumeEmpty(active)) setDialog({ type: "empty" });
-    else if (findSampleContent(active)) setDialog({ type: "sample" });
-    else startPdf();
+  const requestPdf = (fromShortcut = false) => {
+    if (isResumeEmpty(active)) setDialog({ type: "empty", fromShortcut });
+    else if (findSampleContent(active)) setDialog({ type: "sample", fromShortcut });
+    else savePdf(fromShortcut);
   };
 
   const onRestoreFile = async (file: File | undefined) => {
@@ -285,11 +322,12 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         onSelectResume={store.selectResume}
         onCreate={() => store.createNewResume(active.design.templateId)}
         onRename={() => openRename(active.id)}
+        onRenameTo={(name) => store.renameResume(active.id, name)}
         onDuplicate={() => store.duplicateResume(active.id)}
         onDelete={() => setDialog({ type: "delete", id: active.id })}
         onDownloadBackup={downloadBackup}
         onRestoreBackup={() => restoreInput.current?.click()}
-        onDownload={requestPdf}
+        onDownload={() => requestPdf()}
         onClearSample={hasSampleContent(active) ? clearSample : undefined}
         downloading={pdf.status === "preparing"}
       />
@@ -386,6 +424,14 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
               </Notice>
             )}
 
+            {backupMissingPhotos > 0 && (
+              <Notice tone="warning" title="Some photos aren’t in this backup" onDismiss={() => setBackupMissingPhotos(0)}>
+                {missingPhotoText(backupMissingPhotos, true)} couldn’t be read from this browser, so the backup doesn’t include{" "}
+                {backupMissingPhotos === 1 ? "it" : "them"}. Everything else is in the backup. To include a photo, upload it again,
+                then download a new backup.
+              </Notice>
+            )}
+
             {overLimits.length > 0 && (
               <Notice
                 tone="warning"
@@ -428,6 +474,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
                 onSelect={store.selectResume}
                 onCreate={() => store.createNewResume(active.design.templateId)}
                 onRename={openRename}
+                onRenameTo={store.renameResume}
                 onDuplicate={store.duplicateResume}
                 onDelete={(id) => setDialog({ type: "delete", id })}
                 onEditSection={editSection}
@@ -578,7 +625,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
       {pdf.printView}
       <PrintHandlers
         onShortcut={() => {
-          if (pdf.status !== "preparing") requestPdf();
+          if (pdf.status !== "preparing") requestPdf(true);
         }}
         onBeforePrint={() => pdf.beginSystemPrint(active, photoUrl)}
         onAfterPrint={pdf.endSystemPrint}
@@ -586,7 +633,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
       <Dialog
         open={dialog?.type === "empty"}
-        onClose={() => setDialog(null)}
+        onClose={() => closeDialog("empty")}
         title="Your resume is empty"
         description="The PDF would only show a placeholder name. Add your details first, or load sample data to see how it looks."
       >
@@ -595,11 +642,11 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
             type="button"
             onClick={() => {
               setDialog(null);
-              startPdf();
+              savePdf(dialog?.type === "empty" && dialog.fromShortcut);
             }}
             className={dialogButtonClass.secondary}
           >
-            Download anyway
+            Save as PDF anyway
           </button>
           <button
             type="button"
@@ -617,20 +664,20 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
 
       <Dialog
         open={dialog?.type === "sample"}
-        onClose={() => setDialog(null)}
+        onClose={() => closeDialog("sample")}
         title="This resume still contains sample content."
-        description="Review it before downloading."
+        description="Review it before saving it as a PDF."
       >
         <div className="mt-6 flex flex-wrap justify-end gap-2">
           <button
             type="button"
             onClick={() => {
               setDialog(null);
-              startPdf();
+              savePdf(dialog?.type === "sample" && dialog.fromShortcut);
             }}
             className={dialogButtonClass.secondary}
           >
-            Download anyway
+            Save as PDF anyway
           </button>
           <button
             type="button"
@@ -655,6 +702,17 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
           </button>
         </div>
       </Dialog>
+
+      <PrintNoticeDialog
+        notice={dialog?.type === "print-notice" ? dialog : null}
+        fileName={`${pdfFileName(active)}.pdf`}
+        onClose={() => closeDialog("print-notice")}
+        onContinue={(hideNextTime) => {
+          if (hideNextTime) savePrintNoticeHidden();
+          setDialog(null);
+          startPdf();
+        }}
+      />
 
       <Dialog
         open={dialog?.type === "restore"}
@@ -759,7 +817,7 @@ export function ResumeEditor({ initialTemplate }: { initialTemplate?: TemplateSl
         open={dialog?.type === "rename" && !!dialogResume}
         onClose={() => setDialog(null)}
         title="Rename resume"
-        description="The name is only used to tell your resumes apart. It doesn't appear on the resume itself."
+        description="Used to tell your resumes apart and as the suggested PDF file name. It doesn't appear on the resume itself."
       >
         <form onSubmit={submitRename} className="mt-5">
           <label htmlFor="resume-name" className="block text-sm font-medium text-ink-soft">

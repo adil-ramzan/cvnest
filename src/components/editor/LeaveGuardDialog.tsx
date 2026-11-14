@@ -7,7 +7,8 @@ type LeaveGuardDialogProps = {
   open: boolean;
   /** Saving to this browser is failing, not just unbacked-up. */
   saveFailed: boolean;
-  onDownloadBackup: () => Promise<void>;
+  /** Resolves to how many photos the backup couldn't include. */
+  onDownloadBackup: () => Promise<number>;
   onSavePdf: () => void;
   onStay: () => void;
   onLeave: () => void;
@@ -16,6 +17,7 @@ type LeaveGuardDialogProps = {
 /** Asks before in-app navigation while work is at risk. Escape and the backdrop mean stay. */
 export function LeaveGuardDialog({ open, saveFailed, onDownloadBackup, onSavePdf, onStay, onLeave }: LeaveGuardDialogProps) {
   const [backedUp, setBackedUp] = useState(false);
+  const [missingPhotos, setMissingPhotos] = useState(0);
   const close = () => {
     setBackedUp(false);
     onStay();
@@ -23,7 +25,16 @@ export function LeaveGuardDialog({ open, saveFailed, onDownloadBackup, onSavePdf
 
   if (backedUp) {
     return (
-      <Dialog open={open} onClose={close} title="Backup downloaded. Leave now?">
+      <Dialog
+        open={open}
+        onClose={close}
+        title="Backup downloaded. Leave now?"
+        description={
+          missingPhotos > 0
+            ? `${missingPhotos === 1 ? "One photo" : `${missingPhotos} photos`} couldn’t be read from this browser, so the backup doesn’t include ${missingPhotos === 1 ? "it" : "them"}.`
+            : undefined
+        }
+      >
         <div className="mt-6 flex justify-end gap-2">
           <button type="button" onClick={close} className={dialogButtonClass.secondary}>
             Stay
@@ -60,7 +71,7 @@ export function LeaveGuardDialog({ open, saveFailed, onDownloadBackup, onSavePdf
           type="button"
           autoFocus
           onClick={async () => {
-            await onDownloadBackup();
+            setMissingPhotos(await onDownloadBackup());
             setBackedUp(true);
           }}
           className={dialogButtonClass.primary}

@@ -22,8 +22,8 @@ export default function EditorError({ error, reset }: { error: Error & { digest?
         <AlertTriangle aria-hidden="true" className="size-7 text-[#b54708]" />
         <h1 className="mt-4 text-2xl font-bold text-ink">The editor ran into a problem</h1>
         <p className="mt-3 text-base leading-relaxed text-muted">
-          Your resumes are saved in this browser and nothing has been deleted. Try again, or reload the editor to
-          continue where you left off.
+          This error doesn&apos;t delete anything. Resumes already saved in this browser are still there. Try again,
+          or reload the editor.
         </p>
         <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
           <button type="button" onClick={reset} className={buttonClass("primary", "md")}>

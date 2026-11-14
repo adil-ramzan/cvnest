@@ -21,7 +21,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           <p className="text-sm font-medium text-accent-ink">{SITE_NAME}</p>
           <h1 className="mt-2 text-3xl font-bold">Something went wrong</h1>
           <p className="mt-4 text-base leading-relaxed text-muted">
-            The page couldn&apos;t be displayed. Any resumes you saved are still stored in this browser.
+            The page couldn&apos;t be displayed. Resumes already saved in this browser are not affected.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <button

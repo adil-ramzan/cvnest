@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useState } from "react";
-import { buttonClass } from "@/components/ui/styles";
+import { buttonClass, siteButtonMotion } from "@/components/ui/styles";
 import { categoryDetails, type GalleryCategory, type GalleryTemplate, INITIAL_CARDS } from "./gallery";
 import { GalleryCard } from "./GalleryCard";
 
@@ -35,7 +35,7 @@ export function TemplateSection({ category, items, eager, onPreview }: TemplateS
       </ul>
 
       {hiddenCount > 0 && (
-        <button type="button" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)} className={buttonClass("secondary", "lg", "mt-10")}>
+        <button type="button" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)} className={buttonClass("secondary", "lg", `${siteButtonMotion.secondary} mt-10`)}>
           {expanded ? "See fewer" : `See ${hiddenCount} more`}
           <span className="sr-only"> {category.label.toLowerCase()} templates</span>
         </button>

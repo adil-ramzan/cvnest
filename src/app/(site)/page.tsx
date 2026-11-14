@@ -5,7 +5,6 @@ import { FinalCta } from "@/components/home/FinalCta";
 import { Hero } from "@/components/home/Hero";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { Templates } from "@/components/home/Templates";
-import { ValueProps } from "@/components/home/ValueProps";
 import { homeCopy } from "@/data/copy";
 import { socialImage } from "@/data/site";
 
@@ -22,7 +21,6 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <ValueProps />
       <HowItWorks />
       <Templates />
       <Features />

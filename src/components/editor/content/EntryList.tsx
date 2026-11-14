@@ -30,6 +30,8 @@ type EntryListProps<T extends Entry> = {
 export function EntryList<T extends Entry>({ items, onChange, create, itemName, getTitle, getSubtitle, renderFields, onDeleted }: EntryListProps<T>) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [newKey, setNewKey] = useState<string | null>(null);
+  /** The entry just added, while it slides in. Cleared when that ends, so moving it later can't replay it. */
+  const [enteringKey, setEnteringKey] = useState<string | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const original = useRef<T | null>(null);
@@ -123,6 +125,7 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
     onChange([...items, item]);
     setOpenKey(key);
     setNewKey(key);
+    setEnteringKey(key);
   };
 
   const cancel = (index: number) => {
@@ -145,7 +148,7 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
         {announcement}
       </p>
       {items.length > 0 && (
-        <ul ref={listRef} className="space-y-2">
+        <ul ref={listRef} className="entry-list stagger-list space-y-2">
           {items.map((item, index) => {
             const key = keyOf(item, index);
             const open = openKey === key;
@@ -154,7 +157,12 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
             const bodyId = `entry-${key}`;
 
             return (
-              <li key={key} id={item.sample ? sampleEntryElementId(key) : undefined} className={`scroll-mt-36 rounded-2xl border border-line ${draggingKey === key ? "bg-panel shadow-soft" : ""}`}>
+              <li
+                key={key}
+                id={item.sample ? sampleEntryElementId(key) : undefined}
+                onAnimationEnd={(event) => event.target === event.currentTarget && enteringKey === key && setEnteringKey(null)}
+                className={`scroll-mt-36 rounded-2xl border border-line ${draggingKey === key ? "bg-panel shadow-soft" : ""} ${enteringKey === key ? "entry-enter" : ""}`}
+              >
                 <div className="flex items-center gap-1 px-1.5">
                   <button
                     type="button"
@@ -178,10 +186,10 @@ export function EntryList<T extends Entry>({ items, onChange, create, itemName, 
                     onClick={() => openRow(item, key)}
                     aria-expanded={open}
                     aria-controls={bodyId}
-                    className={`min-w-0 flex-1 rounded-lg py-2.5 text-left ${focusRing} ${item.hidden ? "opacity-55" : ""}`}
+                    className={`group min-w-0 flex-1 rounded-lg py-2.5 text-left ${focusRing} ${item.hidden ? "opacity-55" : ""}`}
                   >
                     <span className="flex items-center gap-2">
-                      <span className={`truncate text-[0.9375rem] font-bold ${getTitle(item).trim() ? "text-ink" : "text-muted"}`}>{title}</span>
+                      <span className={`truncate text-[0.9375rem] font-bold decoration-ink/30 underline-offset-[3px] group-hover:underline ${getTitle(item).trim() ? "text-ink" : "text-muted"}`}>{title}</span>
                       {item.sample && <SampleTag />}
                     </span>
                     {subtitle && <span className="block truncate text-[0.875rem] text-muted">{subtitle}</span>}

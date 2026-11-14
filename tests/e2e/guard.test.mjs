@@ -115,6 +115,8 @@ check("Next edit re-activates it", (await unload(page)) === 1);
 await page.click(logo);
 await page.waitForSelector("dialog[open]");
 await press(page, "Save as PDF");
+await page.waitForFunction(() => document.querySelector("dialog[open]")?.textContent.includes("Continue"));
+await press(page, "Continue");
 await page.waitForFunction(() => window.__printed > 0);
 check("Save as PDF stays on the page", onEditor(page) && !(await dialogOpen(page)));
 await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));

@@ -26,7 +26,7 @@ export function SiteHeader() {
   const isActive = (href: string) => (href === "/" ? pathname === "/" : !href.includes("#") && pathname.startsWith(href));
 
   return (
-    <header className="sticky top-0 z-40 bg-canvas/90 pt-3 pb-2 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 bg-canvas pt-3 pb-2">
       <Container>
         <div className="grid h-16 grid-cols-[1fr_auto] items-center gap-6 rounded-2xl bg-surface px-4 shadow-soft md:grid-cols-[1fr_auto_1fr] md:px-5">
           <Logo />
@@ -38,7 +38,7 @@ export function SiteHeader() {
                   <Link
                     href={item.href}
                     aria-current={isActive(item.href) ? "page" : undefined}
-                    className="rounded-lg px-3 py-2 text-base font-medium text-muted transition-colors hover:text-ink aria-[current=page]:text-ink"
+                    className="rounded-lg px-3 py-2 text-base font-medium text-muted transition-colors duration-150 ease-out hover:bg-accent-soft/55 hover:text-ink active:bg-accent-soft/80 active:text-ink aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent-ink"
                   >
                     {item.label}
                   </Link>
@@ -55,7 +55,7 @@ export function SiteHeader() {
 
           <button
             type="button"
-            className="-mr-1 inline-flex size-11 items-center justify-center justify-self-end rounded-[14px] text-ink hover:bg-ink/5 md:hidden"
+            className="-mr-1 inline-flex size-11 items-center justify-center justify-self-end rounded-[14px] text-ink transition-colors duration-150 ease-out hover:bg-ink/5 active:bg-ink/10 md:hidden"
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
             onClick={() => setMenuOpen(!menuOpen)}
@@ -75,7 +75,7 @@ export function SiteHeader() {
                       href={item.href}
                       onClick={() => setMenuOpen(false)}
                       aria-current={isActive(item.href) ? "page" : undefined}
-                      className="block rounded-lg px-3 py-2.5 text-base text-ink-soft hover:bg-ink/5 aria-[current=page]:font-medium aria-[current=page]:text-ink"
+                      className="block rounded-lg px-3 py-2.5 text-base text-ink-soft transition-colors duration-150 ease-out hover:bg-accent-soft/55 hover:text-ink active:bg-accent-soft/80 active:text-ink aria-[current=page]:bg-accent-soft aria-[current=page]:font-medium aria-[current=page]:text-accent-ink"
                     >
                       {item.label}
                     </Link>

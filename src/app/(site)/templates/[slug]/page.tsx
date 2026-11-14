@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
+import { quietLinkClass } from "@/components/ui/styles";
 import { site, socialImage } from "@/data/site";
 import { getCategory, getTemplate, templates } from "@/data/templates";
 
@@ -23,6 +24,7 @@ export async function generateMetadata({ params }: TemplatePageProps): Promise<M
   if (!template) return {};
 
   const title = `Free ${template.name} Resume Template`;
+  // ACCOUNTS
   const description = `${template.description} Free to use, no account required.`;
   return {
     title,
@@ -44,7 +46,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
 
   return (
     <Container className="py-10 sm:py-14">
-      <Link href="/templates" className="inline-flex items-center gap-1.5 text-base text-muted hover:text-ink pointer-coarse:min-h-10">
+      <Link href="/templates" className={`inline-flex items-center gap-1.5 text-base ${quietLinkClass} pointer-coarse:min-h-10`}>
         <ArrowLeft aria-hidden="true" className="size-4" />
         All templates
       </Link>
@@ -85,6 +87,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
           <ButtonLink href={`/editor?template=${template.slug}`} size="lg" className="mt-8 w-full">
             Use This Free Template
           </ButtonLink>
+          {/* ACCOUNTS */}
           <p className="mt-3 text-sm text-muted">
             Free to use, with no account required. The sample content shown is fictional and for preview only.
           </p>
@@ -94,7 +97,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
             <ul className="mt-3 space-y-2.5">
               {related.map((item) => (
                 <li key={item.slug}>
-                  <Link href={`/templates/${item.slug}`} className="text-base text-muted underline-offset-4 pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center hover:text-ink hover:underline">
+                  <Link href={`/templates/${item.slug}`} className={`text-base ${quietLinkClass} pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center`}>
                     {item.name} — {item.layout}
                   </Link>
                 </li>
@@ -102,7 +105,7 @@ export default async function TemplatePage({ params }: TemplatePageProps) {
             </ul>
             <Link
               href={`/templates?category=${template.category}`}
-              className="mt-4 inline-block text-base font-medium text-ink underline-offset-4 hover:underline pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
+              className="mt-4 inline-block text-base font-medium text-ink underline-offset-4 transition-colors duration-150 ease-out hover:text-accent-ink hover:underline active:text-accent-ink pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center"
             >
               View all {category.label.toLowerCase()} templates
             </Link>

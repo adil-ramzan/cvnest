@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
+import { quietLinkClass } from "@/components/ui/styles";
 import { homeCopy } from "@/data/copy";
 import { footerNav, site } from "@/data/site";
 import { Logo } from "./Logo";
@@ -24,7 +25,7 @@ export function SiteFooter() {
                 <ul className="mt-3 space-y-2.5 pointer-coarse:space-y-0">
                   {group.links.map((item) => (
                     <li key={item.href}>
-                      <Link href={item.href} className="text-base text-muted transition-colors hover:text-ink pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center">
+                      <Link href={item.href} className={`text-base ${quietLinkClass} pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center`}>
                         {item.label}
                       </Link>
                     </li>

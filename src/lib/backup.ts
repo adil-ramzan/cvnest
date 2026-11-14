@@ -24,24 +24,32 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-async function withEmbeddedPhoto(resume: Resume): Promise<Resume> {
+/** `missing` is set when the resume has a photo that couldn't be read, so the backup goes without it. */
+async function withEmbeddedPhoto(resume: Resume): Promise<{ resume: Resume; missing: boolean }> {
   const photo = resume.profile.photo;
-  if (!photo || photo.inlineData) return resume;
+  if (!photo || photo.inlineData) return { resume, missing: false };
   try {
     const blob = await loadPhoto(photo.id);
-    return blob ? { ...resume, profile: { ...resume.profile, photo: { ...photo, inlineData: await blobToDataUrl(blob) } } } : resume;
+    if (!blob) return { resume, missing: true };
+    return { resume: { ...resume, profile: { ...resume.profile, photo: { ...photo, inlineData: await blobToDataUrl(blob) } } }, missing: false };
   } catch {
-    return resume;
+    return { resume, missing: true };
   }
 }
 
-export async function createBackup(resumes: Resume[]): Promise<string> {
-  return JSON.stringify({
+/**
+ * The backup file's text, and how many resumes have a photo that couldn't be read and so
+ * isn't in it. Those resumes are still backed up in full apart from the photo.
+ */
+export async function createBackup(resumes: Resume[]): Promise<{ text: string; missingPhotos: number }> {
+  const embedded = await Promise.all(resumes.map(withEmbeddedPhoto));
+  const text = JSON.stringify({
     kind: BACKUP_KIND,
     schemaVersion: RESUME_SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
-    resumes: await Promise.all(resumes.map(withEmbeddedPhoto)),
+    resumes: embedded.map((item) => item.resume),
   });
+  return { text, missingPhotos: embedded.filter((item) => item.missing).length };
 }
 
 /** Checks a backup file through the same migrations and validation as stored data. */

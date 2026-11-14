@@ -3,6 +3,7 @@
 import { Maximize, Minus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { pageInset } from "@/components/resume/engine/design";
+import { FEW_LINES_FILL } from "@/components/resume/paginate";
 import { pageSizes } from "@/components/resume/ResumePaper";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { buttonClass } from "@/components/ui/styles";
@@ -20,8 +21,6 @@ const MIN_FIT = 0.3;
 const MAX_FIT = 1.25;
 /** Space between pages in the preview. */
 const PAGE_GAP = 32;
-/** A last page this full holds only a few lines. */
-const FEW_LINES_FILL = 0.12;
 
 type PreviewPanelProps = {
   resume: Resume;

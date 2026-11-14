@@ -1,6 +1,6 @@
-// Browser printing outside Download PDF: site pages print their own content, Ctrl/Cmd+P in
-// the editor runs the Download PDF flow, and the browser's Print menu prints the resume, or a
-// note saying to use Download PDF if its fonts or photo aren't ready. Skips without poppler.
+// Browser printing outside Save as PDF: site pages print their own content, Ctrl/Cmd+P in
+// the editor runs the Save as PDF flow (without the notice before it), and the browser's Print
+// menu prints the resume, or a note saying to use Save as PDF if its fonts or photo aren't ready. Skips without poppler.
 import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -80,16 +80,17 @@ const printState = (page) =>
   await page.close();
 }
 
-// ---- Ctrl/Cmd+P in the editor runs the Download PDF flow
+// ---- Ctrl/Cmd+P in the editor runs the Save as PDF flow
 {
   const page = await newPage();
   await editorWith(page, resume());
   const before = await printed(page);
   await pressPrintShortcut(page, "Control");
-  check("Ctrl+P opens the print window through Download PDF", await waitFor(async () => (await printed(page)) === before + 1, 5000));
+  check("Ctrl+P opens the print window through Save as PDF", await waitFor(async () => (await printed(page)) === before + 1, 5000));
+  check("Ctrl+P doesn't show the Save as PDF notice", (await page.$$("dialog[open]")).length === 0);
   const during = await printState(page);
   check("Ctrl+P: the resume's print copy is mounted and the page marked as printing", during.root && !during.note && during.attribute, JSON.stringify(during));
-  check("Ctrl+P: the PDF file name is suggested", during.title === "Priya-Printwell-Resume", during.title);
+  check("Ctrl+P: the PDF file name is suggested", during.title === "Print test", during.title);
   const text = await pdfText(page, "ctrl-p");
   check("Ctrl+P: the printout is the resume, not the editor", text.includes("Priya Printwell") && !text.includes("Saved locally") && !text.includes("Customize"));
   await finishPrint(page);
@@ -101,11 +102,54 @@ const printState = (page) =>
   await finishPrint(page);
   await sleep(300);
 
+  const saveButton = await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF"))?.innerText.trim());
+  check("The top bar button says Save as PDF", saveButton === "Save as PDF", saveButton);
   await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click());
+  await page.waitForSelector("dialog[open]");
+  const notice = await page.evaluate(() => document.querySelector("dialog[open]").innerText);
+  check(
+    "Save as PDF first says what to choose, and the file name",
+    notice.includes("In the next window, choose “Save as PDF” as the destination. Your browser may suggest the name “Print test.pdf”."),
+    notice.replace(/\s+/g, " "),
+  );
+  check("The notice says the resume stays in the browser", notice.includes("Your resume stays in your browser."));
+  check("The notice offers Continue and Don't show this again", notice.includes("Continue") && notice.includes("Don't show this again"));
+  check("Nothing prints until Continue", (await printed(page)) === before + 2);
+  await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Continue").click());
   await waitFor(async () => (await printed(page)) === before + 3, 5000);
   const exported = await pdfText(page, "download-pdf");
-  check("Download PDF itself still prints the resume only", exported.includes("Priya Printwell") && !exported.includes("Saved locally"));
+  check("Save as PDF itself still prints the resume only", exported.includes("Priya Printwell") && !exported.includes("Saved locally"));
   await finishPrint(page);
+  await sleep(300);
+
+  // "Don't show this again" is remembered.
+  await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click());
+  await page.waitForSelector("dialog[open]");
+  await page.evaluate(() => document.querySelector("dialog[open] input[type=checkbox]").click());
+  await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Continue").click());
+  await waitFor(async () => (await printed(page)) === before + 4, 5000);
+  await finishPrint(page);
+  await sleep(300);
+  await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click());
+  check("After Don't show this again, Save as PDF opens the print window directly", await waitFor(async () => (await printed(page)) === before + 5, 5000));
+  check("and shows no notice", (await page.$$("dialog[open]")).length === 0);
+  await finishPrint(page);
+  await page.close();
+}
+
+// ---- On a phone, the notice matches the system print screen
+{
+  const page = await newPage();
+  await page.setViewport({ width: 390, height: 844, hasTouch: true, isMobile: true });
+  await editorWith(page, resume());
+  await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click());
+  await page.waitForSelector("dialog[open]");
+  const notice = await page.evaluate(() => document.querySelector("dialog[open]").innerText);
+  check(
+    "Phone: the notice uses the print screen's wording",
+    notice.includes("On Android, choose “Save as PDF” as the printer. On iPhone or iPad, tap Share, then Save to Files. Your browser may suggest the name “Print test.pdf”.") && notice.includes("Your resume stays in your browser."),
+    notice.replace(/\s+/g, " "),
+  );
   await page.close();
 }
 
@@ -114,7 +158,7 @@ const printState = (page) =>
   const page = await newPage();
   await editorWith(page, resume({ profile: { fullName: "", jobTitle: "", email: "", phone: "", location: "" }, sections: [] }));
   await pressPrintShortcut(page);
-  check("Ctrl+P on an empty resume asks first, like Download PDF", (await page.evaluate(() => document.querySelector("dialog[open]")?.innerText ?? "")).includes("Your resume is empty"));
+  check("Ctrl+P on an empty resume asks first, like Save as PDF", (await page.evaluate(() => document.querySelector("dialog[open]")?.innerText ?? "")).includes("Your resume is empty"));
   check("Ctrl+P on an empty resume doesn't print yet", (await printed(page)) === 0);
   await pressPrintShortcut(page);
   check("Ctrl+P while a dialog is open does nothing more", (await page.$$("dialog[open]")).length === 1 && (await printed(page)) === 0);
@@ -123,7 +167,7 @@ const printState = (page) =>
   const sample = await newPage();
   await editorWith(sample, resume({ profile: { ...resume().profile, sampleFields: ["fullName"] } }));
   await pressPrintShortcut(sample);
-  check("Ctrl+P with sample content asks to review it, like Download PDF", (await sample.evaluate(() => document.querySelector("dialog[open]")?.innerText ?? "")).includes("still contains sample content"));
+  check("Ctrl+P with sample content asks to review it, like Save as PDF", (await sample.evaluate(() => document.querySelector("dialog[open]")?.innerText ?? "")).includes("still contains sample content"));
   await sample.close();
 }
 
@@ -139,7 +183,7 @@ const printState = (page) =>
   await finishPrint(page);
   await sleep(300);
   const after = await printState(page);
-  check("Print menu: afterwards everything is put back (copy, mark and title)", !after.root && !after.attribute && after.title !== "Priya-Printwell-Resume", JSON.stringify(after));
+  check("Print menu: afterwards everything is put back (copy, mark and title)", !after.root && !after.attribute && after.title !== "Print test", JSON.stringify(after));
   check("Print menu: the editor didn't open its own print window", (await printed(page)) === 0);
 
   // Fonts still loading: a note instead of a page that could come out wrong.
@@ -148,7 +192,7 @@ const printState = (page) =>
   const notReady = await printState(page);
   check("Print menu, fonts not ready: a note is printed instead of the resume", notReady.root && notReady.note, JSON.stringify(notReady));
   const note = await pdfText(page, "menu-not-ready");
-  check("Print menu, fonts not ready: the note says to use Download PDF", note.includes("Use Download PDF") && note.includes("Download PDF") && !note.includes("Keeps printed pages honest"), note.slice(0, 120).replace(/\s+/g, " "));
+  check("Print menu, fonts not ready: the note says to use Save as PDF", note.includes("Use Save as PDF") && note.includes("as the destination") && !note.includes("Keeps printed pages honest"), note.slice(0, 120).replace(/\s+/g, " "));
   await finishPrint(page);
   await page.close();
 }

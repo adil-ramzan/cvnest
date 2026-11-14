@@ -20,6 +20,10 @@ const registry = fs.readFileSync(path.join(process.cwd(), "src/data/templates.ts
 const slugs = [...registry.matchAll(/^    slug: "([^"]+)"/gm)].map((m) => m[1]);
 const blocks = registry.split(/\n    slug: /).slice(1);
 const sectional = new Set(blocks.filter((b) => /section(Bands|Cards): true/.test(b)).map((b) => b.match(/"([^"]+)"/)[1]));
+// A card split across pages is sliced, not repeated (audit T-01), so where a card carries on
+// at the top of a page its text starts above the card padding that pages opening with a fresh
+// card have. Accepted for these templates only.
+const carded = new Set(blocks.filter((b) => /sectionCards: true/.test(b)).map((b) => b.match(/"([^"]+)"/)[1]));
 const inset = (slug) => {
   const block = blocks.find((b) => b.startsWith(`"${slug}"`));
   const density = block.match(/density: "(\w+)"/)?.[1];
@@ -48,7 +52,7 @@ function inspect(result, label, slug, target) {
   // Measured at the first line's ink: a run of ink across the page skips plain text and finds the first rule instead.
   // Anything drawn above that line is the margin-ink check's.
   if (result.contTop) {
-    if (result.contTop.max - result.contTop.min > 16) note("uneven-margin", `${label}: ${result.contTop.min}-${result.contTop.max}`);
+    if (!carded.has(slug) && result.contTop.max - result.contTop.min > 16) note("uneven-margin", `${label}: ${result.contTop.min}-${result.contTop.max}`);
     if (Math.abs(result.contTop.min - inset(slug)) > 30) note("wrong-margin", `${label}: ${result.contTop.min}`);
   }
 }

@@ -29,6 +29,16 @@ const openProfile = async () => {
   await page.waitForSelector("::-p-aria(Full name)");
 };
 
+/** Opens a section card by its description and waits for it to finish opening (--accordion-duration, 700ms): its controls are clipped until then. */
+const openSection = async (hint) => {
+  await page.locator(`::-p-text(${hint})`).click();
+  await page.waitForFunction((text) => {
+    const header = [...document.querySelectorAll("h2 > button[aria-expanded=true]")].find((b) => b.textContent.includes(text));
+    const body = header && document.getElementById(header.getAttribute("aria-controls"));
+    return body && Math.abs(body.getBoundingClientRect().height - body.firstElementChild.scrollHeight) < 1;
+  }, {}, hint);
+};
+
 // 1. Template from URL
 await page.goto(`${BASE}/editor?template=modern`, { waitUntil: "networkidle0" });
 await openProfile();
@@ -40,26 +50,26 @@ check("Template from URL selected", modernPressed === "modern", modernPressed);
 await aria("Full name").fill(MARKER);
 await aria("Job title").fill("Chief Cartographer");
 await aria("Email").fill("zelda@example.com");
-await page.locator("::-p-text(Jobs, internships and volunteer roles)").click();
+await openSection("Jobs, internships and volunteer roles");
 await aria("Add position").click();
 await sleep(200);
 await aria("Job title").fill("Map Maker");
 await aria("Company").fill("Atlas Co");
 await aria("Achievements and responsibilities").fill("Drew 400 maps\nLed survey team");
 // Skills
-await page.locator("::-p-text(Tools, technologies and strengths)").click();
+await openSection("Tools, technologies and strengths");
 await aria("Add a skill").fill("Surveying");
 await page.keyboard.press("Enter");
 await aria("Add a skill").fill("GIS, Python");
 await page.keyboard.press("Enter");
 // Languages
-await page.locator("::-p-text(Languages you speak)").click();
+await openSection("Languages you speak");
 await aria("Add language").click();
 await aria("Language").fill("Spanish");
 await aria("Proficiency").fill("Fluent");
 // Custom section
 await aria("Add section").click();
-await page.locator("[role='menu'] ::-p-text(Custom section)").click();
+await page.locator("[aria-label='Sections you can add'] ::-p-text(Custom section)").click();
 await page.type("[aria-label='Section heading']", "Volunteering");
 await page.keyboard.press("Enter");
 await sleep(900);

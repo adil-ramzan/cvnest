@@ -84,12 +84,14 @@ check("Cancel puts the sample text and its mark back", entries[0].sample === tru
 // ---- Warning
 await download();
 const warning = await dialogText();
-check("Download warns with the agreed wording", warning?.includes("This resume still contains sample content.") && warning.includes("Review it before downloading."), String(warning).slice(0, 90));
-check("Warning offers all three ways on", ["Download anyway", "Review", "Clear sample content"].every((t) => warning.includes(t)));
+check("Download warns with the agreed wording", warning?.includes("This resume still contains sample content.") && warning.includes("Review it before saving it as a PDF."), String(warning).slice(0, 90));
+check("Warning offers all three ways on", ["Save as PDF anyway", "Review", "Clear sample content"].every((t) => warning.includes(t)));
 check("Warning stops the print until answered", (await printed()) === 0);
-await clickText("Download anyway");
+await clickText("Save as PDF anyway");
+await sleep(150);
+await clickText("Continue");
 await finishPrint();
-check("Download anyway prints", (await printed()) === 1);
+check("Save as PDF anyway prints", (await printed()) === 1);
 
 await page.evaluate(() => [...document.querySelectorAll("[role='tab']")].find((t) => t.textContent.includes("Overview")).click());
 await sleep(100);
@@ -144,7 +146,8 @@ check("Old resumes show no tags", (await tags()) === 0);
 check("Old resumes have no clear action", !(await menu()).includes("Clear sample content"));
 await page.keyboard.press("Escape");
 await download();
-check("Old resumes download with no warning", (await dialogText()) === null);
+check("Old resumes download with no warning", !(await dialogText())?.includes("sample content") && (await dialogText())?.includes("Continue"));
+await clickText("Continue");
 await finishPrint();
 
 await fresh({ ...real, profile: { ...real.profile, sampleFields: ["fullName"] } });
@@ -153,7 +156,9 @@ await page.waitForSelector("dialog[open]");
 await clickText("Save as PDF");
 await sleep(250);
 check("The leave guard's Save as PDF warns too", (await dialogText())?.includes("still contains sample content") && (await printed()) === 0);
-await clickText("Download anyway");
+await clickText("Save as PDF anyway");
+await sleep(150);
+await clickText("Continue");
 await finishPrint();
 check("And can be bypassed", (await printed()) === 1);
 

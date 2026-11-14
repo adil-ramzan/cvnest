@@ -36,15 +36,19 @@ const sizes = [
 ];
 
 const groupLabel = "text-sm font-medium text-ink";
-const swatchClass = `flex size-10 items-center justify-center rounded-full ring-offset-2 ring-offset-surface aria-pressed:ring-2 aria-pressed:ring-ink ${focusRing}`;
+const swatchClass = `flex size-10 items-center justify-center rounded-full ring-offset-2 ring-offset-surface transition-shadow enabled:not-aria-pressed:hover:ring-2 enabled:not-aria-pressed:hover:ring-line-strong aria-pressed:ring-2 aria-pressed:ring-ink motion-reduce:transition-none ${focusRing}`;
 const stepClass = `flex size-10 items-center justify-center rounded-full border border-line text-ink-soft transition-colors hover:border-line-strong hover:text-ink disabled:opacity-40 ${focusRing}`;
 
 type StyleControlsProps = {
   customization: ResumeCustomization;
   onChange: (customization: ResumeCustomization) => void;
+  /** False when the template never draws its accent color: the color choices are disabled, with a note. */
+  accentAvailable?: boolean;
+  /** Shown under the color choices when `accentAvailable` is false. */
+  noAccentNote?: string;
 };
 
-export function StyleControls({ customization, onChange }: StyleControlsProps) {
+export function StyleControls({ customization, onChange, accentAvailable = true, noAccentNote }: StyleControlsProps) {
   const { accentColor, fontFamily, fontScale = 1 } = customization;
   const isPreset = colors.some((color) => color.value === accentColor);
   const customized = accentColor !== undefined || fontFamily !== undefined || fontScale !== 1;
@@ -61,7 +65,7 @@ export function StyleControls({ customization, onChange }: StyleControlsProps) {
           Color
         </p>
         <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
-          <button type="button" aria-pressed={!accentColor} onClick={() => onChange({ accentColor: undefined })} className={chipClass}>
+          <button type="button" aria-pressed={!accentColor} disabled={!accentAvailable} onClick={() => onChange({ accentColor: undefined })} className={`${chipClass} disabled:cursor-not-allowed disabled:opacity-50`}>
             Template
           </button>
           {colors.map((color) => (
@@ -70,16 +74,18 @@ export function StyleControls({ customization, onChange }: StyleControlsProps) {
               type="button"
               aria-label={color.label}
               aria-pressed={accentColor === color.value}
+              disabled={!accentAvailable}
               onClick={() => onChange({ accentColor: color.value })}
-              className={swatchClass}
+              className={`${swatchClass} disabled:cursor-not-allowed disabled:opacity-40`}
               style={{ backgroundColor: color.value }}
             >
               {accentColor === color.value && <Check aria-hidden="true" className="size-4 text-white" />}
             </button>
           ))}
-          <label className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border px-2 pr-3.5 text-sm text-ink-soft hover:border-line-strong hover:text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent ${accentColor && !isPreset ? "border-ink" : "border-line"}`}>
+          <label className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border px-2 pr-3.5 text-sm text-ink-soft hover:border-line-strong hover:text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent has-disabled:cursor-not-allowed has-disabled:opacity-50 ${accentColor && !isPreset ? "border-ink" : "border-line"}`}>
             <input
               type="color"
+              disabled={!accentAvailable}
               value={accentColor ?? colors[0].value}
               onChange={(event) => onChange({ accentColor: event.target.value })}
               className="size-6 cursor-pointer rounded-full border-0 bg-transparent p-0"
@@ -87,7 +93,9 @@ export function StyleControls({ customization, onChange }: StyleControlsProps) {
             Custom
           </label>
         </div>
-        <p className="mt-2 text-sm text-muted">Very light colors are darkened so your text stays readable.</p>
+        <p className="mt-2 text-sm text-muted">
+          {accentAvailable ? "Very light colors are darkened so your text stays readable." : noAccentNote}
+        </p>
       </div>
 
       <div role="group" aria-labelledby="style-font">

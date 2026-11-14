@@ -5,7 +5,7 @@ export function Logo() {
   return (
     <Link
       href="/"
-      className="inline-flex min-h-10 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+      className="inline-flex min-h-10 items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80 active:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
     >
       <span aria-hidden="true" className="flex size-8 items-center justify-center rounded-[10px] bg-ink text-base font-bold text-white">
         {site.name[0]}

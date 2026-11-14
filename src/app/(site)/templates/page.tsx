@@ -5,12 +5,14 @@ import { ResumePreview } from "@/components/resume/ResumePreview";
 import type { GalleryTemplate } from "@/components/templates/gallery";
 import { TemplateGallery } from "@/components/templates/TemplateGallery";
 import { Container } from "@/components/ui/Container";
+import { quietLinkClass } from "@/components/ui/styles";
 import { site, socialImage } from "@/data/site";
 import { TEMPLATE_COUNT_LABEL } from "@/data/template-count";
 import { templateStructure } from "@/data/template-tags";
 import { getCategory, templateCategories, templates } from "@/data/templates";
 
 const title = `${TEMPLATE_COUNT_LABEL} Free Resume Templates`;
+// ACCOUNTS
 const description = `Browse ${TEMPLATE_COUNT_LABEL} free resume templates, from clean single-column designs to modern, creative, photo and executive layouts. Customize any of them online without an account.`;
 
 export const metadata: Metadata = {
@@ -57,7 +59,7 @@ export default function TemplatesPage() {
         <nav aria-label="Breadcrumb">
           <ol className="flex items-center gap-1.5 text-base text-muted">
             <li>
-              <Link href="/" className="underline-offset-4 hover:text-ink hover:underline">
+              <Link href="/" className={quietLinkClass}>
                 Home
               </Link>
             </li>
@@ -71,10 +73,11 @@ export default function TemplatesPage() {
         </nav>
         <h1 className="mt-5 text-display text-balance text-ink max-[480px]:text-[2.4rem]">{TEMPLATE_COUNT_LABEL} free resume templates</h1>
         <p className="mt-5 max-w-xl text-lead text-muted">
-          Pick a design and make it yours.
+          Pick a design to start with.
           <br />
-          Switch any time; your words stay put.
+          You can switch at any time.
         </p>
+        {/* ACCOUNTS */}
         <p className="mt-5 text-small text-ink-soft">Free to use · No watermark · No account needed</p>
       </Container>
       <TemplateGallery categories={categories} items={items} eager={eager} total={TEMPLATE_COUNT_LABEL} />

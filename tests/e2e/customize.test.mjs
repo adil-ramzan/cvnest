@@ -112,7 +112,9 @@ await sleep(300);
 await page.evaluate(async () => {
   [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click();
   await new Promise((resolve) => setTimeout(resolve, 60));
-  [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Download anyway")?.click();
+  [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Save as PDF anyway")?.click();
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Continue")?.click();
 });
 await page.waitForFunction(() => (window.__printed || 0) > 0);
 const printed = await page.evaluate(() => {

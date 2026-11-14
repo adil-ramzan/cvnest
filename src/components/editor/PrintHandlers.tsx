@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 type PrintHandlersProps = {
-  /** Ctrl+P or Cmd+P in the editor: the same as choosing Download PDF. */
+  /** Ctrl+P or Cmd+P in the editor: the same as choosing Save as PDF, without the notice before it. */
   onShortcut: () => void;
   /** The browser is about to print (its menu, or a shortcut the editor didn't catch). */
   onBeforePrint: () => void;

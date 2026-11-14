@@ -1,5 +1,6 @@
 import { site } from "@/data/site";
 
+// ACCOUNTS: this file describes browser-only storage with no account or cloud sync.
 const PRIVACY_STATEMENT ="Your resume data is stored locally in this browser. It is not uploaded to our servers.";
 
 /** Full explanation shown on the Overview tab. */
@@ -9,8 +10,8 @@ export function PrivacyDetails() {
       <p className="font-medium text-ink">{PRIVACY_STATEMENT}</p>
       <ul className="list-disc space-y-2 pl-5 marker:text-line-strong">
         <li>
-          Resumes are saved automatically in this browser&apos;s local storage, and profile photos in its IndexedDB
-          storage. {site.name} doesn&apos;t send them anywhere, and there is no account or cloud sync. Browser extensions and
+          When the browser allows it, resumes are saved automatically in its local storage, and profile photos in its
+          IndexedDB storage. {site.name} doesn&apos;t send them anywhere, and there is no account or cloud sync. Browser extensions and
           browser sync are outside our control.
         </li>
         <li>

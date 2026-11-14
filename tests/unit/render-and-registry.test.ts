@@ -75,8 +75,15 @@ describe("prepareResume", () => {
   it("formats date ranges", () => {
     assert.equal(dateRange("2020", "2022"), "2020 – 2022");
     assert.equal(dateRange("2019", "2019"), "2019");
-    assert.equal(dateRange("", "Present"), "Present");
     assert.equal(dateRange(undefined, undefined), "");
+  });
+
+  it("shows no bare \"Present\" when there's no start date (audit T-09)", () => {
+    for (const ongoing of ["Present", "present", " Current ", "Now", "Ongoing", "Today"]) assert.equal(dateRange("", ongoing), "");
+    assert.equal(dateRange(undefined, "Present"), "");
+    assert.equal(dateRange("", "2020"), "2020");
+    assert.equal(dateRange("2020", "Present"), "2020 – Present");
+    assert.equal(dateRange("2020", ""), "2020");
   });
 });
 

@@ -59,6 +59,8 @@ for (const [name, make, expected, hasPhoto] of [["full", full, fullText, true], 
       if (shows !== preview.img) problems.push(`${label} preview: photo ${preview.img}`);
       const before = await page.evaluate(() => window.__printed);
       await page.evaluate(() => [...document.querySelectorAll("header button")].find((b) => b.textContent.includes("PDF")).click());
+      await page.waitForSelector("dialog[open]");
+      await page.evaluate(() => [...document.querySelectorAll("dialog[open] button")].find((b) => b.textContent === "Continue")?.click());
       await page.waitForFunction((b) => window.__printed > b, {}, before);
       const print = await page.$eval(".print-root .resume-paper", (el) => ({ text: el.textContent, img: !!el.querySelector("img") }));
       for (const item of expected) if (!print.text.includes(item)) problems.push(`${label} print: ${item}`);

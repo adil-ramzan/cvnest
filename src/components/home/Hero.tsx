@@ -1,4 +1,4 @@
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Container } from "@/components/ui/Container";
@@ -29,14 +29,8 @@ export function Hero() {
           <p className="mt-4 text-base text-muted">{hero.reassurance}</p>
         </div>
 
-        <div className="relative mx-auto w-full max-w-md pb-6 lg:max-w-lg">
+        <div className="relative mx-auto w-full max-w-md lg:max-w-lg">
           <ResumePreview template={template} thumbnail className="overflow-hidden rounded-2xl shadow-pop" />
-          <p className="absolute right-3 bottom-0 flex items-center gap-2.5 rounded-2xl bg-surface px-4 py-3 text-base font-medium text-ink shadow-pop sm:-right-4">
-            <span className="flex size-6 items-center justify-center rounded-full bg-accent-soft text-accent">
-              <Check aria-hidden="true" className="size-4" strokeWidth={2.5} />
-            </span>
-            {hero.badge}
-          </p>
         </div>
       </Container>
     </section>

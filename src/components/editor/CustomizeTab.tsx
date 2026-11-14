@@ -4,7 +4,7 @@ import { memo, useDeferredValue, useMemo, useState } from "react";
 import { type PageSize, pageSizes } from "@/components/resume/ResumePaper";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import type { Resume, ResumeCustomization } from "@/data/resume";
-import { ORDER_NOTE, templateStructure } from "@/data/template-tags";
+import { NO_ACCENT_NOTE, ORDER_NOTE, templateStructure, usesAccentColor } from "@/data/template-tags";
 import { getCategory, getTemplate, type ResumeTemplate, type TemplateCategory, type TemplateSlug, templateCategories, templates } from "@/data/templates";
 import { chipClass, StyleControls } from "./StyleControls";
 
@@ -73,7 +73,12 @@ export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateC
           Style
         </h2>
         <p className="mt-1 text-base text-muted">Saved with this resume and used in your PDF. These stay when you switch templates.</p>
-        <StyleControls customization={resume.design} onChange={onCustomizationChange} />
+        <StyleControls
+          customization={resume.design}
+          onChange={onCustomizationChange}
+          accentAvailable={!current || usesAccentColor(current)}
+          noAccentNote={NO_ACCENT_NOTE}
+        />
       </section>
 
       <section className={groupClass} aria-labelledby="customize-template">
@@ -113,7 +118,7 @@ export function CustomizeTab({ resume, photoUrl, template, pageSize, onTemplateC
             {(Object.keys(pageSizes) as PageSize[]).map((size) => (
               <label
                 key={size}
-                className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-line px-4 py-3 has-checked:border-accent has-checked:bg-accent-soft/50 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent"
+                className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-line px-4 py-3 transition-colors not-has-checked:hover:border-ink/35 motion-reduce:transition-none has-checked:border-accent has-checked:bg-accent-soft/50 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent"
               >
                 <input
                   type="radio"

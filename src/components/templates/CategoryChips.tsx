@@ -33,7 +33,11 @@ export function CategoryChips({ categories }: { categories: GalleryCategory[] })
   return (
     <nav aria-label="Template categories" className="sticky top-18 z-30 border-b border-line bg-canvas/90 backdrop-blur-sm">
       <div className="mx-auto w-full max-w-7xl">
-        <ul ref={barRef} className="flex gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden">
+        <ul
+          ref={barRef}
+          // Chrome doesn't scroll a partly visible chip into view when it gets keyboard focus.
+          onFocus={(event) => (event.target as HTMLElement).scrollIntoView({ block: "nearest", inline: "nearest" })}
+          className="flex scroll-px-4 gap-2 overflow-x-auto px-4 py-3 [scrollbar-width:none] sm:scroll-px-6 sm:px-6 [&::-webkit-scrollbar]:hidden">
           {categories.map(({ id, label, count }) => {
             const Icon = categoryDetails[id].icon;
             return (
@@ -41,7 +45,7 @@ export function CategoryChips({ categories }: { categories: GalleryCategory[] })
                 <a
                   href={`#${id}`}
                   aria-current={active === id ? "true" : undefined}
-                  className={`inline-flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-base font-medium text-ink-soft transition-colors hover:border-ink/35 aria-[current]:border-ink aria-[current]:bg-ink aria-[current]:text-white ${focusRing}`}
+                  className={`inline-flex h-11 items-center gap-2 rounded-full border border-line bg-surface px-4 text-base font-medium text-ink-soft transition-colors duration-150 ease-out hover:border-ink/35 hover:bg-canvas hover:text-ink active:bg-canvas aria-[current]:border-ink aria-[current]:bg-ink aria-[current]:text-white ${focusRing}`}
                 >
                   <Icon aria-hidden="true" className="size-4.5" />
                   {label}

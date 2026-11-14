@@ -2,12 +2,13 @@
 
 import { AlertTriangle, ChevronDown, Copy, Download, Eraser, HardDrive, Info, LayoutDashboard, Loader2, type LucideIcon, MoreHorizontal, Pencil, PencilLine, Plus, SlidersHorizontal, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
-import { type KeyboardEvent, useRef } from "react";
+import { type KeyboardEvent, useRef, useState } from "react";
 import { getTemplate } from "@/data/templates";
 import { site } from "@/data/site";
 import type { Resume } from "@/data/resume";
 import { buttonClass, focusRing } from "@/components/ui/styles";
 import { Menu, type MenuItem } from "./Menu";
+import { ResumeNameInput } from "./ResumeNameInput";
 import type { SaveStatus } from "./useResumeStore";
 
 export type EditorTab = "overview" | "content" | "customize";
@@ -32,6 +33,8 @@ type EditorTopBarProps = {
   onSelectResume: (id: string) => void;
   onCreate: () => void;
   onRename: () => void;
+  /** Saves a new name for the open resume, typed into the header. */
+  onRenameTo: (name: string) => void;
   onDuplicate: () => void;
   onDelete: () => void;
   onDownloadBackup: () => void;
@@ -168,6 +171,7 @@ export function EditorTopBar({
   onSelectResume,
   onCreate,
   onRename,
+  onRenameTo,
   onDuplicate,
   onDelete,
   onDownloadBackup,
@@ -176,7 +180,16 @@ export function EditorTopBar({
   onClearSample,
   downloading,
 }: EditorTopBarProps) {
+  const [renaming, setRenaming] = useState(false);
+  /** Back to the resume menu's button once the name is saved or cancelled, so keyboard users keep their place. */
+  const stopRenaming = () => {
+    setRenaming(false);
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>("[aria-label^='Switch resume. Current resume:']")?.focus());
+  };
+
   const resumeItems: MenuItem[] = [
+    { label: "Rename", icon: Pencil, onSelect: () => setRenaming(true) },
+    "separator",
     ...[...resumes]
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .map((resume) => ({
@@ -221,6 +234,19 @@ export function EditorTopBar({
 
         <span aria-hidden="true" className="mx-1 hidden h-6 w-px bg-line sm:block" />
 
+        {renaming ? (
+          <div className="min-w-0 sm:max-w-60">
+            <ResumeNameInput
+              key={active.id}
+              name={active.name}
+              label="Rename resume"
+              fitText
+              className="h-10 max-w-full px-2"
+              onSave={onRenameTo}
+              onDone={stopRenaming}
+            />
+          </div>
+        ) : (
         <Menu
           label={`Switch resume. Current resume: ${active.name}`}
           items={resumeItems}
@@ -229,11 +255,15 @@ export function EditorTopBar({
           triggerClassName="inline-flex h-10 max-w-full items-center gap-1.5 rounded-lg px-2 text-base font-medium text-ink hover:bg-ink/5"
           trigger={
             <>
-              <span className="truncate">{active.name}</span>
+              {/* Double-clicking the name renames it; the menu's Rename item does the same from the keyboard. */}
+              <span className="truncate" onDoubleClick={() => setRenaming(true)}>
+                {active.name}
+              </span>
               <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-muted" />
             </>
           }
         />
+        )}
         </div>
 
         <Tabs tab={tab} onTabChange={onTabChange} className="order-last col-span-2 -mx-3 border-t border-line p-1.5 sm:-mx-4 lg:order-none lg:col-span-1 lg:mx-0 lg:border-0 lg:p-0" />
@@ -245,7 +275,7 @@ export function EditorTopBar({
             onClick={onDownload}
             disabled={downloading}
             aria-busy={downloading}
-            title="Download your resume as a PDF"
+            title="Save your resume as a PDF"
             className={buttonClass("primary", "sm", "ml-1 disabled:cursor-progress disabled:opacity-70")}
           >
             {downloading ? (
@@ -254,7 +284,7 @@ export function EditorTopBar({
               <Download aria-hidden="true" className="hidden size-4 min-[360px]:block" />
             )}
             <span className="sm:hidden">PDF</span>
-            <span className="hidden sm:inline">{downloading ? "Preparing PDF…" : "Download PDF"}</span>
+            <span className="hidden sm:inline">{downloading ? "Preparing PDF…" : "Save as PDF"}</span>
           </button>
           <Menu
             label="More actions"

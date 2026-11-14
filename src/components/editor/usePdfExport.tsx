@@ -10,6 +10,7 @@ import { geckoFooterTrim } from "@/components/resume/paginate";
 import type { PageSize, Resume, ResumeCustomization } from "@/data/resume";
 import { SITE_NAME } from "@/data/site";
 import { getTemplate, type ResumeTemplate, templates } from "@/data/templates";
+import { pdfFileName } from "@/lib/pdf-file-name";
 import { loadStaticFonts, needsStaticFonts, staticFontCss, staticFontsReady } from "./printFonts";
 
 /**
@@ -37,17 +38,8 @@ const IMAGE_TIMEOUT_MS = 8000;
 /** Fallback cleanup if the browser never fires `afterprint`. */
 const PRINT_FALLBACK_MS = 120_000;
 
-/** "Maya Chen" → "Maya-Chen-Resume". Used as the document title, which browsers suggest as the PDF file name. */
-export function pdfFileName(fullName: string): string {
-  const base = fullName
-    .normalize("NFKC")
-    .replace(/[\\/:*?"<>|#%{}^~[\]`\u0000-\u001f]+/g, " ")
-    .trim()
-    .replace(/\s+/g, "-")
-    .slice(0, 80)
-    .replace(/-+$/, "");
-  return base ? `${base}-Resume` : `${SITE_NAME}-Resume`;
-}
+/** Re-exported so the editor keeps importing it from here. */
+export { pdfFileName };
 
 // No page margins: they would leave white bands across sidebars and page colors.
 const pageRule = (size: PageSize) => `@page { size: ${size === "a4" ? "A4" : "letter"}; margin: 0; }`;
@@ -137,11 +129,11 @@ function fontsFor(resume: Resume) {
 function PrintNote() {
   return (
     <div className="print-note">
-      <p className="print-note-title">Use Download PDF to save your resume</p>
+      <p className="print-note-title">Use Save as PDF to save your resume</p>
       <p>
         This print was started from the browser&apos;s menu before your resume&apos;s fonts or photo had finished loading,
-        so it could come out wrong. Close this window, then choose <strong>Download PDF</strong> at the top of the{" "}
-        {SITE_NAME} editor and pick &ldquo;Save as PDF&rdquo;.
+        so it could come out wrong. Close this window, then choose <strong>Save as PDF</strong> at the top of the{" "}
+        {SITE_NAME} editor and pick &ldquo;Save as PDF&rdquo; as the destination.
       </p>
     </div>
   );
@@ -207,7 +199,7 @@ export function usePdfExport() {
           photoFailed = true;
           setMessage("Your photo couldn't be loaded, so it may be missing from the PDF.");
         }
-        document.title = pdfFileName(job.resume.profile.fullName);
+        document.title = pdfFileName(job.resume);
         setPrinting(true);
         window.addEventListener("afterprint", finish);
         timer = setTimeout(() => finish(), PRINT_FALLBACK_MS);
@@ -243,7 +235,7 @@ export function usePdfExport() {
     const current = imagesLoaded && fontsLoaded ? pending : { ...pending, ready: false };
     if (!current.ready) flushSync(() => setSystem(current));
     systemRef.current = current;
-    document.title = pdfFileName(resume.profile.fullName);
+    document.title = pdfFileName(resume);
     setPrinting(true);
   }, []);
 
@@ -299,6 +291,6 @@ export function usePdfExport() {
     printView,
     beginSystemPrint,
     endSystemPrint,
-    fileName: job ? `${pdfFileName(job.resume.profile.fullName)}.pdf` : "",
+    fileName: job ? `${pdfFileName(job.resume)}.pdf` : "",
   };
 }

@@ -27,7 +27,23 @@ export type PageSpec = {
   gecko: boolean;
 };
 
+/** How full the content area of the last page is, 0 to 1: its top and bottom margins don't count. */
 export type PageLayout = { pages: number; lastPageFill: number; spaced: boolean };
+
+/** A last page this full holds only a few lines: up to about five lines of text in any template. */
+export const FEW_LINES_FILL = 0.12;
+
+/**
+ * How much of a page's content area is used down to `bottom`, measured from the top of the
+ * page's column. Chrome's columns include the page's top and bottom padding, so that padding
+ * is left out here; Firefox's hold only what its print frame leaves. Measuring from the page
+ * edge instead made the same few lines count as fuller in templates with deeper margins (T-05).
+ */
+export function contentFill(bottom: number, { height, inset, gecko }: Pick<PageSpec, "height" | "inset" | "gecko">) {
+  const top = gecko ? 0 : inset;
+  const usable = gecko ? height - inset * 2 + geckoFooterTrim(inset) : height - inset * 2;
+  return Math.max(0, (bottom - top) / usable);
+}
 
 type Placement = { element: HTMLElement; column: number; top: number; bottom: number; parts: { column: number; height: number; top: number }[] };
 
@@ -67,7 +83,7 @@ function measure(sheet: HTMLElement, spec: PageSpec) {
 
   const pages = Math.max(1, ...placements.map((p) => p.parts.at(-1)!.column + 1));
   const onLast = placements.filter((p) => p.parts.at(-1)!.column === pages - 1);
-  const lastPageFill = pages > 1 ? Math.max(0, ...onLast.map((p) => p.bottom)) / columnHeight : 1;
+  const lastPageFill = pages > 1 ? contentFill(Math.max(0, ...onLast.map((p) => p.bottom)), spec) : 1;
   return { placements, pages, lastPageFill };
 }
 

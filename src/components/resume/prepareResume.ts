@@ -75,10 +75,16 @@ function freeText(value: string | undefined) {
   return { details, text: details.map((block) => (block.kind === "text" ? block.text : block.items.join(" · "))).join(" · ") };
 }
 
+/** End dates that only say "still going" and carry no date of their own. */
+const ONGOING = /^(present|current|now|ongoing|today)$/i;
+
 export function dateRange(start?: string, end?: string) {
   const from = text(start);
   const to = text(end);
   if (from && to && from !== to) return `${from} – ${to}`;
+  // "Present" on its own says nothing about when, so an entry without a start date
+  // shows no date rather than a bare "Present" (audit T-09). A real end date still shows.
+  if (!from && ONGOING.test(to)) return "";
   return from || to;
 }
 

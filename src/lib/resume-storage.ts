@@ -26,6 +26,7 @@ const UNREADABLE_BACKUP_KEY = "folio.resumes.v2.unreadable-backup";
 const BACKUP_STATE_KEY = "folio.backup-state";
 const MIGRATION_LOG_KEY = "folio.migrations";
 const OPEN_SECTIONS_KEY = "folio.open-sections";
+const PRINT_NOTICE_KEY = "folio.print-notice-hidden";
 const upgradeBackupKey = (fromVersion: number) => `folio.resumes.backup-v${fromVersion}`;
 
 export const RESUMES_STORAGE_KEY = RESUMES_KEY;
@@ -327,5 +328,22 @@ export function saveOpenSection(resumeId: string, sectionId: string | null): voi
     window.localStorage.setItem(OPEN_SECTIONS_KEY, JSON.stringify(sections));
   } catch {
     // Only affects which section opens next time.
+  }
+}
+
+/** Whether the person asked not to see the "choose Save as PDF" notice again. */
+export function loadPrintNoticeHidden(): boolean {
+  try {
+    return window.localStorage.getItem(PRINT_NOTICE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function savePrintNoticeHidden(): void {
+  try {
+    window.localStorage.setItem(PRINT_NOTICE_KEY, "1");
+  } catch {
+    // Only means the notice shows again next time.
   }
 }

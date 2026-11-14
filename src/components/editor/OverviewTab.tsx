@@ -1,12 +1,13 @@
 "use client";
 
 import { Check, Copy, Download, Pencil, Plus, Trash2, Upload } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { getTemplate } from "@/data/templates";
 import type { Resume, SectionType } from "@/data/resume";
 import { buttonClass, iconButtonClass } from "@/components/ui/styles";
 import type { StorageProtection } from "@/lib/persistence";
 import { PrivacyDetails } from "./PrivacyNote";
+import { ResumeNameInput } from "./ResumeNameInput";
 
 type OverviewTabProps = {
   resumes: Resume[];
@@ -14,6 +15,8 @@ type OverviewTabProps = {
   onSelect: (id: string) => void;
   onCreate: () => void;
   onRename: (id: string) => void;
+  /** Saves a new name typed into a row of the resume list. */
+  onRenameTo: (id: string, name: string) => void;
   onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
   onEditSection: (sectionId: string) => void;
@@ -45,8 +48,14 @@ function Card({ title, action, children }: { title: string; action?: ReactNode; 
 const smallButton = buttonClass("secondary", "sm");
 const iconButton = iconButtonClass;
 
-export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onDuplicate, onDelete, onEditSection, onDownloadBackup, onRestoreBackup, lastBackupAt, storageProtection, replacedAt, onUndoReplace }: OverviewTabProps) {
+export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onRenameTo, onDuplicate, onDelete, onEditSection, onDownloadBackup, onRestoreBackup, lastBackupAt, storageProtection, replacedAt, onUndoReplace }: OverviewTabProps) {
   const { profile, sections } = active;
+  const [editingId, setEditingId] = useState<string | null>(null);
+  /** After editing, focus goes back to the row's Rename button so keyboard users keep their place. */
+  const stopEditing = (id: string) => {
+    setEditingId(null);
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-rename-id="${CSS.escape(id)}"]`)?.focus());
+  };
   const sectionStatus = (type: SectionType, label: string) => {
     const section = sections.find((s) => s.type === type);
     const done = section ? (section.type === "summary" ? !!section.content.trim() : section.entries.length > 0) : false;
@@ -94,16 +103,16 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
                 <button
                   type="button"
                   onClick={() => onEditSection(item.id ?? "add-section")}
-                  className="flex min-h-12 w-full items-center gap-3 py-2.5 text-left text-base hover:text-ink"
+                  className="group flex min-h-12 w-full items-center gap-3 py-2.5 text-left text-base"
                 >
                   <span
                     className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${item.done ? "border-accent bg-accent text-white" : "border-line-strong"}`}
                   >
                     {item.done && <Check aria-hidden="true" className="size-3" strokeWidth={3} />}
                   </span>
-                  <span className={`flex-1 ${item.done ? "text-ink-soft" : "text-ink"}`}>{item.label}</span>
+                  <span className={`flex-1 group-hover:text-ink ${item.done ? "text-ink-soft" : "text-ink"}`}>{item.label}</span>
                   <span className="sr-only">{item.done ? "(done)" : "(not started)"}</span>
-                  <span className="text-sm font-medium text-accent-ink">Edit</span>
+                  <span className="text-sm font-medium text-accent-ink underline-offset-4 group-hover:underline">Edit</span>
                 </button>
               </li>
             ))}
@@ -126,14 +135,24 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
             return (
               <li key={resume.id} className="flex items-center gap-2 py-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-medium text-ink">
-                    {resume.name}
-                    {isActive && (
-                      <span className="ml-2 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-ink">
-                        Open
-                      </span>
-                    )}
-                  </p>
+                  {editingId === resume.id ? (
+                    <ResumeNameInput
+                      name={resume.name}
+                      label="Resume name"
+                      className="h-9"
+                      onSave={(name) => onRenameTo(resume.id, name)}
+                      onDone={() => stopEditing(resume.id)}
+                    />
+                  ) : (
+                    <p className="truncate text-base font-medium text-ink">
+                      {resume.name}
+                      {isActive && (
+                        <span className="ml-2 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-ink">
+                          Open
+                        </span>
+                      )}
+                    </p>
+                  )}
                   <p className="truncate text-sm text-muted">
                     {getTemplate(resume.design.templateId)?.name} · {formatUpdated(resume.updatedAt)}
                   </p>
@@ -143,6 +162,16 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
                     Open
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setEditingId(resume.id)}
+                  aria-label={`Rename ${resume.name}`}
+                  title="Rename"
+                  data-rename-id={resume.id}
+                  className={iconButton}
+                >
+                  <Pencil aria-hidden="true" className="size-4" />
+                </button>
                 <button type="button" onClick={() => onDuplicate(resume.id)} aria-label={`Duplicate ${resume.name}`} className={iconButton}>
                   <Copy aria-hidden="true" className="size-4" />
                 </button>
@@ -167,7 +196,7 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
         <p className="mt-1 text-[0.875rem] text-muted">{lastBackupAt ? `Last backup: ${formatUpdated(lastBackupAt)}` : "No backup yet"}</p>
         {storageProtection && (
           <p className="mt-1 text-[0.875rem] text-muted" data-storage-protection={storageProtection}>
-            {storageProtection === "protected" ? "Storage: protected" : "Storage: may be cleared by the browser"}
+            {storageProtection === "protected" ? "Storage: your browser agreed to keep it" : "Storage: may be cleared by the browser"}
           </p>
         )}
         <div className="mt-4 flex flex-wrap gap-2">
@@ -182,7 +211,7 @@ export function OverviewTab({ resumes, active, onSelect, onCreate, onRename, onD
         </div>
         {replacedAt && onUndoReplace && (
           <div className="mt-4 rounded-xl bg-panel p-3.5 text-[0.875rem] text-ink-soft">
-            <p>Your resumes were replaced by a restore on {formatUpdated(replacedAt)}. The earlier ones are kept in this browser for 7 days. Only the most recent replace can be undone.</p>
+            <p>Your resumes were replaced by a restore on {formatUpdated(replacedAt)}. The earlier ones are kept in this browser for up to 7 days. Only the most recent replace can be undone.</p>
             <button type="button" onClick={onUndoReplace} className={`${smallButton} mt-3`}>
               Put back earlier resumes
             </button>

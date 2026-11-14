@@ -147,8 +147,9 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
   // Add awards, volunteering and a custom section. Adding one opens it and closes the last.
   for (const label of ["Awards", "Volunteering", "Custom section"]) {
     await page.locator("::-p-aria(Add section)").click();
-    await page.locator(`[role='menu'] ::-p-text(${label})`).click();
-    await sleep(150);
+    await page.locator(`[aria-label='Sections you can add'] ::-p-text(${label})`).click();
+    // The panel closes and the new card opens over --accordion-duration (700ms).
+    await sleep(900);
     if (label === "Awards") {
       await page.locator("::-p-aria(Add award)").click();
       await page.locator("::-p-aria(Award)").fill("Hackathon Winner");
@@ -170,6 +171,12 @@ const seed = async (page, items) => { await page.goto(`${BASE}/about`, { waitUnt
     const el = await page.waitForSelector(`::-p-text(${hint})`);
     await el.evaluate((node) => node.scrollIntoView({ behavior: "instant", block: "center" }));
     await el.click();
+    // Cards open over --accordion-duration (700ms); their controls are clipped until then.
+    await page.waitForFunction((text) => {
+      const header = [...document.querySelectorAll("h2 > button[aria-expanded=true]")].find((b) => b.textContent.includes(text));
+      const body = header && document.getElementById(header.getAttribute("aria-controls"));
+      return body && Math.abs(body.getBoundingClientRect().height - body.firstElementChild.scrollHeight) < 1;
+    }, {}, hint);
   };
   await openSection("A short introduction");
   await page.locator("::-p-aria(Summary)").fill("Summary text here.");
