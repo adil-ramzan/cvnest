@@ -215,7 +215,7 @@ export function TagInput({ label, itemName, items, onChange, onDeleted, placehol
                   onDeleted(item, index, item.name);
                 }}
                 aria-label={`Remove ${itemName} ${item.name}`}
-                className="-m-1.5 inline-flex size-10 items-center justify-center rounded-full text-muted hover:bg-ink/10 hover:text-ink"
+                className="-m-1.5 inline-flex size-10 pointer-coarse:size-11 items-center justify-center rounded-full text-muted hover:bg-ink/10 hover:text-ink"
               >
                 <X aria-hidden="true" className="size-3.5" />
               </button>

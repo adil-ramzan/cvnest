@@ -6,7 +6,7 @@ import { buttonClass, focusRing } from "@/components/ui/styles";
 import { FONT_SCALE, RESUME_FONTS, type ResumeCustomization, type ResumeFont } from "@/data/resume";
 
 export const chipClass =
-  "inline-flex h-10 items-center rounded-full border border-line px-3.5 text-sm text-ink-soft transition-colors hover:border-line-strong hover:text-ink aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white";
+  "inline-flex h-10 pointer-coarse:h-11 items-center rounded-full border border-line px-3.5 text-sm text-ink-soft transition-colors hover:border-line-strong hover:text-ink aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-white";
 
 const colors = [
   { label: "Navy", value: "#1f3a5f" },
@@ -36,8 +36,8 @@ const sizes = [
 ];
 
 const groupLabel = "text-sm font-medium text-ink";
-const swatchClass = `flex size-10 items-center justify-center rounded-full ring-offset-2 ring-offset-surface aria-pressed:ring-2 aria-pressed:ring-ink ${focusRing}`;
-const stepClass = `flex size-10 items-center justify-center rounded-full border border-line text-ink-soft transition-colors hover:border-line-strong hover:text-ink disabled:opacity-40 ${focusRing}`;
+const swatchClass = `flex size-10 pointer-coarse:size-11 items-center justify-center rounded-full ring-offset-2 ring-offset-surface aria-pressed:ring-2 aria-pressed:ring-ink ${focusRing}`;
+const stepClass = `flex size-10 pointer-coarse:size-11 items-center justify-center rounded-full border border-line text-ink-soft transition-colors hover:border-line-strong hover:text-ink disabled:opacity-40 ${focusRing}`;
 
 type StyleControlsProps = {
   customization: ResumeCustomization;
@@ -77,7 +77,7 @@ export function StyleControls({ customization, onChange }: StyleControlsProps) {
               {accentColor === color.value && <Check aria-hidden="true" className="size-4 text-white" />}
             </button>
           ))}
-          <label className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded-full border px-2 pr-3.5 text-sm text-ink-soft hover:border-line-strong hover:text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent ${accentColor && !isPreset ? "border-ink" : "border-line"}`}>
+          <label className={`inline-flex h-10 pointer-coarse:h-11 cursor-pointer items-center gap-2 rounded-full border px-2 pr-3.5 text-sm text-ink-soft hover:border-line-strong hover:text-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent ${accentColor && !isPreset ? "border-ink" : "border-line"}`}>
             <input
               type="color"
               value={accentColor ?? colors[0].value}

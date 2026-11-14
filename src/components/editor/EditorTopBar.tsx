@@ -105,7 +105,7 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
 function StorageInfo() {
   return (
     <span className="group relative inline-flex">
-      <button type="button" aria-label={STORAGE_NOTE} className={`inline-flex size-10 items-center justify-center rounded-full text-muted hover:text-ink ${focusRing}`}>
+      <button type="button" aria-label={STORAGE_NOTE} className={`inline-flex size-10 pointer-coarse:size-11 items-center justify-center rounded-full text-muted hover:text-ink ${focusRing}`}>
         <Info aria-hidden="true" className="size-4" />
       </button>
       <span
@@ -148,7 +148,7 @@ function Tabs({ tab, onTabChange, className = "" }: { tab: EditorTab; onTabChang
             tabIndex={selected ? 0 : -1}
             onClick={() => onTabChange(item.id)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            className={`relative inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-2 text-[0.875rem] lg:px-3.5 font-medium transition-colors lg:flex-none ${selected ? "bg-accent-soft text-accent-ink" : "text-muted hover:text-ink"}`}
+            className={`relative inline-flex h-10 pointer-coarse:h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-full px-2 text-[0.875rem] lg:px-3.5 font-medium transition-colors lg:flex-none ${selected ? "bg-accent-soft text-accent-ink" : "text-muted hover:text-ink"}`}
           >
             <item.icon aria-hidden="true" className="hidden size-4 shrink-0 min-[400px]:block" />
             {item.label}
@@ -207,7 +207,7 @@ export function EditorTopBar({
         <div className="flex h-15 min-w-0 items-center gap-2 sm:gap-3">
         <Link
           href="/"
-          className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          className="inline-flex min-h-10 min-w-10 pointer-coarse:min-h-11 pointer-coarse:min-w-11 shrink-0 items-center justify-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
         >
           <span
             aria-hidden="true"
@@ -226,7 +226,7 @@ export function EditorTopBar({
           items={resumeItems}
           menuClassName="max-h-[70vh] w-72 overflow-y-auto"
           className="min-w-0 sm:max-w-60"
-          triggerClassName="inline-flex h-10 max-w-full items-center gap-1.5 rounded-lg px-2 text-base font-medium text-ink hover:bg-ink/5"
+          triggerClassName="inline-flex h-10 pointer-coarse:h-11 max-w-full items-center gap-1.5 rounded-lg px-2 text-base font-medium text-ink hover:bg-ink/5"
           trigger={
             <>
               <span className="truncate">{active.name}</span>
@@ -260,7 +260,7 @@ export function EditorTopBar({
             label="More actions"
             align="end"
             items={moreItems}
-            triggerClassName="inline-flex size-10 items-center justify-center rounded-lg text-ink-soft hover:bg-ink/5 hover:text-ink"
+            triggerClassName="inline-flex size-10 pointer-coarse:size-11 items-center justify-center rounded-lg text-ink-soft hover:bg-ink/5 hover:text-ink"
             trigger={<MoreHorizontal aria-hidden="true" className="size-5" />}
           />
         </div>

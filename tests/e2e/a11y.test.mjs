@@ -111,17 +111,18 @@ await page.close();
 const phone = await browser.newPage();
 await phone.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
 const small = [];
-for (const route of ["/", "/templates/professional", "/free", "/about", "/editor"]) {
+for (const route of ["/", "/templates", "/templates/professional", "/free", "/about", "/editor"]) {
   await phone.goto(`${BASE}${route}`, { waitUntil: "networkidle0" });
   await sleep(300);
   small.push(...(await phone.evaluate((route) => [...document.querySelectorAll("a, button, input:not([type=radio]):not([type=checkbox]), select, [role=tab]")]
     // Inline links in a sentence are exempt, and carousel dots stay 24px because nine won't fit beside the arrows.
     .filter((el) => el.offsetParent && !el.closest(".sr-only") && !el.classList.contains("sr-only") && !el.closest("p") && !el.getAttribute("aria-label")?.startsWith("Go to template"))
     .map((el) => [el, el.getBoundingClientRect()])
-    .filter(([, box]) => box.width > 2 && (box.height < 40 || box.width < 40))
+    // 44px on touch screens (desktop keeps 40px).
+    .filter(([, box]) => box.width > 2 && (box.height < 44 || box.width < 44))
     .map(([el, box]) => `${route} ${(el.getAttribute("aria-label") || el.textContent).trim().slice(0, 24)} ${Math.round(box.width)}x${Math.round(box.height)}`), route)));
 }
-check("Touch targets are at least 40px on a phone", small.length === 0, small.slice(0, 12).join(" | "));
+check("Touch targets are at least 44px on a phone", small.length === 0, small.slice(0, 12).join(" | "));
 
 check("No page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
 await browser.close();

@@ -27,7 +27,7 @@ export function Notice({ tone = "info", title, children, actions, onDismiss }: N
         {actions && <div className="mt-2.5 flex flex-wrap gap-2">{actions}</div>}
       </div>
       {onDismiss && (
-        <button type="button" onClick={onDismiss} aria-label={`Dismiss: ${title}`} className="-m-2 inline-flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-black/5">
+        <button type="button" onClick={onDismiss} aria-label={`Dismiss: ${title}`} className="-m-2 inline-flex size-10 pointer-coarse:size-11 shrink-0 items-center justify-center rounded-lg hover:bg-black/5">
           <X aria-hidden="true" className="size-4" />
         </button>
       )}

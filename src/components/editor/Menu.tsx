@@ -136,7 +136,7 @@ export function Menu({ label, trigger, triggerClassName = "", className = "", it
                   close(false);
                   item.onSelect();
                 }}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm outline-none focus:bg-ink/5 hover:bg-ink/5 ${item.danger ? "text-[#b42318]" : "text-ink"}`}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 pointer-coarse:min-h-11 text-left text-sm outline-none focus:bg-ink/5 hover:bg-ink/5 ${item.danger ? "text-[#b42318]" : "text-ink"}`}
               >
                 {isRadio ? (
                   <Check aria-hidden="true" className={`size-4 shrink-0 ${item.checked ? "text-accent" : "invisible"}`} />

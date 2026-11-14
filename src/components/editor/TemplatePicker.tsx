@@ -14,7 +14,7 @@ const ordered = groups.flatMap((group) => group.items);
 const PAGE_STEP = 8;
 const TYPE_AHEAD_RESET_MS = 500;
 
-const triggerClass = `h-10 max-w-52 rounded-lg border border-line bg-surface pr-8 pl-3 text-left text-[0.875rem] font-medium text-ink transition-colors hover:border-line-strong ${focusRing}`;
+const triggerClass = `h-10 pointer-coarse:h-11 max-w-52 rounded-lg border border-line bg-surface pr-8 pl-3 text-left text-[0.875rem] font-medium text-ink transition-colors hover:border-line-strong ${focusRing}`;
 
 type TemplatePickerProps = {
   template: ResumeTemplate;
@@ -170,7 +170,7 @@ export function TemplatePicker({ template, onChange }: TemplatePickerProps) {
                     aria-selected={selected}
                     onClick={() => choose(item.slug)}
                     onMouseMove={() => setActive(ordered.indexOf(item))}
-                    className={`flex h-10 cursor-pointer scroll-mt-9 items-center gap-2.5 rounded-lg px-2.5 text-[0.875rem] ${
+                    className={`flex h-10 pointer-coarse:h-11 cursor-pointer scroll-mt-9 items-center gap-2.5 rounded-lg px-2.5 text-[0.875rem] ${
                       selected ? "bg-accent-soft font-medium text-accent-ink" : "text-ink-soft"
                     } ${item.slug === activeSlug ? "outline-2 -outline-offset-2 outline-accent" : ""}`}
                   >
